@@ -96,43 +96,42 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MCP-01 | — | Pending |
-| MCP-02 | — | Pending |
-| MCP-03 | — | Pending |
-| MCP-04 | — | Pending |
-| SCNE-01 | — | Pending |
-| SCNE-02 | — | Pending |
-| SCNE-03 | — | Pending |
-| SCNE-04 | — | Pending |
-| SCNE-05 | — | Pending |
-| SCNE-06 | — | Pending |
-| SCRP-01 | — | Pending |
-| SCRP-02 | — | Pending |
-| SCRP-03 | — | Pending |
-| SCRP-04 | — | Pending |
-| RNTM-01 | — | Pending |
-| RNTM-02 | — | Pending |
-| RNTM-03 | — | Pending |
-| RNTM-04 | — | Pending |
-| RNTM-05 | — | Pending |
-| RNTM-06 | — | Pending |
-| PROJ-01 | — | Pending |
-| PROJ-02 | — | Pending |
-| PROJ-03 | — | Pending |
-| PROJ-04 | — | Pending |
-| EDIT-01 | — | Pending |
-| EDIT-02 | — | Pending |
-| EDIT-03 | — | Pending |
-| EDIT-04 | — | Pending |
-| DIST-01 | — | Pending |
-| DIST-02 | — | Pending |
-| DIST-03 | — | Pending |
+| MCP-01 | Phase 1 | Pending |
+| MCP-02 | Phase 1 | Pending |
+| MCP-03 | Phase 1 | Pending |
+| MCP-04 | Phase 1 | Pending |
+| SCNE-01 | Phase 1 | Pending |
+| SCNE-02 | Phase 2 | Pending |
+| SCNE-03 | Phase 2 | Pending |
+| SCNE-04 | Phase 2 | Pending |
+| SCNE-05 | Phase 2 | Pending |
+| SCNE-06 | Phase 2 | Pending |
+| SCRP-01 | Phase 3 | Pending |
+| SCRP-02 | Phase 3 | Pending |
+| SCRP-03 | Phase 3 | Pending |
+| SCRP-04 | Phase 3 | Pending |
+| PROJ-01 | Phase 3 | Pending |
+| PROJ-02 | Phase 3 | Pending |
+| PROJ-03 | Phase 3 | Pending |
+| PROJ-04 | Phase 3 | Pending |
+| EDIT-01 | Phase 4 | Pending |
+| EDIT-02 | Phase 4 | Pending |
+| EDIT-03 | Phase 4 | Pending |
+| EDIT-04 | Phase 4 | Pending |
+| RNTM-01 | Phase 5 | Pending |
+| RNTM-02 | Phase 5 | Pending |
+| RNTM-03 | Phase 5 | Pending |
+| RNTM-04 | Phase 5 | Pending |
+| RNTM-05 | Phase 5 | Pending |
+| RNTM-06 | Phase 5 | Pending |
+| DIST-02 | Phase 5 | Pending |
+| DIST-03 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 31 total
-- Mapped to phases: 0
-- Unmapped: 31 ⚠️
+- Mapped to phases: 31
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-14*
-*Last updated: 2026-03-14 after initial definition*
+*Last updated: 2026-03-14 after roadmap phase mapping*
