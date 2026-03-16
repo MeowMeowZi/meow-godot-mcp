@@ -38,15 +38,15 @@ created: 2026-03-17
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 03-01-01 | 01 | 1 | MCP-04 | unit | `ctest -R test_protocol --output-on-failure` | Wave 0 | ⬜ pending |
-| 03-01-02 | 01 | 1 | SCRP-01 | unit (mock) | `ctest -R test_protocol --output-on-failure` | Wave 0 | ⬜ pending |
-| 03-01-03 | 01 | 1 | SCRP-02 | unit (mock) | `ctest -R test_protocol --output-on-failure` | Wave 0 | ⬜ pending |
-| 03-01-04 | 01 | 1 | SCRP-03 | unit | `ctest -R test_script_tools --output-on-failure` | Wave 0 | ⬜ pending |
-| 03-01-05 | 01 | 1 | SCRP-04 | manual | Manual UAT -- requires running Godot editor | N/A | ⬜ pending |
+| 03-01-01 | 01 | 1 | SCRP-01 | unit (mock) | `ctest -R test_protocol --output-on-failure` | Wave 0 | ⬜ pending |
+| 03-01-02 | 01 | 1 | SCRP-02 | unit (mock) | `ctest -R test_protocol --output-on-failure` | Wave 0 | ⬜ pending |
+| 03-01-03 | 01 | 1 | SCRP-03 | unit | `ctest -R test_script_tools --output-on-failure` | Wave 0 | ⬜ pending |
+| 03-01-04 | 01 | 1 | SCRP-04 | manual | Manual UAT -- requires running Godot editor | N/A | ⬜ pending |
 | 03-02-01 | 02 | 1 | PROJ-01 | manual | Manual UAT -- requires res:// filesystem | N/A | ⬜ pending |
 | 03-02-02 | 02 | 1 | PROJ-02 | manual | Manual UAT -- requires Godot ProjectSettings | N/A | ⬜ pending |
 | 03-02-03 | 02 | 1 | PROJ-03 | manual | Manual UAT -- requires Godot ResourceLoader | N/A | ⬜ pending |
 | 03-02-04 | 02 | 2 | PROJ-04 | unit | `ctest -R test_protocol --output-on-failure` | Wave 0 | ⬜ pending |
+| 03-02-05 | 02 | 2 | MCP-04 | unit | `ctest -R test_protocol --output-on-failure` | Wave 0 | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
