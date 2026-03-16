@@ -1,0 +1,30 @@
+# Build artifacts
+*.o
+*.obj
+*.dll
+*.so
+*.dylib
+*.framework
+*.exe
+.sconsign.dblite
+*.os
+
+# Godot
+.godot/
+*.import
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Test build
+tests/build/
+
+# SCons
+.sconf_temp/
+config.log
+
+# Binary output (tracked via .gitkeep)
+project/addons/godot_mcp_meow/bin/*
+!project/addons/godot_mcp_meow/bin/.gitkeep
