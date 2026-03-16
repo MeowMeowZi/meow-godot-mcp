@@ -124,6 +124,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | RNTM-04 | Phase 5 | Pending |
 | RNTM-05 | Phase 5 | Pending |
 | RNTM-06 | Phase 5 | Pending |
+| DIST-01 | Phase 1 | Complete |
 | DIST-02 | Phase 5 | Pending |
 | DIST-03 | Phase 5 | Pending |
 
@@ -134,4 +135,4 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ---
 *Requirements defined: 2026-03-14*
-*Last updated: 2026-03-14 after roadmap phase mapping*
+*Last updated: 2026-03-16 after Phase 1 completion*

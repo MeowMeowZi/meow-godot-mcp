@@ -12,7 +12,7 @@ This roadmap delivers a C++ GDExtension MCP server for Godot that lets AI tools 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & First Tool** - GDExtension scaffold, bridge executable, MCP transport, and scene tree query proving the full pipeline end-to-end
+- [x] **Phase 1: Foundation & First Tool** - GDExtension scaffold, bridge executable, MCP transport, and scene tree query proving the full pipeline end-to-end
 - [ ] **Phase 2: Scene CRUD** - Node creation, modification, deletion with undo/redo and Godot type parsing
 - [ ] **Phase 3: Script & Project Management** - GDScript read/write/attach, project structure query, and resource management
 - [ ] **Phase 4: Editor Integration** - Dock panel UI with connection status/controls, version-adaptive tools, and MCP prompt templates
@@ -33,9 +33,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 - [x] 01-01-PLAN.md -- Project scaffold, build system, GDExtension registration, and test infrastructure
-- [ ] 01-02-PLAN.md -- GDExtension MCP server: JSON-RPC protocol, TCP server, scene tree tool, EditorPlugin
-- [ ] 01-03-PLAN.md -- Bridge executable: stdio transport, TCP client, relay loop
-- [ ] 01-04-PLAN.md -- End-to-end integration build and human verification
+- [x] 01-02-PLAN.md -- GDExtension MCP server: JSON-RPC protocol, TCP server, scene tree tool, EditorPlugin
+- [x] 01-03-PLAN.md -- Bridge executable: stdio transport, TCP client, relay loop
+- [x] 01-04-PLAN.md -- End-to-end integration build and human verification (8/8 UAT passed)
 
 ### Phase 2: Scene CRUD
 **Goal**: AI can create, modify, and delete nodes in the Godot scene tree with full undo/redo support
@@ -108,7 +108,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & First Tool | 0/4 | Planning complete | - |
+| 1. Foundation & First Tool | 4/4 | Complete | 2026-03-16 |
 | 2. Scene CRUD | 0/? | Not started | - |
 | 3. Script & Project Management | 0/? | Not started | - |
 | 4. Editor Integration | 0/? | Not started | - |
