@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### MCP Transport
 
-- [ ] **MCP-01**: Bridge 可执行文件通过 stdio 接收 AI 客户端请求并中继到 GDExtension（TCP localhost）
+- [x] **MCP-01**: Bridge 可执行文件通过 stdio 接收 AI 客户端请求并中继到 GDExtension（TCP localhost）
 - [ ] **MCP-02**: GDExtension 内实现 JSON-RPC 2.0 协议处理 MCP 消息
 - [ ] **MCP-03**: 支持 MCP initialize/initialized 握手流程（spec 2025-03-26）
 - [ ] **MCP-04**: IO 线程与 Godot 主线程通过队列+promise 模式安全通信
@@ -96,7 +96,7 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MCP-01 | Phase 1 | Pending |
+| MCP-01 | Phase 1 | Complete |
 | MCP-02 | Phase 1 | Pending |
 | MCP-03 | Phase 1 | Pending |
 | MCP-04 | Phase 1 | Pending |
