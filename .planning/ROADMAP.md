@@ -47,11 +47,12 @@ Plans:
   3. AI can delete a node by path and the scene tree updates accordingly
   4. All scene modifications made by AI can be undone with Ctrl+Z and redone with Ctrl+Y in the editor
   5. Property values specified as strings (e.g., "Vector2(100,200)", "#ff0000") are automatically parsed into correct Godot types
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md -- Variant type parser module: string-to-Variant conversion with unit tests (SCNE-06)
+- [ ] 02-02-PLAN.md -- Scene mutation tools (create/modify/delete nodes) with UndoRedo, protocol registration, and server wiring (SCNE-02/03/04/05)
+- [ ] 02-03-PLAN.md -- Full build and end-to-end UAT verification of all Scene CRUD tools (all SCNE requirements)
 
 ### Phase 3: Script & Project Management
 **Goal**: AI can read, write, and attach GDScript files, query project structure, and manage resource files
@@ -109,7 +110,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & First Tool | 4/4 | Complete | 2026-03-16 |
-| 2. Scene CRUD | 0/? | Not started | - |
+| 2. Scene CRUD | 0/3 | Planning complete | - |
 | 3. Script & Project Management | 0/? | Not started | - |
 | 4. Editor Integration | 0/? | Not started | - |
 | 5. Runtime, Signals & Distribution | 0/? | Not started | - |
