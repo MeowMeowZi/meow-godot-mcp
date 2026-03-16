@@ -1,6 +1,7 @@
 #include "mcp_plugin.h"
 #include "mcp_server.h"
 
+#include <godot_cpp/classes/editor_undo_redo_manager.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
 using namespace godot;
@@ -19,6 +20,7 @@ MCPPlugin::~MCPPlugin() {
 
 void MCPPlugin::_enter_tree() {
     server = new MCPServer();
+    server->set_undo_redo(get_undo_redo());
     server->start(port);
     set_process(true);
     UtilityFunctions::print("MCP Meow: Server started on port ", port);

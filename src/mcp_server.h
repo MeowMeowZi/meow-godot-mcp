@@ -8,6 +8,10 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
+namespace godot {
+class EditorUndoRedoManager;
+}
+
 // Plain C++ class (NOT a Godot Object) -- owned by MCPPlugin
 class MCPServer {
 public:
@@ -18,6 +22,8 @@ public:
     void stop();
     void poll();
     bool is_running() const;
+
+    void set_undo_redo(godot::EditorUndoRedoManager* ur);
 
 private:
     void process_message(const std::string& line);
@@ -30,6 +36,7 @@ private:
     bool initialized;
     int port;
     bool running;
+    godot::EditorUndoRedoManager* undo_redo = nullptr;
 };
 
 #endif // GODOT_MCP_MEOW_MCP_SERVER_H

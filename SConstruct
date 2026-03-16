@@ -11,6 +11,9 @@ env.Append(CPPPATH=["src/", "thirdparty/"])
 if env["platform"] == "windows":
     env.Append(CXXFLAGS=["/EHsc"])
 
+# Enable Godot-dependent code paths in dual-mode modules (e.g., variant_parser)
+env.Append(CPPDEFINES=["GODOT_MCP_MEOW_GODOT_ENABLED"])
+
 # GDExtension library target
 sources = Glob("src/*.cpp")
 

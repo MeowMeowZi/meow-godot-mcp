@@ -1,6 +1,7 @@
 #include "mcp_server.h"
 #include "mcp_protocol.h"
 #include "scene_tools.h"
+#include "scene_mutation.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -13,6 +14,10 @@ MCPServer::MCPServer()
 
 MCPServer::~MCPServer() {
     stop();
+}
+
+void MCPServer::set_undo_redo(godot::EditorUndoRedoManager* ur) {
+    undo_redo = ur;
 }
 
 void MCPServer::start(int p_port) {
@@ -194,6 +199,56 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
             nlohmann::json result = get_scene_tree(max_depth, include_properties, root_path);
             return mcp::create_tool_result(id, result);
+        }
+
+        if (tool_name == "create_node") {
+            std::string type, parent_path, node_name;
+            nlohmann::json properties;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("type") && args["type"].is_string())
+                    type = args["type"].get<std::string>();
+                if (args.contains("parent_path") && args["parent_path"].is_string())
+                    parent_path = args["parent_path"].get<std::string>();
+                if (args.contains("name") && args["name"].is_string())
+                    node_name = args["name"].get<std::string>();
+                if (args.contains("properties") && args["properties"].is_object())
+                    properties = args["properties"];
+            }
+            if (type.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: type");
+            }
+            return mcp::create_tool_result(id, create_node(type, parent_path, node_name, properties, undo_redo));
+        }
+
+        if (tool_name == "set_node_property") {
+            std::string node_path, property, value;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+                if (args.contains("property") && args["property"].is_string())
+                    property = args["property"].get<std::string>();
+                if (args.contains("value") && args["value"].is_string())
+                    value = args["value"].get<std::string>();
+            }
+            if (node_path.empty() || property.empty() || value.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: node_path, property, value");
+            }
+            return mcp::create_tool_result(id, set_node_property(node_path, property, value, undo_redo));
+        }
+
+        if (tool_name == "delete_node") {
+            std::string node_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+            }
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
+            }
+            return mcp::create_tool_result(id, delete_node(node_path, undo_redo));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
