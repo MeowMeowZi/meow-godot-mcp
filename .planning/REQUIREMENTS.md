@@ -21,7 +21,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SCNE-03**: AI 可修改节点属性（transform、name、visibility、自定义属性等）
 - [ ] **SCNE-04**: AI 可删除指定路径的节点
 - [ ] **SCNE-05**: 所有场景修改操作集成 Godot UndoRedo 系统，支持 Ctrl+Z 撤销
-- [ ] **SCNE-06**: 属性值自动解析 Godot 类型（Vector2/3、Color、NodePath 等字符串格式自动转换）
+- [x] **SCNE-06**: 属性值自动解析 Godot 类型（Vector2/3、Color、NodePath 等字符串格式自动转换）
 
 ### Script Management
 
@@ -105,7 +105,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | SCNE-03 | Phase 2 | Pending |
 | SCNE-04 | Phase 2 | Pending |
 | SCNE-05 | Phase 2 | Pending |
-| SCNE-06 | Phase 2 | Pending |
+| SCNE-06 | Phase 2 | Complete |
 | SCRP-01 | Phase 3 | Pending |
 | SCRP-02 | Phase 3 | Pending |
 | SCRP-03 | Phase 3 | Pending |
