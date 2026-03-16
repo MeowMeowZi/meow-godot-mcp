@@ -89,8 +89,16 @@ nlohmann::json create_node(const std::string& type, const std::string& parent_pa
 
     undo_redo->commit_action();
 
-    // Return the actual path (Godot may have auto-renamed for uniqueness)
-    std::string actual_path = std::string(String(scene_root->get_path_to(new_node)).utf8().get_data());
+    // Construct path from known parent path + actual node name
+    // Avoids get_path_to() which can error when common_parent is null
+    // if the node isn't fully integrated into the tree yet
+    std::string node_name = std::string(String(new_node->get_name()).utf8().get_data());
+    std::string actual_path;
+    if (parent_path.empty()) {
+        actual_path = node_name;
+    } else {
+        actual_path = parent_path + "/" + node_name;
+    }
     return {{"success", true}, {"path", actual_path}, {"type", type}};
 }
 
