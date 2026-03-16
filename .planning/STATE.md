@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-03-16T03:22:11.340Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-03-16T03:26:37.612Z"
 last_activity: 2026-03-16 -- Plan 01-03 completed (bridge executable)
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 50
 ---
 
@@ -51,6 +51,7 @@ Progress: [█████░░░░░] 50%
 
 *Updated after each plan completion*
 | Phase 01 P03 | 3min | 2 tasks | 6 files |
+| Phase 01 P02 | 7min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,9 @@ Recent decisions affecting current work:
 - [01-03]: Two-thread relay design: blocking stdin reader + main thread TCP polling with 10ms sleep
 - [01-03]: Reconnect on TCP disconnect stays alive indefinitely with fixed 2-second interval
 - [Phase 01-03]: Bridge uses separate SCons Environment() for zero godot-cpp dependency
+- [Phase 01-02]: MCPServer is plain C++ class (not Godot Object) owned by MCPPlugin via raw pointer
+- [Phase 01-02]: Protocol layer (mcp_protocol.h/cpp) kept Godot-free for testability
+- [Phase 01-02]: StringName/NodePath require explicit String() construction before .utf8() in godot-cpp v10
 
 ### Pending Todos
 
@@ -81,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T03:22:11.338Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-03-16T03:26:16.823Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

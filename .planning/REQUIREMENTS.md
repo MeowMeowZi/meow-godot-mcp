@@ -10,13 +10,13 @@ Requirements for initial release. Each maps to roadmap phases.
 ### MCP Transport
 
 - [x] **MCP-01**: Bridge 可执行文件通过 stdio 接收 AI 客户端请求并中继到 GDExtension（TCP localhost）
-- [ ] **MCP-02**: GDExtension 内实现 JSON-RPC 2.0 协议处理 MCP 消息
-- [ ] **MCP-03**: 支持 MCP initialize/initialized 握手流程（spec 2025-03-26）
+- [x] **MCP-02**: GDExtension 内实现 JSON-RPC 2.0 协议处理 MCP 消息
+- [x] **MCP-03**: 支持 MCP initialize/initialized 握手流程（spec 2025-03-26）
 - [ ] **MCP-04**: IO 线程与 Godot 主线程通过队列+promise 模式安全通信
 
 ### Scene Operations
 
-- [ ] **SCNE-01**: AI 可查询当前场景树结构（节点名称、类型、路径、层级关系）
+- [x] **SCNE-01**: AI 可查询当前场景树结构（节点名称、类型、路径、层级关系）
 - [ ] **SCNE-02**: AI 可创建指定类型的新节点并设置父节点和初始属性
 - [ ] **SCNE-03**: AI 可修改节点属性（transform、name、visibility、自定义属性等）
 - [ ] **SCNE-04**: AI 可删除指定路径的节点
@@ -97,10 +97,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | MCP-01 | Phase 1 | Complete |
-| MCP-02 | Phase 1 | Pending |
-| MCP-03 | Phase 1 | Pending |
+| MCP-02 | Phase 1 | Complete |
+| MCP-03 | Phase 1 | Complete |
 | MCP-04 | Phase 1 | Pending |
-| SCNE-01 | Phase 1 | Pending |
+| SCNE-01 | Phase 1 | Complete |
 | SCNE-02 | Phase 2 | Pending |
 | SCNE-03 | Phase 2 | Pending |
 | SCNE-04 | Phase 2 | Pending |
