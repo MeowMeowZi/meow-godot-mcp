@@ -37,7 +37,15 @@ target_link_libraries(test_protocol GTest::gtest_main)
 add_executable(test_scene_tree test_scene_tree.cpp)
 target_link_libraries(test_scene_tree GTest::gtest_main)
 
+# Variant parser tests (pure C++17, no Godot dependency)
+add_executable(test_variant_parser
+    test_variant_parser.cpp
+    ${CMAKE_SOURCE_DIR}/../src/variant_parser.cpp
+)
+target_link_libraries(test_variant_parser GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(test_placeholder)
 gtest_discover_tests(test_protocol)
 gtest_discover_tests(test_scene_tree)
+gtest_discover_tests(test_variant_parser)
