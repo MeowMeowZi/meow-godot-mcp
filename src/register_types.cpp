@@ -1,4 +1,5 @@
 #include "register_types.h"
+#include "mcp_plugin.h"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
@@ -7,13 +8,13 @@ using namespace godot;
 
 void initialize_mcp_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
-        // MCPPlugin class registration will be added in Plan 02
+        GDREGISTER_CLASS(MCPPlugin);
     }
 }
 
 void uninitialize_mcp_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
-        // Cleanup will be added in Plan 02
+        // Godot handles class cleanup automatically
     }
 }
 

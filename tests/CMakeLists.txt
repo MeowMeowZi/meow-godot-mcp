@@ -33,6 +33,11 @@ add_executable(test_protocol
 )
 target_link_libraries(test_protocol GTest::gtest_main)
 
+# Scene tree format tests (tests JSON structure contract, no Godot dependency)
+add_executable(test_scene_tree test_scene_tree.cpp)
+target_link_libraries(test_scene_tree GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(test_placeholder)
 gtest_discover_tests(test_protocol)
+gtest_discover_tests(test_scene_tree)
