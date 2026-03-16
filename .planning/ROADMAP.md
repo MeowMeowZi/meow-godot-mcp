@@ -13,7 +13,7 @@ This roadmap delivers a C++ GDExtension MCP server for Godot that lets AI tools 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & First Tool** - GDExtension scaffold, bridge executable, MCP transport, and scene tree query proving the full pipeline end-to-end
-- [ ] **Phase 2: Scene CRUD** - Node creation, modification, deletion with undo/redo and Godot type parsing
+- [x] **Phase 2: Scene CRUD** - Node creation, modification, deletion with undo/redo and Godot type parsing
 - [ ] **Phase 3: Script & Project Management** - GDScript read/write/attach, project structure query, and resource management
 - [ ] **Phase 4: Editor Integration** - Dock panel UI with connection status/controls, version-adaptive tools, and MCP prompt templates
 - [ ] **Phase 5: Runtime, Signals & Distribution** - Game run/stop control, debug output capture, signal management, and cross-platform packaging
@@ -50,9 +50,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Variant type parser module: string-to-Variant conversion with unit tests (SCNE-06)
-- [ ] 02-02-PLAN.md -- Scene mutation tools (create/modify/delete nodes) with UndoRedo, protocol registration, and server wiring (SCNE-02/03/04/05)
-- [ ] 02-03-PLAN.md -- Full build and end-to-end UAT verification of all Scene CRUD tools (all SCNE requirements)
+- [x] 02-01-PLAN.md -- Variant type parser module: string-to-Variant conversion with unit tests (SCNE-06)
+- [x] 02-02-PLAN.md -- Scene mutation tools (create/modify/delete nodes) with UndoRedo, protocol registration, and server wiring (SCNE-02/03/04/05)
+- [x] 02-03-PLAN.md -- Full build and end-to-end UAT verification of all Scene CRUD tools (all SCNE requirements, 11/11 passed)
 
 ### Phase 3: Script & Project Management
 **Goal**: AI can read, write, and attach GDScript files, query project structure, and manage resource files
@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & First Tool | 4/4 | Complete | 2026-03-16 |
-| 2. Scene CRUD | 2/3 | In Progress | - |
+| 2. Scene CRUD | 3/3 | Complete | 2026-03-16 |
 | 3. Script & Project Management | 0/? | Not started | - |
 | 4. Editor Integration | 0/? | Not started | - |
 | 5. Runtime, Signals & Distribution | 0/? | Not started | - |
