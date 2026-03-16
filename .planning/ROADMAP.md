@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 1: Foundation & First Tool
 **Goal**: AI client can connect to a Godot editor instance via MCP and query the scene tree -- proving the bridge-relay architecture works end-to-end
 **Depends on**: Nothing (first phase)
-**Requirements**: MCP-01, MCP-02, MCP-03, MCP-04, DIST-01, SCNE-01
+**Requirements**: MCP-01, MCP-02, MCP-03, DIST-01, SCNE-01
 **Success Criteria** (what must be TRUE):
   1. The GDExtension loads in Godot 4.3+ editor without errors and the plugin appears in Project Settings
   2. The bridge executable can be configured in Claude Desktop (or similar AI client) as an MCP server and completes the initialize/initialized handshake
@@ -56,13 +56,14 @@ Plans:
 ### Phase 3: Script & Project Management
 **Goal**: AI can read, write, and attach GDScript files, query project structure, and manage resource files
 **Depends on**: Phase 2
-**Requirements**: SCRP-01, SCRP-02, SCRP-03, SCRP-04, PROJ-01, PROJ-02, PROJ-03, PROJ-04
+**Requirements**: SCRP-01, SCRP-02, SCRP-03, SCRP-04, PROJ-01, PROJ-02, PROJ-03, PROJ-04, MCP-04
 **Success Criteria** (what must be TRUE):
   1. AI can read the content of any GDScript file in the project and create new .gd files with specified content
   2. AI can edit existing GDScript files and attach/detach scripts to/from nodes
   3. AI can list the project file structure (directories and files under res://) and read project.godot settings
   4. AI can query and operate on .tres/.res resource files
   5. Scene tree structure and project file listing are available as MCP Resources (structured read-only data per MCP spec)
+  6. IO thread + queue/promise pattern ensures cross-thread safety for concurrent MCP requests (MCP-04, deferred from Phase 1)
 **Plans**: TBD
 
 Plans:
