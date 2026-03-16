@@ -19,15 +19,25 @@ library = env.SharedLibrary(
 
 Default(library)
 
-# Bridge executable target (placeholder for Plan 03)
-# Bridge source files will be created in Plan 03.
-# Uncomment the following when bridge/*.cpp files exist:
-#
-# bridge_sources = Glob("bridge/*.cpp")
-# if bridge_sources:
-#     bridge_env = env.Clone()
-#     # Bridge is a standalone executable, not a Godot extension
-#     bridge = bridge_env.Program(
-#         "project/addons/godot_mcp_meow/bin/godot-mcp-bridge",
-#         source=bridge_sources,
-#     )
+# Bridge executable target
+# The bridge is a standalone executable that relays stdio <-> TCP.
+# It does NOT link against godot-cpp (no Godot dependency).
+# Build with: scons bridge
+bridge_env = Environment()
+
+# C++17 standard
+if bridge_env["PLATFORM"] == "win32":
+    bridge_env.Append(CXXFLAGS=["/std:c++17", "/EHsc"])
+    bridge_env.Append(LIBS=["ws2_32"])
+else:
+    bridge_env.Append(CXXFLAGS=["-std=c++17"])
+    bridge_env.Append(LIBS=["pthread"])
+
+bridge_env.Append(CPPPATH=["bridge/"])
+
+bridge_sources = Glob("bridge/*.cpp")
+bridge = bridge_env.Program(
+    "project/addons/godot_mcp_meow/bin/godot-mcp-bridge",
+    source=bridge_sources,
+)
+Alias("bridge", bridge)
