@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & First Tool | 4/4 | Complete | 2026-03-16 |
-| 2. Scene CRUD | 0/3 | Planning complete | - |
+| 2. Scene CRUD | 2/3 | In Progress | - |
 | 3. Script & Project Management | 0/? | Not started | - |
 | 4. Editor Integration | 0/? | Not started | - |
 | 5. Runtime, Signals & Distribution | 0/? | Not started | - |

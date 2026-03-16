@@ -17,10 +17,10 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Scene Operations
 
 - [x] **SCNE-01**: AI 可查询当前场景树结构（节点名称、类型、路径、层级关系）
-- [ ] **SCNE-02**: AI 可创建指定类型的新节点并设置父节点和初始属性
-- [ ] **SCNE-03**: AI 可修改节点属性（transform、name、visibility、自定义属性等）
-- [ ] **SCNE-04**: AI 可删除指定路径的节点
-- [ ] **SCNE-05**: 所有场景修改操作集成 Godot UndoRedo 系统，支持 Ctrl+Z 撤销
+- [x] **SCNE-02**: AI 可创建指定类型的新节点并设置父节点和初始属性
+- [x] **SCNE-03**: AI 可修改节点属性（transform、name、visibility、自定义属性等）
+- [x] **SCNE-04**: AI 可删除指定路径的节点
+- [x] **SCNE-05**: 所有场景修改操作集成 Godot UndoRedo 系统，支持 Ctrl+Z 撤销
 - [x] **SCNE-06**: 属性值自动解析 Godot 类型（Vector2/3、Color、NodePath 等字符串格式自动转换）
 
 ### Script Management
@@ -101,10 +101,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | MCP-03 | Phase 1 | Complete |
 | MCP-04 | Phase 1 | Pending |
 | SCNE-01 | Phase 1 | Complete |
-| SCNE-02 | Phase 2 | Pending |
-| SCNE-03 | Phase 2 | Pending |
-| SCNE-04 | Phase 2 | Pending |
-| SCNE-05 | Phase 2 | Pending |
+| SCNE-02 | Phase 2 | Complete |
+| SCNE-03 | Phase 2 | Complete |
+| SCNE-04 | Phase 2 | Complete |
+| SCNE-05 | Phase 2 | Complete |
 | SCNE-06 | Phase 2 | Complete |
 | SCRP-01 | Phase 3 | Pending |
 | SCRP-02 | Phase 3 | Pending |
