@@ -104,7 +104,7 @@ TEST(ToolsListResponse, HasGetSceneTreeTool) {
     EXPECT_EQ(response["id"], 2);
 
     auto tools = response["result"]["tools"];
-    ASSERT_EQ(tools.size(), 1);
+    ASSERT_EQ(tools.size(), 4);
     EXPECT_EQ(tools[0]["name"], "get_scene_tree");
 }
 
@@ -207,4 +207,65 @@ TEST(ToolNotFoundError, UsesInvalidParamsCode) {
     auto response = create_tool_not_found_error(6, "bar");
 
     EXPECT_EQ(response["error"]["code"], -32602);
+}
+
+// --- Scene mutation tool registration tests ---
+
+TEST(ToolsListResponse, HasCreateNodeTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "create_node") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("type"));
+            EXPECT_TRUE(schema["properties"].contains("parent_path"));
+            EXPECT_TRUE(schema["properties"].contains("name"));
+            EXPECT_TRUE(schema["properties"].contains("properties"));
+            // "type" is required
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 1);
+            EXPECT_EQ(req[0], "type");
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "create_node tool not found in tools/list";
+}
+
+TEST(ToolsListResponse, HasSetNodePropertyTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "set_node_property") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            EXPECT_TRUE(schema["properties"].contains("property"));
+            EXPECT_TRUE(schema["properties"].contains("value"));
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 3);
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "set_node_property tool not found in tools/list";
+}
+
+TEST(ToolsListResponse, HasDeleteNodeTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "delete_node") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 1);
+            EXPECT_EQ(req[0], "node_path");
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "delete_node tool not found in tools/list";
 }

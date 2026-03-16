@@ -44,8 +44,13 @@ add_executable(test_variant_parser
 )
 target_link_libraries(test_variant_parser GTest::gtest_main)
 
+# Scene mutation argument/response contract tests (no Godot dependency)
+add_executable(test_scene_mutation test_scene_mutation.cpp)
+target_link_libraries(test_scene_mutation GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(test_placeholder)
 gtest_discover_tests(test_protocol)
 gtest_discover_tests(test_scene_tree)
 gtest_discover_tests(test_variant_parser)
+gtest_discover_tests(test_scene_mutation)

@@ -106,6 +106,44 @@ nlohmann::json create_tools_list_response(const nlohmann::json& id) {
                         }},
                         {"required", nlohmann::json::array()}
                     }}
+                },
+                {
+                    {"name", "create_node"},
+                    {"description", "Create a new node in the scene tree. The node is added as a child of the specified parent with undo/redo support."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"type", {{"type", "string"}, {"description", "Node class name (e.g., Sprite2D, CharacterBody3D, Node2D, Label)"}}},
+                            {"parent_path", {{"type", "string"}, {"description", "Path to parent node relative to scene root. Empty string or omit for scene root."}}},
+                            {"name", {{"type", "string"}, {"description", "Name for the new node. If omitted, uses the class name. Godot may auto-rename for uniqueness."}}},
+                            {"properties", {{"type", "object"}, {"description", "Initial property values as key-value pairs. Keys are snake_case property names (e.g., position, visible, modulate). Values are strings auto-parsed to Godot types (e.g., 'Vector2(100,200)', '#ff0000', 'true')."}}}
+                        }},
+                        {"required", {"type"}}
+                    }}
+                },
+                {
+                    {"name", "set_node_property"},
+                    {"description", "Set a property value on an existing node. Supports undo/redo. Property values are auto-parsed from strings to Godot types."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"node_path", {{"type", "string"}, {"description", "Path to the target node relative to scene root (e.g., 'Player', 'Player/Sprite2D')"}}},
+                            {"property", {{"type", "string"}, {"description", "Property name in snake_case (e.g., position, rotation_degrees, visible, modulate, name)"}}},
+                            {"value", {{"type", "string"}, {"description", "Property value as string. Auto-parsed: 'Vector2(100,200)', 'Color(1,0,0,1)', '#ff0000', '42', '3.14', 'true', 'false'"}}}
+                        }},
+                        {"required", {"node_path", "property", "value"}}
+                    }}
+                },
+                {
+                    {"name", "delete_node"},
+                    {"description", "Delete a node from the scene tree. Cannot delete the scene root. Supports undo/redo."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"node_path", {{"type", "string"}, {"description", "Path to the node to delete, relative to scene root"}}}
+                        }},
+                        {"required", {"node_path"}}
+                    }}
                 }
             }}
         }}
