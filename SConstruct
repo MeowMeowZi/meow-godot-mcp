@@ -7,6 +7,10 @@ env = SConscript("godot-cpp/SConstruct")
 # Add include paths for project source and third-party headers
 env.Append(CPPPATH=["src/", "thirdparty/"])
 
+# Enable C++ exception handling (required by nlohmann/json)
+if env["platform"] == "windows":
+    env.Append(CXXFLAGS=["/EHsc"])
+
 # GDExtension library target
 sources = Glob("src/*.cpp")
 

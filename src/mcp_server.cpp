@@ -91,7 +91,15 @@ void MCPServer::poll() {
     }
 
     // Read available data
-    PackedByteArray data = client_peer->get_data(available);
+    Array get_result = client_peer->get_partial_data(available);
+    if (get_result.size() < 2) {
+        return;
+    }
+    int64_t err_code = get_result[0];
+    if (err_code != 0) {
+        return;
+    }
+    PackedByteArray data = get_result[1];
     if (data.size() == 0) {
         return;
     }
@@ -116,7 +124,11 @@ void MCPServer::poll() {
         }
 
         if (!line.empty()) {
-            process_message(line);
+            try {
+                process_message(line);
+            } catch (const std::exception& e) {
+                UtilityFunctions::printerr("MCP Meow: Error processing message: ", e.what());
+            }
         }
     }
 }

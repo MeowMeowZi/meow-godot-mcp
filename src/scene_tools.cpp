@@ -13,14 +13,20 @@
 
 using namespace godot;
 
-nlohmann::json serialize_node(Node* node, int current_depth, int max_depth, bool include_properties) {
+nlohmann::json serialize_node(Node* node, Node* scene_root, int current_depth, int max_depth, bool include_properties) {
     nlohmann::json result;
 
     // Core fields (always present)
     // StringName and NodePath need explicit conversion to String before .utf8()
     result["name"] = std::string(String(node->get_name()).utf8().get_data());
     result["type"] = std::string(String(node->get_class()).utf8().get_data());
-    result["path"] = std::string(String(node->get_path()).utf8().get_data());
+
+    // Use path relative to scene root for clean, usable paths
+    if (node == scene_root) {
+        result["path"] = std::string(String(node->get_name()).utf8().get_data());
+    } else {
+        result["path"] = std::string(String(scene_root->get_path_to(node)).utf8().get_data());
+    }
 
     // Extended properties (optional)
     if (include_properties) {
@@ -78,7 +84,7 @@ nlohmann::json serialize_node(Node* node, int current_depth, int max_depth, bool
         for (int i = 0; i < child_count; i++) {
             Node* child = node->get_child(i);
             if (child) {
-                children.push_back(serialize_node(child, current_depth + 1, max_depth, include_properties));
+                children.push_back(serialize_node(child, scene_root, current_depth + 1, max_depth, include_properties));
             }
         }
         result["children"] = children;
@@ -117,5 +123,5 @@ nlohmann::json get_scene_tree(int max_depth, bool include_properties, const std:
         }
     }
 
-    return serialize_node(start_node, 0, max_depth, include_properties);
+    return serialize_node(start_node, root, 0, max_depth, include_properties);
 }

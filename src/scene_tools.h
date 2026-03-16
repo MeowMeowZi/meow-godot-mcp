@@ -15,6 +15,6 @@ class Node;
 nlohmann::json get_scene_tree(int max_depth = -1, bool include_properties = true, const std::string& root_path = "");
 
 // Recursively serialize a node and its children to JSON
-nlohmann::json serialize_node(godot::Node* node, int current_depth, int max_depth, bool include_properties);
+nlohmann::json serialize_node(godot::Node* node, godot::Node* scene_root, int current_depth, int max_depth, bool include_properties);
 
 #endif // GODOT_MCP_MEOW_SCENE_TOOLS_H
