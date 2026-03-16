@@ -55,7 +55,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Distribution & Compatibility
 
-- [ ] **DIST-01**: 以 GDExtension addon 形式打包（addons/godot-mcp-meow/ 目录结构）
+- [x] **DIST-01**: 以 GDExtension addon 形式打包（addons/godot-mcp-meow/ 目录结构）
 - [ ] **DIST-02**: 提供 Windows（x86_64）、Linux（x86_64）、macOS（universal）预编译二进制
 - [ ] **DIST-03**: 支持 Godot 4.3+ 并通过 godot-cpp 兼容层向前兼容 4.4/4.5/4.6
 

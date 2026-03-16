@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Project scaffold, build system, GDExtension registration, and test infrastructure
+- [x] 01-01-PLAN.md -- Project scaffold, build system, GDExtension registration, and test infrastructure
 - [ ] 01-02-PLAN.md -- GDExtension MCP server: JSON-RPC protocol, TCP server, scene tree tool, EditorPlugin
 - [ ] 01-03-PLAN.md -- Bridge executable: stdio transport, TCP client, relay loop
 - [ ] 01-04-PLAN.md -- End-to-end integration build and human verification
