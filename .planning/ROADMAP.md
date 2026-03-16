@@ -28,12 +28,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. The GDExtension loads in Godot 4.3+ editor without errors and the plugin appears in Project Settings
   2. The bridge executable can be configured in Claude Desktop (or similar AI client) as an MCP server and completes the initialize/initialized handshake
   3. AI client can call a `get_scene_tree` tool and receive the current scene's node hierarchy (names, types, paths)
-  4. The plugin addon directory structure follows Godot Asset Library conventions (`addons/godot-mcp-meow/`)
-**Plans**: TBD
+  4. The plugin addon directory structure follows Godot Asset Library conventions (`addons/godot_mcp_meow/`)
+**Plans:** 4 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- Project scaffold, build system, GDExtension registration, and test infrastructure
+- [ ] 01-02-PLAN.md -- GDExtension MCP server: JSON-RPC protocol, TCP server, scene tree tool, EditorPlugin
+- [ ] 01-03-PLAN.md -- Bridge executable: stdio transport, TCP client, relay loop
+- [ ] 01-04-PLAN.md -- End-to-end integration build and human verification
 
 ### Phase 2: Scene CRUD
 **Goal**: AI can create, modify, and delete nodes in the Godot scene tree with full undo/redo support
@@ -105,7 +107,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & First Tool | 0/? | Not started | - |
+| 1. Foundation & First Tool | 0/4 | Planning complete | - |
 | 2. Scene CRUD | 0/? | Not started | - |
 | 3. Script & Project Management | 0/? | Not started | - |
 | 4. Editor Integration | 0/? | Not started | - |
