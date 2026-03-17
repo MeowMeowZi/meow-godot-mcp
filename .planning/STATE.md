@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-17T02:27:24.000Z"
-last_activity: 2026-03-17 -- Phase 3 Plan 1 complete (script tools module)
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-03-17T02:35:57.000Z"
+last_activity: 2026-03-17 -- Phase 3 Plan 2 complete (project tools, MCP resources, IO threading)
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-14)
 
 **Core value:** AI can read and manipulate the Godot editor scene tree via standard MCP protocol -- enabling real AI-assisted game development
-**Current focus:** Phase 3 in progress -- Script & Project Management
+**Current focus:** Phase 3 in progress -- Script & Project Management (2 of 3 plans complete)
 
 ## Current Position
 
 Phase: 3 of 5 (Script & Project Management)
-Plan: 1 of 3 in current phase (03-01 complete)
+Plan: 2 of 3 in current phase (03-02 complete)
 Status: In Progress
-Last activity: 2026-03-17 -- Phase 3 Plan 1 complete (script tools module)
+Last activity: 2026-03-17 -- Phase 3 Plan 2 complete (project tools, MCP resources, IO threading)
 
-Progress: [████████░░] 80% (8/10 plans)
+Progress: [█████████░] 90% (9/10 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 9 min
-- Total execution time: 1.17 hours
+- Total plans completed: 9
+- Average duration: 8 min
+- Total execution time: 1.25 hours
 
 **By Phase:**
 
@@ -45,13 +45,14 @@ Progress: [████████░░] 80% (8/10 plans)
 |-------|-------|-------|----------|
 | 1 - Foundation | 4 | 40 min | 10 min |
 | 2 - Scene CRUD | 3/3 | 22 min | 7 min |
-| 3 - Script/Project | 1/3 | 8 min | 8 min |
+| 3 - Script/Project | 2/3 | 13 min | 6.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (5 min), 02-02 (9 min), 02-03 (8 min), 03-01 (8 min)
-- Trend: Consistent 7-8 min for focused module tasks
+- Last 5 plans: 02-02 (9 min), 02-03 (8 min), 03-01 (8 min), 03-02 (5 min)
+- Trend: Accelerating -- 5-8 min for focused module tasks
 
 *Updated after each plan completion*
+| Phase 03 P02 | 5min | 2 tasks | 7 files |
 | Phase 03 P01 | 8min | 2 tasks | 7 files |
 | Phase 02 P03 | 8min | 2 tasks | 2 files |
 | Phase 02 P02 | 9min | 2 tasks | 11 files |
@@ -94,6 +95,10 @@ Recent decisions affecting current work:
 - [Phase 03-01]: EditResult struct (success + lines + error) for composable pure C++ line editing error handling
 - [Phase 03-01]: attach_script uses ResourceLoader::load with "Script" type hint for proper GDScript loading
 - [Phase 03-01]: GDScript file writes always end with trailing newline to match Godot editor convention
+- [Phase 03-02]: IO thread handles TCP + JSON-RPC parse; main thread handles all Godot API dispatch via queue
+- [Phase 03-02]: Notifications and parse errors handled inline on IO thread (no queue round-trip needed)
+- [Phase 03-02]: IO thread uses condition_variable wait for synchronous request/response flow
+- [Phase 03-02]: Resource inspection filters properties by STORAGE/EDITOR usage, skips INTERNAL
 
 ### Pending Todos
 
@@ -107,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T02:27:24.000Z
-Stopped at: Completed 03-01-PLAN.md
-Resume file: .planning/phases/03-script-project-management/03-01-SUMMARY.md
+Last session: 2026-03-17T02:35:57.000Z
+Stopped at: Completed 03-02-PLAN.md
+Resume file: .planning/phases/03-script-project-management/03-02-SUMMARY.md

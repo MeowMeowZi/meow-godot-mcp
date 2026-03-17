@@ -12,7 +12,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **MCP-01**: Bridge 可执行文件通过 stdio 接收 AI 客户端请求并中继到 GDExtension（TCP localhost）
 - [x] **MCP-02**: GDExtension 内实现 JSON-RPC 2.0 协议处理 MCP 消息
 - [x] **MCP-03**: 支持 MCP initialize/initialized 握手流程（spec 2025-03-26）
-- [ ] **MCP-04**: IO 线程与 Godot 主线程通过队列+promise 模式安全通信
+- [x] **MCP-04**: IO 线程与 Godot 主线程通过队列+promise 模式安全通信
 
 ### Scene Operations
 
@@ -41,10 +41,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Project & Resources
 
-- [ ] **PROJ-01**: AI 可查询项目文件结构和目录列表（res:// 文件系统）
-- [ ] **PROJ-02**: AI 可读取 project.godot 项目设置
-- [ ] **PROJ-03**: AI 可查询和操作 .tres/.res 资源文件
-- [ ] **PROJ-04**: 场景树、项目结构等数据通过 MCP Resources 规范暴露为结构化只读数据
+- [x] **PROJ-01**: AI 可查询项目文件结构和目录列表（res:// 文件系统）
+- [x] **PROJ-02**: AI 可读取 project.godot 项目设置
+- [x] **PROJ-03**: AI 可查询和操作 .tres/.res 资源文件
+- [x] **PROJ-04**: 场景树、项目结构等数据通过 MCP Resources 规范暴露为结构化只读数据
 
 ### Editor Integration
 
@@ -99,7 +99,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | MCP-01 | Phase 1 | Complete |
 | MCP-02 | Phase 1 | Complete |
 | MCP-03 | Phase 1 | Complete |
-| MCP-04 | Phase 1 | Pending |
+| MCP-04 | Phase 1 | Complete |
 | SCNE-01 | Phase 1 | Complete |
 | SCNE-02 | Phase 2 | Complete |
 | SCNE-03 | Phase 2 | Complete |
@@ -110,10 +110,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | SCRP-02 | Phase 3 | Complete |
 | SCRP-03 | Phase 3 | Complete |
 | SCRP-04 | Phase 3 | Complete |
-| PROJ-01 | Phase 3 | Pending |
-| PROJ-02 | Phase 3 | Pending |
-| PROJ-03 | Phase 3 | Pending |
-| PROJ-04 | Phase 3 | Pending |
+| PROJ-01 | Phase 3 | Complete |
+| PROJ-02 | Phase 3 | Complete |
+| PROJ-03 | Phase 3 | Complete |
+| PROJ-04 | Phase 3 | Complete |
 | EDIT-01 | Phase 4 | Pending |
 | EDIT-02 | Phase 4 | Pending |
 | EDIT-03 | Phase 4 | Pending |
