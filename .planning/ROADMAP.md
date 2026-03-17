@@ -81,11 +81,11 @@ Plans:
   2. The dock panel provides buttons to start, stop, and restart the MCP server without reloading the plugin
   3. The plugin detects the running Godot version at startup and only exposes MCP tools compatible with that version
   4. Pre-built MCP Prompt templates are available for common workflows (e.g., "create a player controller", "set up a TileMap", "debug physics")
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md -- Dock panel UI, server controls, version detection, and ToolDef registry with version filtering (EDIT-01, EDIT-02, EDIT-03)
+- [ ] 04-02-PLAN.md -- MCP Prompts protocol with 4 workflow templates and end-to-end UAT verification (EDIT-04)
 
 ### Phase 5: Runtime, Signals & Distribution
 **Goal**: AI can run/debug the game, manage signals between nodes, and the plugin ships as cross-platform binaries
@@ -113,5 +113,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 1. Foundation & First Tool | 4/4 | Complete | 2026-03-16 |
 | 2. Scene CRUD | 3/3 | Complete | 2026-03-16 |
 | 3. Script & Project Management | 3/3 | Complete | 2026-03-17 |
-| 4. Editor Integration | 0/? | Not started | - |
+| 4. Editor Integration | 0/2 | Not started | - |
 | 5. Runtime, Signals & Distribution | 0/? | Not started | - |
