@@ -144,6 +144,67 @@ nlohmann::json create_tools_list_response(const nlohmann::json& id) {
                         }},
                         {"required", {"node_path"}}
                     }}
+                },
+                {
+                    {"name", "read_script"},
+                    {"description", "Read the content of a GDScript file. Returns the full file content and line count."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"path", {{"type", "string"}, {"description", "Path to GDScript file (e.g., res://scripts/player.gd)"}}}
+                        }},
+                        {"required", {"path"}}
+                    }}
+                },
+                {
+                    {"name", "write_script"},
+                    {"description", "Create a new GDScript file with the specified content. Errors if the file already exists. Use edit_script to modify existing files."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"path", {{"type", "string"}, {"description", "Path for the new GDScript file (e.g., res://scripts/player.gd)"}}},
+                            {"content", {{"type", "string"}, {"description", "Full GDScript content to write"}}}
+                        }},
+                        {"required", {"path", "content"}}
+                    }}
+                },
+                {
+                    {"name", "edit_script"},
+                    {"description", "Edit an existing GDScript file with line-level operations (insert, replace, delete). Line numbers are 1-based."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"path", {{"type", "string"}, {"description", "Path to GDScript file (e.g., res://scripts/player.gd)"}}},
+                            {"operation", {{"type", "string"}, {"enum", {"insert", "replace", "delete"}}, {"description", "Line editing operation"}}},
+                            {"line", {{"type", "integer"}, {"description", "1-based line number"}}},
+                            {"content", {{"type", "string"}, {"description", "Content for insert/replace operations"}}},
+                            {"end_line", {{"type", "integer"}, {"description", "End line for multi-line replace/delete (inclusive, 1-based). Defaults to same as line."}}}
+                        }},
+                        {"required", {"path", "operation", "line"}}
+                    }}
+                },
+                {
+                    {"name", "attach_script"},
+                    {"description", "Attach an existing GDScript file to a scene node. Replaces any existing script. Supports undo/redo."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"node_path", {{"type", "string"}, {"description", "Path to target node relative to scene root"}}},
+                            {"script_path", {{"type", "string"}, {"description", "Path to .gd file (e.g., res://scripts/player.gd)"}}}
+                        }},
+                        {"required", {"node_path", "script_path"}}
+                    }}
+                },
+                {
+                    {"name", "detach_script"},
+                    {"description", "Remove the script from a scene node. Supports undo/redo."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"node_path", {{"type", "string"}, {"description", "Path to the node to detach script from"}}}
+                        }},
+                        {"required", {"node_path"}}
+                    }}
                 }
             }}
         }}

@@ -104,7 +104,7 @@ TEST(ToolsListResponse, HasGetSceneTreeTool) {
     EXPECT_EQ(response["id"], 2);
 
     auto tools = response["result"]["tools"];
-    ASSERT_EQ(tools.size(), 4);
+    ASSERT_EQ(tools.size(), 9);
     EXPECT_EQ(tools[0]["name"], "get_scene_tree");
 }
 
@@ -268,4 +268,99 @@ TEST(ToolsListResponse, HasDeleteNodeTool) {
         }
     }
     EXPECT_TRUE(found) << "delete_node tool not found in tools/list";
+}
+
+// --- Script tool registration tests ---
+
+TEST(ToolsListResponse, HasReadScriptTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "read_script") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("path"));
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 1);
+            EXPECT_EQ(req[0], "path");
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "read_script tool not found in tools/list";
+}
+
+TEST(ToolsListResponse, HasWriteScriptTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "write_script") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("path"));
+            EXPECT_TRUE(schema["properties"].contains("content"));
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 2);
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "write_script tool not found in tools/list";
+}
+
+TEST(ToolsListResponse, HasEditScriptTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "edit_script") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("path"));
+            EXPECT_TRUE(schema["properties"].contains("operation"));
+            EXPECT_TRUE(schema["properties"].contains("line"));
+            EXPECT_TRUE(schema["properties"].contains("content"));
+            EXPECT_TRUE(schema["properties"].contains("end_line"));
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 3);
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "edit_script tool not found in tools/list";
+}
+
+TEST(ToolsListResponse, HasAttachScriptTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "attach_script") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            EXPECT_TRUE(schema["properties"].contains("script_path"));
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 2);
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "attach_script tool not found in tools/list";
+}
+
+TEST(ToolsListResponse, HasDetachScriptTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "detach_script") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 1);
+            EXPECT_EQ(req[0], "node_path");
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "detach_script tool not found in tools/list";
 }

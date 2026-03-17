@@ -2,6 +2,7 @@
 #include "mcp_protocol.h"
 #include "scene_tools.h"
 #include "scene_mutation.h"
+#include "script_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -249,6 +250,84 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
             return mcp::create_tool_result(id, delete_node(node_path, undo_redo));
+        }
+
+        if (tool_name == "read_script") {
+            std::string path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("path") && args["path"].is_string())
+                    path = args["path"].get<std::string>();
+            }
+            if (path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
+            }
+            return mcp::create_tool_result(id, read_script(path));
+        }
+
+        if (tool_name == "write_script") {
+            std::string path, content;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("path") && args["path"].is_string())
+                    path = args["path"].get<std::string>();
+                if (args.contains("content") && args["content"].is_string())
+                    content = args["content"].get<std::string>();
+            }
+            if (path.empty() || content.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: path, content");
+            }
+            return mcp::create_tool_result(id, write_script(path, content));
+        }
+
+        if (tool_name == "edit_script") {
+            std::string path, operation, content;
+            int line = 0, end_line = -1;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("path") && args["path"].is_string())
+                    path = args["path"].get<std::string>();
+                if (args.contains("operation") && args["operation"].is_string())
+                    operation = args["operation"].get<std::string>();
+                if (args.contains("line") && args["line"].is_number_integer())
+                    line = args["line"].get<int>();
+                if (args.contains("content") && args["content"].is_string())
+                    content = args["content"].get<std::string>();
+                if (args.contains("end_line") && args["end_line"].is_number_integer())
+                    end_line = args["end_line"].get<int>();
+            }
+            if (path.empty() || operation.empty() || line == 0) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: path, operation, line");
+            }
+            return mcp::create_tool_result(id, edit_script(path, operation, line, content, end_line));
+        }
+
+        if (tool_name == "attach_script") {
+            std::string node_path, script_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+                if (args.contains("script_path") && args["script_path"].is_string())
+                    script_path = args["script_path"].get<std::string>();
+            }
+            if (node_path.empty() || script_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: node_path, script_path");
+            }
+            return mcp::create_tool_result(id, attach_script(node_path, script_path, undo_redo));
+        }
+
+        if (tool_name == "detach_script") {
+            std::string node_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+            }
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
+            }
+            return mcp::create_tool_result(id, detach_script(node_path, undo_redo));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
