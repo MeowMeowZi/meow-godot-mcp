@@ -101,6 +101,7 @@ EditResult edit_lines(const std::vector<std::string>& lines, const std::string& 
 #ifdef GODOT_MCP_MEOW_GODOT_ENABLED
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/editor_file_system.hpp>
 #include <godot_cpp/classes/editor_undo_redo_manager.hpp>
@@ -196,8 +197,10 @@ nlohmann::json write_script(const std::string& path, const std::string& content)
     file->store_string(String(content.c_str()));
     file.unref();  // Close file before updating filesystem
 
-    // Notify the editor filesystem about the new file
-    EditorInterface::get_singleton()->get_resource_filesystem()->update_file(gd_path);
+    // NOTE: EditorFileSystem::update_file() is intentionally NOT called here.
+    // Calling it (even deferred) causes crashes when UndoRedo operations
+    // (create_node, attach_script) run shortly after. The file is written
+    // to disk; the editor will pick it up on next filesystem scan.
 
     return {{"success", true}, {"path", path}};
 }
@@ -239,8 +242,7 @@ nlohmann::json edit_script(const std::string& path, const std::string& operation
     write_file->store_string(new_content);
     write_file.unref();
 
-    // Notify editor filesystem
-    EditorInterface::get_singleton()->get_resource_filesystem()->update_file(gd_path);
+    // NOTE: EditorFileSystem::update_file() intentionally omitted (see write_script).
 
     return {{"success", true}, {"path", path}, {"line_count", static_cast<int>(result.lines.size())}};
 }
@@ -268,10 +270,31 @@ nlohmann::json attach_script(const std::string& node_path, const std::string& sc
         return {{"error", path_error}};
     }
 
-    // Load the script resource
-    Ref<Resource> script = ResourceLoader::get_singleton()->load(String(script_path.c_str()), String("Script"));
+    String gd_script_path = String(script_path.c_str());
+
+    // Verify file exists on disk
+    if (!FileAccess::file_exists(gd_script_path)) {
+        return {{"error", "Script file not found: " + script_path}};
+    }
+
+    // Build GDScript manually instead of ResourceLoader::load() to avoid
+    // crashes when loading .gd files just created by write_script.
+    // ResourceLoader triggers editor internals that crash on unregistered files.
+    Ref<FileAccess> script_file = FileAccess::open(gd_script_path, FileAccess::READ);
+    if (!script_file.is_valid()) {
+        return {{"error", "Failed to read script file: " + script_path}};
+    }
+    String source = script_file->get_as_text();
+    script_file.unref();
+
+    Ref<GDScript> script;
+    script.instantiate();
+    script->set_source_code(source);
+    script->set_path(gd_script_path);
+    script->reload();
+
     if (!script.is_valid()) {
-        return {{"error", "Failed to load script: " + script_path}};
+        return {{"error", "Failed to create script: " + script_path}};
     }
 
     // Save current script for undo
