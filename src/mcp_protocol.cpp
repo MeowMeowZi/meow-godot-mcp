@@ -72,7 +72,8 @@ nlohmann::json create_initialize_response(const nlohmann::json& id) {
             {"protocolVersion", "2025-03-26"},
             {"capabilities", {
                 {"tools", {{"listChanged", false}}},
-                {"resources", {}}
+                {"resources", {}},
+                {"prompts", {{"listChanged", false}}}
             }},
             {"serverInfo", {
                 {"name", "godot-mcp-meow"},

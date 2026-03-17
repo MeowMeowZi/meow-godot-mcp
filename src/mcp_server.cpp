@@ -1,5 +1,6 @@
 #include "mcp_server.h"
 #include "mcp_protocol.h"
+#include "mcp_prompts.h"
 #include "scene_tools.h"
 #include "scene_mutation.h"
 #include "script_tools.h"
@@ -267,6 +268,35 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return mcp::create_resource_read_response(id, contents);
         }
         return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Unknown resource URI: " + uri);
+    }
+
+    if (method == "prompts/list") {
+        return mcp::create_prompts_list_response(id);
+    }
+
+    if (method == "prompts/get") {
+        std::string prompt_name;
+        nlohmann::json arguments = nlohmann::json::object();
+        if (params.contains("name") && params["name"].is_string()) {
+            prompt_name = params["name"].get<std::string>();
+        }
+        if (params.contains("arguments") && params["arguments"].is_object()) {
+            arguments = params["arguments"];
+        }
+        if (prompt_name.empty() || !prompt_exists(prompt_name)) {
+            return mcp::create_prompt_not_found_error(id, prompt_name);
+        }
+        auto messages = get_prompt_messages(prompt_name, arguments);
+        // Lookup description from prompts list
+        auto all_prompts = get_all_prompts_json();
+        std::string description;
+        for (const auto& p : all_prompts) {
+            if (p["name"] == prompt_name) {
+                description = p["description"].get<std::string>();
+                break;
+            }
+        }
+        return mcp::create_prompt_get_response(id, description, messages);
     }
 
     if (method == "tools/call") {
