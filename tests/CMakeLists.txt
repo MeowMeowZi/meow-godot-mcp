@@ -30,6 +30,7 @@ target_link_libraries(test_placeholder GTest::gtest_main)
 add_executable(test_protocol
     test_protocol.cpp
     ${CMAKE_SOURCE_DIR}/../src/mcp_protocol.cpp
+    ${CMAKE_SOURCE_DIR}/../src/mcp_tool_registry.cpp
 )
 target_link_libraries(test_protocol GTest::gtest_main)
 

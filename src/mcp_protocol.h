@@ -7,6 +7,8 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
+struct GodotVersion;
+
 namespace mcp {
 
 // JSON-RPC 2.0 standard error codes
@@ -39,6 +41,7 @@ ParseResult parse_jsonrpc(const std::string& json_str);
 // MCP message builders (spec 2025-03-26)
 nlohmann::json create_initialize_response(const nlohmann::json& id);
 nlohmann::json create_tools_list_response(const nlohmann::json& id);
+nlohmann::json create_tools_list_response(const nlohmann::json& id, const GodotVersion& version);
 nlohmann::json create_tool_result(const nlohmann::json& id, const nlohmann::json& content_data);
 nlohmann::json create_error_response(const nlohmann::json& id, int code, const std::string& message);
 nlohmann::json create_tool_not_found_error(const nlohmann::json& id, const std::string& tool_name);

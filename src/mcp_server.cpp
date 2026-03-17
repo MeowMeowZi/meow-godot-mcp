@@ -24,6 +24,14 @@ void MCPServer::set_undo_redo(godot::EditorUndoRedoManager* ur) {
     undo_redo = ur;
 }
 
+void MCPServer::set_godot_version(const GodotVersion& v) {
+    godot_version = v;
+}
+
+bool MCPServer::has_client() const {
+    return client_connected.load();
+}
+
 void MCPServer::start(int p_port) {
     port = p_port;
     tcp_server.instantiate();
@@ -40,6 +48,7 @@ void MCPServer::start(int p_port) {
 
 void MCPServer::stop() {
     running.store(false);
+    client_connected.store(false);
 
     // Wake up IO thread if waiting on response_cv
     response_cv.notify_all();
@@ -82,6 +91,7 @@ void MCPServer::io_thread_func() {
                 read_buffer.clear();
             }
             client_peer = tcp_server->take_connection();
+            client_connected.store(true);
             initialized = false;
             UtilityFunctions::print("MCP Meow: Client connected");
         }
@@ -95,6 +105,7 @@ void MCPServer::io_thread_func() {
         auto status = client_peer->get_status();
         if (status == StreamPeerTCP::STATUS_NONE || status == StreamPeerTCP::STATUS_ERROR) {
             UtilityFunctions::print("MCP Meow: Client disconnected");
+            client_connected.store(false);
             client_peer.unref();
             read_buffer.clear();
             initialized = false;
@@ -218,7 +229,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
     }
 
     if (method == "tools/list") {
-        return mcp::create_tools_list_response(id);
+        return mcp::create_tools_list_response(id, godot_version);
     }
 
     if (method == "resources/list") {

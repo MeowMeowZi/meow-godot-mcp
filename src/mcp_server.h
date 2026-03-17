@@ -5,6 +5,8 @@
 #include <godot_cpp/classes/stream_peer_tcp.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+#include "mcp_tool_registry.h"
+
 #include <nlohmann/json.hpp>
 #include <string>
 #include <thread>
@@ -40,8 +42,10 @@ public:
     void stop();
     void poll();  // Called from _process on main thread
     bool is_running() const;
+    bool has_client() const;
 
     void set_undo_redo(godot::EditorUndoRedoManager* ur);
+    void set_godot_version(const GodotVersion& v);
 
 private:
     // Request handling (main thread only)
@@ -64,6 +68,7 @@ private:
     // Threading
     std::thread io_thread;
     std::atomic<bool> running{false};
+    std::atomic<bool> client_connected{false};
     std::mutex queue_mutex;
     std::queue<PendingRequest> request_queue;
     std::queue<PendingResponse> response_queue;
@@ -71,6 +76,7 @@ private:
 
     // Godot resources (main thread only)
     godot::EditorUndoRedoManager* undo_redo = nullptr;
+    GodotVersion godot_version{4, 3, 0};
 };
 
 #endif // GODOT_MCP_MEOW_MCP_SERVER_H
