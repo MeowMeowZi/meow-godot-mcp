@@ -25,10 +25,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Script Management
 
-- [ ] **SCRP-01**: AI 可读取项目中 GDScript 文件内容
-- [ ] **SCRP-02**: AI 可创建新 GDScript 文件并写入内容
-- [ ] **SCRP-03**: AI 可编辑现有 GDScript 文件内容
-- [ ] **SCRP-04**: AI 可将脚本附加到节点或从节点分离脚本
+- [x] **SCRP-01**: AI 可读取项目中 GDScript 文件内容
+- [x] **SCRP-02**: AI 可创建新 GDScript 文件并写入内容
+- [x] **SCRP-03**: AI 可编辑现有 GDScript 文件内容
+- [x] **SCRP-04**: AI 可将脚本附加到节点或从节点分离脚本
 
 ### Runtime & Debug
 
@@ -106,10 +106,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | SCNE-04 | Phase 2 | Complete |
 | SCNE-05 | Phase 2 | Complete |
 | SCNE-06 | Phase 2 | Complete |
-| SCRP-01 | Phase 3 | Pending |
-| SCRP-02 | Phase 3 | Pending |
-| SCRP-03 | Phase 3 | Pending |
-| SCRP-04 | Phase 3 | Pending |
+| SCRP-01 | Phase 3 | Complete |
+| SCRP-02 | Phase 3 | Complete |
+| SCRP-03 | Phase 3 | Complete |
+| SCRP-04 | Phase 3 | Complete |
 | PROJ-01 | Phase 3 | Pending |
 | PROJ-02 | Phase 3 | Pending |
 | PROJ-03 | Phase 3 | Pending |
