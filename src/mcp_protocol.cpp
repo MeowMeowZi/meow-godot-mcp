@@ -69,11 +69,12 @@ nlohmann::json create_initialize_response(const nlohmann::json& id) {
         {"result", {
             {"protocolVersion", "2025-03-26"},
             {"capabilities", {
-                {"tools", {{"listChanged", false}}}
+                {"tools", {{"listChanged", false}}},
+                {"resources", {}}
             }},
             {"serverInfo", {
                 {"name", "godot-mcp-meow"},
-                {"version", "0.1.0"}
+                {"version", "0.2.0"}
             }}
         }}
     };
@@ -205,6 +206,35 @@ nlohmann::json create_tools_list_response(const nlohmann::json& id) {
                         }},
                         {"required", {"node_path"}}
                     }}
+                },
+                {
+                    {"name", "list_project_files"},
+                    {"description", "List all files in the project directory (res://). Returns flat list with file paths and types."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", nlohmann::json::object()},
+                        {"required", nlohmann::json::array()}
+                    }}
+                },
+                {
+                    {"name", "get_project_settings"},
+                    {"description", "Read project.godot settings as structured data. Returns project configuration key-value pairs."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", nlohmann::json::object()},
+                        {"required", nlohmann::json::array()}
+                    }}
+                },
+                {
+                    {"name", "get_resource_info"},
+                    {"description", "Load and inspect a .tres or .res resource file. Returns resource type and property names/values. Read-only."},
+                    {"inputSchema", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"path", {{"type", "string"}, {"description", "Path to resource file (e.g., res://theme.tres, res://material.res)"}}}
+                        }},
+                        {"required", {"path"}}
+                    }}
                 }
             }}
         }}
@@ -240,6 +270,14 @@ nlohmann::json create_error_response(const nlohmann::json& id, int code, const s
 
 nlohmann::json create_tool_not_found_error(const nlohmann::json& id, const std::string& tool_name) {
     return create_error_response(id, INVALID_PARAMS, "Unknown tool: " + tool_name);
+}
+
+nlohmann::json create_resources_list_response(const nlohmann::json& id, const nlohmann::json& resources) {
+    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", {{"resources", resources}}}};
+}
+
+nlohmann::json create_resource_read_response(const nlohmann::json& id, const nlohmann::json& contents) {
+    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", {{"contents", contents}}}};
 }
 
 } // namespace mcp

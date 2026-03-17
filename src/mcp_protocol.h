@@ -43,6 +43,10 @@ nlohmann::json create_tool_result(const nlohmann::json& id, const nlohmann::json
 nlohmann::json create_error_response(const nlohmann::json& id, int code, const std::string& message);
 nlohmann::json create_tool_not_found_error(const nlohmann::json& id, const std::string& tool_name);
 
+// MCP Resources protocol builders
+nlohmann::json create_resources_list_response(const nlohmann::json& id, const nlohmann::json& resources);
+nlohmann::json create_resource_read_response(const nlohmann::json& id, const nlohmann::json& contents);
+
 } // namespace mcp
 
 #endif // GODOT_MCP_MEOW_MCP_PROTOCOL_H

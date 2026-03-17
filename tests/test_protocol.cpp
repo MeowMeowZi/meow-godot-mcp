@@ -78,7 +78,7 @@ TEST(InitializeResponse, HasServerInfo) {
     auto response = create_initialize_response(1);
 
     EXPECT_EQ(response["result"]["serverInfo"]["name"], "godot-mcp-meow");
-    EXPECT_EQ(response["result"]["serverInfo"]["version"], "0.1.0");
+    EXPECT_EQ(response["result"]["serverInfo"]["version"], "0.2.0");
 }
 
 TEST(InitializeResponse, HasToolsCapability) {
@@ -104,7 +104,7 @@ TEST(ToolsListResponse, HasGetSceneTreeTool) {
     EXPECT_EQ(response["id"], 2);
 
     auto tools = response["result"]["tools"];
-    ASSERT_EQ(tools.size(), 9);
+    ASSERT_EQ(tools.size(), 12);
     EXPECT_EQ(tools[0]["name"], "get_scene_tree");
 }
 
@@ -363,4 +363,84 @@ TEST(ToolsListResponse, HasDetachScriptTool) {
         }
     }
     EXPECT_TRUE(found) << "detach_script tool not found in tools/list";
+}
+
+// --- Project tool registration tests ---
+
+TEST(ToolsListResponse, HasListProjectFilesTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "list_project_files") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].empty());
+            EXPECT_TRUE(schema["required"].empty());
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "list_project_files tool not found in tools/list";
+}
+
+TEST(ToolsListResponse, HasGetProjectSettingsTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "get_project_settings") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].empty());
+            EXPECT_TRUE(schema["required"].empty());
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "get_project_settings tool not found in tools/list";
+}
+
+TEST(ToolsListResponse, HasGetResourceInfoTool) {
+    auto response = create_tools_list_response(2);
+    auto tools = response["result"]["tools"];
+    bool found = false;
+    for (const auto& tool : tools) {
+        if (tool["name"] == "get_resource_info") {
+            found = true;
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("path"));
+            EXPECT_EQ(schema["properties"]["path"]["type"], "string");
+            auto req = schema["required"];
+            EXPECT_EQ(req.size(), 1);
+            EXPECT_EQ(req[0], "path");
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "get_resource_info tool not found in tools/list";
+}
+
+// --- Initialize response resources capability test ---
+
+TEST(InitializeResponse, HasResourcesCapability) {
+    auto response = create_initialize_response(1);
+    ASSERT_TRUE(response["result"]["capabilities"].contains("resources"));
+}
+
+// --- Resources protocol builder tests ---
+
+TEST(ResourcesListResponse, HasCorrectStructure) {
+    nlohmann::json resources = {{{"uri", "test://foo"}, {"name", "Test"}}};
+    auto response = create_resources_list_response(1, resources);
+    EXPECT_EQ(response["jsonrpc"], "2.0");
+    EXPECT_EQ(response["id"], 1);
+    EXPECT_EQ(response["result"]["resources"].size(), 1);
+    EXPECT_EQ(response["result"]["resources"][0]["uri"], "test://foo");
+}
+
+TEST(ResourceReadResponse, HasCorrectStructure) {
+    nlohmann::json contents = {{{"uri", "test://foo"}, {"mimeType", "application/json"}, {"text", "{}"}}};
+    auto response = create_resource_read_response(2, contents);
+    EXPECT_EQ(response["jsonrpc"], "2.0");
+    EXPECT_EQ(response["id"], 2);
+    EXPECT_EQ(response["result"]["contents"].size(), 1);
+    EXPECT_EQ(response["result"]["contents"][0]["mimeType"], "application/json");
 }

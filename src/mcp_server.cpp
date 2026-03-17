@@ -3,6 +3,7 @@
 #include "scene_tools.h"
 #include "scene_mutation.h"
 #include "script_tools.h"
+#include "project_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -171,6 +172,43 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         return mcp::create_tools_list_response(id);
     }
 
+    if (method == "resources/list") {
+        nlohmann::json resources = nlohmann::json::array();
+        resources.push_back({
+            {"uri", "godot://scene_tree"},
+            {"name", "Scene Tree"},
+            {"description", "Current scene tree structure with node names, types, and paths"},
+            {"mimeType", "application/json"}
+        });
+        resources.push_back({
+            {"uri", "godot://project_files"},
+            {"name", "Project Files"},
+            {"description", "Flat listing of all files in the project (res://)"},
+            {"mimeType", "application/json"}
+        });
+        return mcp::create_resources_list_response(id, resources);
+    }
+
+    if (method == "resources/read") {
+        std::string uri;
+        if (params.contains("uri") && params["uri"].is_string()) {
+            uri = params["uri"].get<std::string>();
+        }
+        if (uri == "godot://scene_tree") {
+            nlohmann::json tree = get_scene_tree();
+            nlohmann::json contents = nlohmann::json::array();
+            contents.push_back({{"uri", uri}, {"mimeType", "application/json"}, {"text", tree.dump()}});
+            return mcp::create_resource_read_response(id, contents);
+        }
+        if (uri == "godot://project_files") {
+            nlohmann::json files = list_project_files();
+            nlohmann::json contents = nlohmann::json::array();
+            contents.push_back({{"uri", uri}, {"mimeType", "application/json"}, {"text", files.dump()}});
+            return mcp::create_resource_read_response(id, contents);
+        }
+        return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Unknown resource URI: " + uri);
+    }
+
     if (method == "tools/call") {
         std::string tool_name;
         if (params.contains("name") && params["name"].is_string()) {
@@ -328,6 +366,27 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
             return mcp::create_tool_result(id, detach_script(node_path, undo_redo));
+        }
+
+        if (tool_name == "list_project_files") {
+            return mcp::create_tool_result(id, list_project_files());
+        }
+
+        if (tool_name == "get_project_settings") {
+            return mcp::create_tool_result(id, get_project_settings());
+        }
+
+        if (tool_name == "get_resource_info") {
+            std::string path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("path") && args["path"].is_string())
+                    path = args["path"].get<std::string>();
+            }
+            if (path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
+            }
+            return mcp::create_tool_result(id, get_resource_info(path));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
