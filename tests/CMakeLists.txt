@@ -55,6 +55,13 @@ add_executable(test_script_tools
 )
 target_link_libraries(test_script_tools GTest::gtest_main)
 
+# Tool registry unit tests (version comparison, tool filtering, no Godot dependency)
+add_executable(test_tool_registry
+    test_tool_registry.cpp
+    ${CMAKE_SOURCE_DIR}/../src/mcp_tool_registry.cpp
+)
+target_link_libraries(test_tool_registry GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(test_placeholder)
 gtest_discover_tests(test_protocol)
@@ -62,3 +69,4 @@ gtest_discover_tests(test_scene_tree)
 gtest_discover_tests(test_variant_parser)
 gtest_discover_tests(test_scene_mutation)
 gtest_discover_tests(test_script_tools)
+gtest_discover_tests(test_tool_registry)
