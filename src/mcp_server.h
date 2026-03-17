@@ -7,12 +7,30 @@
 
 #include <nlohmann/json.hpp>
 #include <string>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
+#include <atomic>
 
 namespace godot {
 class EditorUndoRedoManager;
 }
 
+struct PendingRequest {
+    std::string method;
+    nlohmann::json id;
+    nlohmann::json params;
+};
+
+struct PendingResponse {
+    nlohmann::json response;
+};
+
 // Plain C++ class (NOT a Godot Object) -- owned by MCPPlugin
+// Two-thread architecture:
+//   IO thread: TCP accept/read/write, JSON-RPC parse, enqueue requests, send responses
+//   Main thread (poll): dequeue requests, execute Godot API calls, enqueue responses
 class MCPServer {
 public:
     MCPServer();
@@ -20,22 +38,38 @@ public:
 
     void start(int port = 6800);
     void stop();
-    void poll();
+    void poll();  // Called from _process on main thread
     bool is_running() const;
 
     void set_undo_redo(godot::EditorUndoRedoManager* ur);
 
 private:
-    void process_message(const std::string& line);
-    void send_response(const nlohmann::json& response);
+    // Request handling (main thread only)
     nlohmann::json handle_request(const std::string& method, const nlohmann::json& id, const nlohmann::json& params);
 
+    // IO thread function
+    void io_thread_func();
+
+    // Process a complete JSON-RPC line (called from IO thread)
+    // Returns true if handled inline (notification/error), false if queued for main thread
+    bool process_message_io(const std::string& line);
+
+    // TCP state (accessed from IO thread only after start)
     godot::Ref<godot::TCPServer> tcp_server;
     godot::Ref<godot::StreamPeerTCP> client_peer;
     std::string read_buffer;
     bool initialized;
     int port;
-    bool running;
+
+    // Threading
+    std::thread io_thread;
+    std::atomic<bool> running{false};
+    std::mutex queue_mutex;
+    std::queue<PendingRequest> request_queue;
+    std::queue<PendingResponse> response_queue;
+    std::condition_variable response_cv;
+
+    // Godot resources (main thread only)
     godot::EditorUndoRedoManager* undo_redo = nullptr;
 };
 

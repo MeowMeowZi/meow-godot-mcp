@@ -8,10 +8,12 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
 
+#include <chrono>
+
 using namespace godot;
 
 MCPServer::MCPServer()
-    : initialized(false), port(6800), running(false) {
+    : initialized(false), port(6800) {
 }
 
 MCPServer::~MCPServer() {
@@ -31,11 +33,22 @@ void MCPServer::start(int p_port) {
         tcp_server.unref();
         return;
     }
-    running = true;
-    UtilityFunctions::print("MCP Meow: TCP server listening on port ", port);
+    running.store(true);
+    io_thread = std::thread(&MCPServer::io_thread_func, this);
+    UtilityFunctions::print("MCP Meow: TCP server listening on port ", port, " (IO thread started)");
 }
 
 void MCPServer::stop() {
+    running.store(false);
+
+    // Wake up IO thread if waiting on response_cv
+    response_cv.notify_all();
+
+    if (io_thread.joinable()) {
+        io_thread.join();
+    }
+
+    // Clean up TCP state on main thread after IO thread has stopped
     if (client_peer.is_valid()) {
         client_peer->disconnect_from_host();
         client_peer.unref();
@@ -44,123 +57,159 @@ void MCPServer::stop() {
         tcp_server->stop();
         tcp_server.unref();
     }
-    running = false;
     initialized = false;
     read_buffer.clear();
+
+    // Clear queues
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex);
+        while (!request_queue.empty()) request_queue.pop();
+        while (!response_queue.empty()) response_queue.pop();
+    }
 }
 
 bool MCPServer::is_running() const {
-    return running && tcp_server.is_valid();
+    return running.load() && tcp_server.is_valid();
 }
 
-void MCPServer::poll() {
-    if (!tcp_server.is_valid()) {
-        return;
-    }
-
-    // Accept new connections (one client at a time)
-    if (tcp_server->is_connection_available()) {
-        // Disconnect previous client if any
-        if (client_peer.is_valid()) {
-            client_peer->disconnect_from_host();
-            client_peer.unref();
-            read_buffer.clear();
+void MCPServer::io_thread_func() {
+    while (running.load()) {
+        // Accept new connections
+        if (tcp_server.is_valid() && tcp_server->is_connection_available()) {
+            if (client_peer.is_valid()) {
+                client_peer->disconnect_from_host();
+                client_peer.unref();
+                read_buffer.clear();
+            }
+            client_peer = tcp_server->take_connection();
+            initialized = false;
+            UtilityFunctions::print("MCP Meow: Client connected");
         }
-        client_peer = tcp_server->take_connection();
-        initialized = false;
-        UtilityFunctions::print("MCP Meow: Client connected");
-    }
 
-    // Read data from connected client
-    if (!client_peer.is_valid()) {
-        return;
-    }
-
-    // Poll the peer to update its connection state
-    client_peer->poll();
-
-    StreamPeerTCP::Status status = client_peer->get_status();
-    if (status == StreamPeerTCP::STATUS_NONE || status == StreamPeerTCP::STATUS_ERROR) {
-        UtilityFunctions::print("MCP Meow: Client disconnected");
-        client_peer.unref();
-        read_buffer.clear();
-        initialized = false;
-        return;
-    }
-
-    if (status != StreamPeerTCP::STATUS_CONNECTED) {
-        return;  // Still connecting
-    }
-
-    int available = client_peer->get_available_bytes();
-    if (available <= 0) {
-        return;
-    }
-
-    // Read available data
-    Array get_result = client_peer->get_partial_data(available);
-    if (get_result.size() < 2) {
-        return;
-    }
-    int64_t err_code = get_result[0];
-    if (err_code != 0) {
-        return;
-    }
-    PackedByteArray data = get_result[1];
-    if (data.size() == 0) {
-        return;
-    }
-
-    // Append to read buffer
-    read_buffer.append(reinterpret_cast<const char*>(data.ptr()), data.size());
-
-    // Process complete newline-delimited messages
-    size_t pos;
-    while ((pos = read_buffer.find('\n')) != std::string::npos) {
-        std::string line = read_buffer.substr(0, pos);
-        read_buffer.erase(0, pos + 1);
-
-        // Skip empty lines
-        if (line.empty() || (line.size() == 1 && line[0] == '\r')) {
+        if (!client_peer.is_valid()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
 
-        // Remove trailing \r if present (Windows line endings)
-        if (!line.empty() && line.back() == '\r') {
-            line.pop_back();
+        client_peer->poll();
+        auto status = client_peer->get_status();
+        if (status == StreamPeerTCP::STATUS_NONE || status == StreamPeerTCP::STATUS_ERROR) {
+            UtilityFunctions::print("MCP Meow: Client disconnected");
+            client_peer.unref();
+            read_buffer.clear();
+            initialized = false;
+            continue;
+        }
+        if (status != StreamPeerTCP::STATUS_CONNECTED) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
         }
 
-        if (!line.empty()) {
-            try {
-                process_message(line);
-            } catch (const std::exception& e) {
-                UtilityFunctions::printerr("MCP Meow: Error processing message: ", e.what());
+        int available = client_peer->get_available_bytes();
+        if (available <= 0) {
+            // Check for pending responses to send
+            {
+                std::lock_guard<std::mutex> lock(queue_mutex);
+                while (!response_queue.empty()) {
+                    auto resp = response_queue.front();
+                    response_queue.pop();
+                    std::string json_str = resp.response.dump() + "\n";
+                    PackedByteArray data;
+                    data.resize(static_cast<int64_t>(json_str.size()));
+                    memcpy(data.ptrw(), json_str.data(), json_str.size());
+                    client_peer->put_data(data);
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+
+        // Read available data
+        Array get_result = client_peer->get_partial_data(available);
+        if (get_result.size() < 2) continue;
+        int64_t err_code = get_result[0];
+        if (err_code != 0) continue;
+        PackedByteArray data = get_result[1];
+        if (data.size() == 0) continue;
+
+        read_buffer.append(reinterpret_cast<const char*>(data.ptr()), data.size());
+
+        // Process complete lines
+        size_t pos;
+        while ((pos = read_buffer.find('\n')) != std::string::npos) {
+            std::string line = read_buffer.substr(0, pos);
+            read_buffer.erase(0, pos + 1);
+            if (line.empty() || (line.size() == 1 && line[0] == '\r')) continue;
+            if (!line.empty() && line.back() == '\r') line.pop_back();
+            if (!line.empty()) {
+                try {
+                    bool handled = process_message_io(line);
+                    if (!handled) {
+                        // Request was queued -- wait for main thread response
+                        std::unique_lock<std::mutex> lock(queue_mutex);
+                        response_cv.wait(lock, [this]{ return !response_queue.empty() || !running.load(); });
+                        if (!running.load()) break;
+                        // Send all pending responses
+                        while (!response_queue.empty()) {
+                            auto resp = response_queue.front();
+                            response_queue.pop();
+                            std::string json_str = resp.response.dump() + "\n";
+                            PackedByteArray resp_data;
+                            resp_data.resize(static_cast<int64_t>(json_str.size()));
+                            memcpy(resp_data.ptrw(), json_str.data(), json_str.size());
+                            client_peer->put_data(resp_data);
+                        }
+                    }
+                } catch (const std::exception& e) {
+                    UtilityFunctions::printerr("MCP Meow: Error processing message: ", e.what());
+                }
             }
         }
     }
 }
 
-void MCPServer::process_message(const std::string& line) {
+bool MCPServer::process_message_io(const std::string& line) {
     auto result = mcp::parse_jsonrpc(line);
 
     if (!result.success) {
-        send_response(result.error_response);
-        return;
+        // Send error response directly (no Godot API calls needed)
+        if (client_peer.is_valid()) {
+            std::string json_str = result.error_response.dump() + "\n";
+            PackedByteArray data;
+            data.resize(static_cast<int64_t>(json_str.size()));
+            memcpy(data.ptrw(), json_str.data(), json_str.size());
+            client_peer->put_data(data);
+        }
+        return true;
     }
 
-    // Handle notifications (no response expected)
+    // Handle notifications inline (no response expected)
     if (result.message.is_notification) {
         if (result.message.method == "notifications/initialized") {
             initialized = true;
             UtilityFunctions::print("MCP Meow: Client initialized");
         }
-        // Notifications do not receive responses
-        return;
+        return true;
     }
 
-    // Handle requests
-    nlohmann::json response = handle_request(result.message.method, result.message.id, result.message.params);
-    send_response(response);
+    // Queue request for main thread processing
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex);
+        request_queue.push({result.message.method, result.message.id, result.message.params});
+    }
+    return false;
+}
+
+void MCPServer::poll() {
+    std::lock_guard<std::mutex> lock(queue_mutex);
+    while (!request_queue.empty()) {
+        auto req = request_queue.front();
+        request_queue.pop();
+        // Execute on main thread (all Godot API calls are safe here)
+        auto response = handle_request(req.method, req.id, req.params);
+        response_queue.push({response});
+        response_cv.notify_one();
+    }
 }
 
 nlohmann::json MCPServer::handle_request(const std::string& method, const nlohmann::json& id, const nlohmann::json& params) {
@@ -393,19 +442,4 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
     }
 
     return mcp::create_error_response(id, mcp::METHOD_NOT_FOUND, "Method not found: " + method);
-}
-
-void MCPServer::send_response(const nlohmann::json& response) {
-    if (!client_peer.is_valid()) {
-        return;
-    }
-
-    // Serialize without pretty-printing for wire format + newline delimiter
-    std::string json_str = response.dump() + "\n";
-
-    PackedByteArray data;
-    data.resize(static_cast<int64_t>(json_str.size()));
-    memcpy(data.ptrw(), json_str.data(), json_str.size());
-
-    client_peer->put_data(data);
 }
