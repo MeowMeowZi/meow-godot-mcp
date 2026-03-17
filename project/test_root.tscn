@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://bobwp6ghbusad"]
+
+[node name="TestRoot" type="Node2D" unique_id=1001567777]
+
+[node name="PlayerSprite" type="Sprite2D" parent="." unique_id=1878915106]
+
+[node name="MainCamera" type="Camera2D" parent="." unique_id=1886637604]
+
+[node name="TestSprite" type="Sprite2D" parent="." unique_id=529365429]
+visible = false
+position = Vector2(100, 200)
+
+[node name="ColorSprite" type="Sprite2D" parent="." unique_id=561772590]
+visible = false
+modulate = Color(1, 0, 0, 1)
