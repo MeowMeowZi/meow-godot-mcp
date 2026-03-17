@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & First Tool** - GDExtension scaffold, bridge executable, MCP transport, and scene tree query proving the full pipeline end-to-end
 - [x] **Phase 2: Scene CRUD** - Node creation, modification, deletion with undo/redo and Godot type parsing
-- [ ] **Phase 3: Script & Project Management** - GDScript read/write/attach, project structure query, and resource management
+- [x] **Phase 3: Script & Project Management** - GDScript read/write/attach, project structure query, and resource management
 - [ ] **Phase 4: Editor Integration** - Dock panel UI with connection status/controls, version-adaptive tools, and MCP prompt templates
 - [ ] **Phase 5: Runtime, Signals & Distribution** - Game run/stop control, debug output capture, signal management, and cross-platform packaging
 
@@ -68,9 +68,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Script tools module: read/write/edit/attach/detach GDScript with unit tests and protocol registration (SCRP-01/02/03/04)
-- [ ] 03-02-PLAN.md -- Project tools, MCP Resources protocol, IO thread refactor (PROJ-01/02/03/04, MCP-04)
-- [ ] 03-03-PLAN.md -- Full build and end-to-end UAT verification of all Phase 3 tools (14 UAT tests)
+- [x] 03-01-PLAN.md -- Script tools module: read/write/edit/attach/detach GDScript with unit tests and protocol registration (SCRP-01/02/03/04)
+- [x] 03-02-PLAN.md -- Project tools, MCP Resources protocol, IO thread refactor (PROJ-01/02/03/04, MCP-04)
+- [x] 03-03-PLAN.md -- Full build and end-to-end UAT verification of all Phase 3 tools (14/14 UAT passed)
 
 ### Phase 4: Editor Integration
 **Goal**: The plugin provides a polished editor experience with status visibility, controls, version awareness, and workflow templates
@@ -112,6 +112,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Foundation & First Tool | 4/4 | Complete | 2026-03-16 |
 | 2. Scene CRUD | 3/3 | Complete | 2026-03-16 |
-| 3. Script & Project Management | 0/3 | In Progress | - |
+| 3. Script & Project Management | 3/3 | Complete | 2026-03-17 |
 | 4. Editor Integration | 0/? | Not started | - |
 | 5. Runtime, Signals & Distribution | 0/? | Not started | - |
