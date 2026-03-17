@@ -50,6 +50,11 @@ nlohmann::json create_tool_not_found_error(const nlohmann::json& id, const std::
 nlohmann::json create_resources_list_response(const nlohmann::json& id, const nlohmann::json& resources);
 nlohmann::json create_resource_read_response(const nlohmann::json& id, const nlohmann::json& contents);
 
+// MCP Prompts protocol builders
+nlohmann::json create_prompts_list_response(const nlohmann::json& id);
+nlohmann::json create_prompt_get_response(const nlohmann::json& id, const std::string& description, const nlohmann::json& messages);
+nlohmann::json create_prompt_not_found_error(const nlohmann::json& id, const std::string& prompt_name);
+
 } // namespace mcp
 
 #endif // GODOT_MCP_MEOW_MCP_PROTOCOL_H

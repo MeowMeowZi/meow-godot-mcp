@@ -1,5 +1,6 @@
 #include "mcp_protocol.h"
 #include "mcp_tool_registry.h"
+#include "mcp_prompts.h"
 
 namespace mcp {
 
@@ -133,6 +134,18 @@ nlohmann::json create_resources_list_response(const nlohmann::json& id, const nl
 
 nlohmann::json create_resource_read_response(const nlohmann::json& id, const nlohmann::json& contents) {
     return {{"jsonrpc", "2.0"}, {"id", id}, {"result", {{"contents", contents}}}};
+}
+
+nlohmann::json create_prompts_list_response(const nlohmann::json& id) {
+    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", {{"prompts", get_all_prompts_json()}}}};
+}
+
+nlohmann::json create_prompt_get_response(const nlohmann::json& id, const std::string& description, const nlohmann::json& messages) {
+    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", {{"description", description}, {"messages", messages}}}};
+}
+
+nlohmann::json create_prompt_not_found_error(const nlohmann::json& id, const std::string& prompt_name) {
+    return create_error_response(id, INVALID_PARAMS, "Prompt not found: " + prompt_name);
 }
 
 } // namespace mcp

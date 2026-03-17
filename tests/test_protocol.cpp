@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "mcp_protocol.h"
+#include "mcp_prompts.h"
 
 using namespace mcp;
 using json = nlohmann::json;
@@ -443,4 +444,101 @@ TEST(ResourceReadResponse, HasCorrectStructure) {
     EXPECT_EQ(response["id"], 2);
     EXPECT_EQ(response["result"]["contents"].size(), 1);
     EXPECT_EQ(response["result"]["contents"][0]["mimeType"], "application/json");
+}
+
+// --- Initialize response prompts capability test ---
+
+TEST(InitializeResponse, HasPromptsCapability) {
+    auto response = create_initialize_response(1);
+    ASSERT_TRUE(response["result"]["capabilities"].contains("prompts"));
+    EXPECT_EQ(response["result"]["capabilities"]["prompts"]["listChanged"], false);
+}
+
+// --- Prompts module tests ---
+
+TEST(PromptsListResponse, HasCorrectStructure) {
+    auto response = create_prompts_list_response(10);
+    EXPECT_EQ(response["jsonrpc"], "2.0");
+    EXPECT_EQ(response["id"], 10);
+    auto prompts = response["result"]["prompts"];
+    ASSERT_EQ(prompts.size(), 4);
+    for (const auto& p : prompts) {
+        EXPECT_TRUE(p.contains("name"));
+        EXPECT_TRUE(p.contains("description"));
+        EXPECT_TRUE(p.contains("arguments"));
+        EXPECT_TRUE(p["name"].is_string());
+        EXPECT_TRUE(p["description"].is_string());
+        EXPECT_TRUE(p["arguments"].is_array());
+    }
+}
+
+TEST(PromptsListResponse, HasCreatePlayerControllerPrompt) {
+    auto response = create_prompts_list_response(10);
+    auto prompts = response["result"]["prompts"];
+    bool found = false;
+    for (const auto& p : prompts) {
+        if (p["name"] == "create_player_controller") {
+            found = true;
+            EXPECT_FALSE(p["description"].get<std::string>().empty());
+            ASSERT_GE(p["arguments"].size(), 1);
+            EXPECT_EQ(p["arguments"][0]["name"], "movement_type");
+            EXPECT_TRUE(p["arguments"][0]["required"].get<bool>());
+            break;
+        }
+    }
+    EXPECT_TRUE(found) << "create_player_controller prompt not found";
+}
+
+TEST(PromptGetResponse, HasCorrectStructure) {
+    auto response = create_prompt_get_response(11, "Test description", json::array({
+        {{"role", "user"}, {"content", {{"type", "text"}, {"text", "Hello"}}}}
+    }));
+    EXPECT_EQ(response["jsonrpc"], "2.0");
+    EXPECT_EQ(response["id"], 11);
+    EXPECT_EQ(response["result"]["description"], "Test description");
+    ASSERT_EQ(response["result"]["messages"].size(), 1);
+    EXPECT_EQ(response["result"]["messages"][0]["role"], "user");
+}
+
+TEST(PromptNotFoundError, ContainsPromptName) {
+    auto response = create_prompt_not_found_error(12, "nonexistent");
+    EXPECT_EQ(response["jsonrpc"], "2.0");
+    EXPECT_EQ(response["id"], 12);
+    EXPECT_EQ(response["error"]["code"], INVALID_PARAMS);
+    std::string msg = response["error"]["message"].get<std::string>();
+    EXPECT_NE(msg.find("nonexistent"), std::string::npos);
+}
+
+// --- Prompts data layer tests ---
+
+TEST(PromptsData, GetAllPromptsReturns4) {
+    auto prompts = get_all_prompts_json();
+    ASSERT_EQ(prompts.size(), 4);
+}
+
+TEST(PromptsData, PromptExistsWorks) {
+    EXPECT_TRUE(prompt_exists("create_player_controller"));
+    EXPECT_TRUE(prompt_exists("setup_scene_structure"));
+    EXPECT_TRUE(prompt_exists("debug_physics"));
+    EXPECT_TRUE(prompt_exists("create_ui_interface"));
+    EXPECT_FALSE(prompt_exists("nonexistent"));
+    EXPECT_FALSE(prompt_exists(""));
+}
+
+TEST(PromptsData, GetPromptMessagesValidPrompt) {
+    auto messages = get_prompt_messages("create_player_controller", {{"movement_type", "2d_platformer"}});
+    ASSERT_FALSE(messages.is_null());
+    ASSERT_TRUE(messages.is_array());
+    ASSERT_GE(messages.size(), 1);
+    EXPECT_EQ(messages[0]["role"], "user");
+    EXPECT_TRUE(messages[0]["content"].contains("type"));
+    EXPECT_EQ(messages[0]["content"]["type"], "text");
+    // Verify argument substitution
+    std::string text = messages[0]["content"]["text"].get<std::string>();
+    EXPECT_NE(text.find("2d_platformer"), std::string::npos);
+}
+
+TEST(PromptsData, GetPromptMessagesNonexistent) {
+    auto messages = get_prompt_messages("nonexistent", {});
+    EXPECT_TRUE(messages.is_null());
 }
