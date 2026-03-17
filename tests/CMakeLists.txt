@@ -48,9 +48,17 @@ target_link_libraries(test_variant_parser GTest::gtest_main)
 add_executable(test_scene_mutation test_scene_mutation.cpp)
 target_link_libraries(test_scene_mutation GTest::gtest_main)
 
+# Script tools unit tests (pure C++ edit_lines + validate_res_path, no Godot dependency)
+add_executable(test_script_tools
+    test_script_tools.cpp
+    ${CMAKE_SOURCE_DIR}/../src/script_tools.cpp
+)
+target_link_libraries(test_script_tools GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(test_placeholder)
 gtest_discover_tests(test_protocol)
 gtest_discover_tests(test_scene_tree)
 gtest_discover_tests(test_variant_parser)
 gtest_discover_tests(test_scene_mutation)
+gtest_discover_tests(test_script_tools)
