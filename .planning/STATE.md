@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-17T08:40:39.309Z"
-last_activity: 2026-03-17 -- Phase 3 UAT verified 14/14 tests pass
+status: in-progress
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-17T09:43:22Z"
+last_activity: 2026-03-17 -- Phase 4 Plan 01 complete (dock UI, tool registry, version filtering)
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
-  percent: 100
+  total_plans: 12
+  completed_plans: 11
+  percent: 91
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-14)
 
 **Core value:** AI can read and manipulate the Godot editor scene tree via standard MCP protocol -- enabling real AI-assisted game development
-**Current focus:** Phase 3 complete -- Script & Project Management (3/3 plans, 14/14 UAT). Ready for Phase 4.
+**Current focus:** Phase 4 in progress -- Editor Integration (1/2 plans complete). Dock UI + tool registry done, prompts next.
 
 ## Current Position
 
-Phase: 3 of 5 (Script & Project Management) -- COMPLETE
-Plan: 3 of 3 in current phase (03-03 complete)
-Status: Phase 3 Complete
-Last activity: 2026-03-17 -- Phase 3 UAT verified 14/14 tests pass
+Phase: 4 of 5 (Editor Integration)
+Plan: 1 of 2 in current phase (04-01 complete)
+Status: In Progress
+Last activity: 2026-03-17 -- Phase 4 Plan 01 complete (dock UI, tool registry, version filtering)
 
-Progress: [██████████] 100% (10/10 plans through Phase 3)
+Progress: [█████████ ] 91% (11/12 plans through Phase 4)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 8 min
-- Total execution time: 1.4 hours
+- Total execution time: 1.5 hours
 
 **By Phase:**
 
@@ -46,12 +46,14 @@ Progress: [██████████] 100% (10/10 plans through Phase 3)
 | 1 - Foundation | 4/4 | 40 min | 10 min |
 | 2 - Scene CRUD | 3/3 | 22 min | 7 min |
 | 3 - Script/Project | 3/3 | 24 min | 8 min |
+| 4 - Editor Integration | 1/2 | 8 min | 8 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-03 (8 min), 03-01 (8 min), 03-02 (5 min), 03-03 (11 min)
+- Last 5 plans: 03-01 (8 min), 03-02 (5 min), 03-03 (11 min), 04-01 (8 min)
 - Trend: Steady -- 5-11 min per plan
 
 *Updated after each plan completion*
+| Phase 04 P01 | 8min | 2 tasks | 12 files |
 | Phase 03 P03 | 11min | 2 tasks | 1 file |
 | Phase 03 P02 | 5min | 2 tasks | 7 files |
 | Phase 03 P01 | 8min | 2 tasks | 7 files |
@@ -101,6 +103,10 @@ Recent decisions affecting current work:
 - [Phase 03-02]: IO thread uses condition_variable wait for synchronous request/response flow
 - [Phase 03-02]: Resource inspection filters properties by STORAGE/EDITOR usage, skips INTERNAL
 - [Phase 03-03]: UAT automated via tests/uat_phase3.py script -- 14/14 tests pass without manual intervention
+- [Phase 04-01]: ToolDef registry in separate mcp_tool_registry.h/cpp (no Godot headers) for unit testability
+- [Phase 04-01]: Backward-compatible create_tools_list_response overload using GodotVersion{99,99,99}
+- [Phase 04-01]: MCPDock is plain C++ class (not ClassDB registered), button signals routed through MCPPlugin via callable_mp()
+- [Phase 04-01]: Status polling at 1.0s interval with dirty check on running/connected/tool_count state
 
 ### Pending Todos
 
@@ -114,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T08:40:39.307Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-editor-integration/04-CONTEXT.md
+Last session: 2026-03-17T09:43:22Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: .planning/phases/04-editor-integration/04-01-SUMMARY.md

@@ -48,9 +48,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Editor Integration
 
-- [ ] **EDIT-01**: 编辑器底部 Dock 面板显示 MCP 服务连接状态（已连接/断开/等待中）
-- [ ] **EDIT-02**: 编辑器面板提供 MCP 服务启动/停止/重启控制按钮
-- [ ] **EDIT-03**: 运行时检测 Godot 版本并按版本动态启用/禁用对应 MCP 工具
+- [x] **EDIT-01**: 编辑器底部 Dock 面板显示 MCP 服务连接状态（已连接/断开/等待中）
+- [x] **EDIT-02**: 编辑器面板提供 MCP 服务启动/停止/重启控制按钮
+- [x] **EDIT-03**: 运行时检测 Godot 版本并按版本动态启用/禁用对应 MCP 工具
 - [ ] **EDIT-04**: 提供预建 MCP Prompts 模板（创建玩家控制器、设置 TileMap、调试物理等常见工作流）
 
 ### Distribution & Compatibility
@@ -114,9 +114,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | PROJ-02 | Phase 3 | Complete |
 | PROJ-03 | Phase 3 | Complete |
 | PROJ-04 | Phase 3 | Complete |
-| EDIT-01 | Phase 4 | Pending |
-| EDIT-02 | Phase 4 | Pending |
-| EDIT-03 | Phase 4 | Pending |
+| EDIT-01 | Phase 4 | Complete |
+| EDIT-02 | Phase 4 | Complete |
+| EDIT-03 | Phase 4 | Complete |
 | EDIT-04 | Phase 4 | Pending |
 | RNTM-01 | Phase 5 | Pending |
 | RNTM-02 | Phase 5 | Pending |
