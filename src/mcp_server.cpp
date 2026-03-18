@@ -6,6 +6,7 @@
 #include "script_tools.h"
 #include "project_tools.h"
 #include "runtime_tools.h"
+#include "signal_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -508,6 +509,59 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     clear_after_read = args["clear_after_read"].get<bool>();
             }
             return mcp::create_tool_result(id, get_game_output(clear_after_read));
+        }
+
+        if (tool_name == "get_node_signals") {
+            std::string node_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+            }
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
+            }
+            return mcp::create_tool_result(id, get_node_signals(node_path));
+        }
+
+        if (tool_name == "connect_signal") {
+            std::string source_path, signal_name, target_path, method_name;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("source_path") && args["source_path"].is_string())
+                    source_path = args["source_path"].get<std::string>();
+                if (args.contains("signal_name") && args["signal_name"].is_string())
+                    signal_name = args["signal_name"].get<std::string>();
+                if (args.contains("target_path") && args["target_path"].is_string())
+                    target_path = args["target_path"].get<std::string>();
+                if (args.contains("method_name") && args["method_name"].is_string())
+                    method_name = args["method_name"].get<std::string>();
+            }
+            if (source_path.empty() || signal_name.empty() || target_path.empty() || method_name.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: source_path, signal_name, target_path, method_name");
+            }
+            return mcp::create_tool_result(id, connect_signal(source_path, signal_name, target_path, method_name));
+        }
+
+        if (tool_name == "disconnect_signal") {
+            std::string source_path, signal_name, target_path, method_name;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("source_path") && args["source_path"].is_string())
+                    source_path = args["source_path"].get<std::string>();
+                if (args.contains("signal_name") && args["signal_name"].is_string())
+                    signal_name = args["signal_name"].get<std::string>();
+                if (args.contains("target_path") && args["target_path"].is_string())
+                    target_path = args["target_path"].get<std::string>();
+                if (args.contains("method_name") && args["method_name"].is_string())
+                    method_name = args["method_name"].get<std::string>();
+            }
+            if (source_path.empty() || signal_name.empty() || target_path.empty() || method_name.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: source_path, signal_name, target_path, method_name");
+            }
+            return mcp::create_tool_result(id, disconnect_signal(source_path, signal_name, target_path, method_name));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
