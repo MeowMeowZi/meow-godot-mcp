@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Completed 04-02-PLAN.md -- v1 milestone complete (15/15 plans, 31/31 requirements)
-last_updated: "2026-03-18T04:43:23.210Z"
-last_activity: 2026-03-18 -- Phase 4 Plan 02 complete (MCP Prompts, 6/6 UAT, 132 unit tests)
+milestone: v1.1
+milestone_name: UI & Editor Expansion
+status: active
+stopped_at: Defining requirements for v1.1
+last_updated: "2026-03-18T05:30:00.000Z"
+last_activity: 2026-03-18 -- Milestone v1.1 started
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** v1.0 MVP shipped. Planning next milestone.
+**Current focus:** v1.1 — UI 系统 + 编辑器能力拓展
 
 ## Current Position
 
-Phase: 5 of 5 -- ALL PHASES COMPLETE
-Plan: 15 of 15 -- ALL PLANS COMPLETE
-Status: v1 Milestone Complete
-Last activity: 2026-03-18 -- Phase 4 Plan 02 complete (MCP Prompts, 6/6 UAT, 132 unit tests)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-18 — Milestone v1.1 started
 
-Progress: [██████████] 100% (15/15 plans)
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
