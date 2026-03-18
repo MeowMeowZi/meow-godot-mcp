@@ -84,7 +84,7 @@ void MCPPlugin::_enter_tree() {
     // Check if game bridge autoload is configured
     bool autoload_missing = true;
     auto* ps = ProjectSettings::get_singleton();
-    if (ps && ps->has_setting("autoload/MeowMCPBridge")) {
+    if (ps && ps->has_setting("autoload/MeowMCPBridge") || ps->has_setting("autoload/MeowMcpBridge")) {
         autoload_missing = false;
     }
     dock->set_autoload_warning(autoload_missing);
@@ -144,7 +144,7 @@ void MCPPlugin::_process(double delta) {
 
         // Re-check autoload status (user may add/remove it at any time)
         auto* ps = ProjectSettings::get_singleton();
-        bool autoload_missing = !ps || !ps->has_setting("autoload/MeowMCPBridge");
+        bool autoload_missing = !ps || !ps->has_setting("autoload/MeowMCPBridge") || ps->has_setting("autoload/MeowMcpBridge");
         dock->set_autoload_warning(autoload_missing);
     }
 }
