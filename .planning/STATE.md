@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI & Editor Expansion
 status: active
-stopped_at: Defining requirements for v1.1
-last_updated: "2026-03-18T05:30:00.000Z"
-last_activity: 2026-03-18 -- Milestone v1.1 started
+stopped_at: Roadmap created for v1.1
+last_updated: "2026-03-18T06:00:00.000Z"
+last_activity: 2026-03-18 -- v1.1 roadmap created (6 phases, 27 requirements)
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,25 +21,25 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** v1.1 — UI 系统 + 编辑器能力拓展
+**Current focus:** v1.1 Phase 6 -- Scene File Management
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-18 — Milestone v1.1 started
+Phase: 6 of 11 (Scene File Management) -- first phase of v1.1
+Plan: --
+Status: Ready to plan
+Last activity: 2026-03-18 -- v1.1 roadmap created
 
 Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
-**Velocity:**
+**Velocity (from v1.0):**
 - Total plans completed: 15
 - Average duration: 8 min
 - Total execution time: 2.1 hours
 
-**By Phase:**
+**By Phase (v1.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
@@ -50,81 +50,20 @@ Progress: [░░░░░░░░░░] 0%
 | 5 - Runtime/Signals/Dist | 3/3 | 22 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (5 min), 05-02 (2 min), 05-03 (15 min), 04-02 (12 min)
-- Trend: 04-02 included UAT checkpoint verification
-
-*Updated after each plan completion*
-| Phase 04 P02 | 12min | 2 tasks | 8 files |
-| Phase 05 P03 | 15min | 3 tasks | 3 files |
-| Phase 05 P02 | 2min | 2 tasks | 3 files |
-| Phase 05 P01 | 5min | 2 tasks | 6 files |
-| Phase 04 P01 | 8min | 2 tasks | 12 files |
-| Phase 03 P03 | 11min | 2 tasks | 1 file |
-| Phase 03 P02 | 5min | 2 tasks | 7 files |
-| Phase 03 P01 | 8min | 2 tasks | 7 files |
-| Phase 02 P03 | 8min | 2 tasks | 2 files |
-| Phase 02 P02 | 9min | 2 tasks | 11 files |
-| Phase 02 P01 | 5min | 1 task (TDD) | 4 files |
-| Phase 01 P04 | 30min | 2 tasks | 10 files |
-| Phase 01 P03 | 3min | 2 tasks | 6 files |
-| Phase 01 P02 | 7min | 2 tasks | 12 files |
+- Last 5 plans: 05-01 (5 min), 05-02 (2 min), 05-03 (15 min), 04-02 (12 min), 04-01 (8 min)
+- Trend: Stable
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Decisions logged in PROJECT.md Key Decisions table.
+Recent decisions affecting v1.1:
 
-- [Roadmap]: 5-phase structure derived from 31 requirements, risk-first ordering (transport/threading proven before features)
-- [Roadmap]: Phase 1 merges transport + first tool to validate end-to-end pipeline in single phase
-- [01-01]: SConscript import pattern from godot-cpp-template for build environment inheritance
-- [01-01]: GoogleTest uses separate CMake build system (not SCons) since each tool officially uses its own build system
-- [01-01]: Bridge target defined as commented placeholder in SConstruct until Plan 03
-- [01-03]: Bridge uses separate SCons Environment() (not env.Clone()) for zero godot-cpp dependency
-- [01-03]: Two-thread relay design: blocking stdin reader + main thread TCP polling with 10ms sleep
-- [01-03]: Reconnect on TCP disconnect stays alive indefinitely with fixed 2-second interval
-- [Phase 01-03]: Bridge uses separate SCons Environment() for zero godot-cpp dependency
-- [Phase 01-02]: MCPServer is plain C++ class (not Godot Object) owned by MCPPlugin via raw pointer
-- [Phase 01-02]: Protocol layer (mcp_protocol.h/cpp) kept Godot-free for testability
-- [Phase 01-02]: StringName/NodePath require explicit String() construction before .utf8() in godot-cpp v10
-- [Phase 01-04]: StreamPeer reading uses get_partial_data() with Array unpacking (get_data returns Array not PackedByteArray)
-- [Phase 01-04]: Scene tree paths use scene_root->get_path_to(node) for clean relative paths
-- [Phase 01-04]: EditorPlugin activation requires plugin.cfg + thin GDScript wrapper (GDExtension class alone insufficient)
-- [Phase 01-04]: /EHsc must be enabled on Windows for C++ exception handling (nlohmann/json requirement)
-- [Phase 02-01]: Two-layer architecture: parse_variant_hint (pure C++) + parse_variant (Godot-dependent) allows comprehensive unit testing without Godot runtime
-- [Phase 02-01]: Godot constructor detection uses uppercase-letter + parenthesis heuristic rather than exhaustive type list
-- [Phase 02-01]: ifdef GODOT_MCP_MEOW_GODOT_ENABLED pattern for dual-mode compilation (test vs runtime)
-- [Phase 02-02]: GODOT_MCP_MEOW_GODOT_ENABLED added to SConstruct CPPDEFINES for all GDExtension sources (not per-file #define)
-- [Phase 02-02]: Properties set AFTER add_child/set_owner within same UndoRedo action for correctness
-- [Phase 02-02]: ClassDB static convenience methods (class_exists, is_parent_class, instantiate) preferred over singleton access
-- [Phase 02-03]: Manual path construction (parent_path + node name) instead of get_path_to for nodes created within UndoRedo actions -- avoids common_parent null error
-- [Phase 03-01]: write_script errors if file already exists -- forces edit_script for modifications (prevents accidental overwrites)
-- [Phase 03-01]: EditResult struct (success + lines + error) for composable pure C++ line editing error handling
-- [Phase 03-01]: attach_script uses ResourceLoader::load with "Script" type hint for proper GDScript loading
-- [Phase 03-01]: GDScript file writes always end with trailing newline to match Godot editor convention
-- [Phase 03-02]: IO thread handles TCP + JSON-RPC parse; main thread handles all Godot API dispatch via queue
-- [Phase 03-02]: Notifications and parse errors handled inline on IO thread (no queue round-trip needed)
-- [Phase 03-02]: IO thread uses condition_variable wait for synchronous request/response flow
-- [Phase 03-02]: Resource inspection filters properties by STORAGE/EDITOR usage, skips INTERNAL
-- [Phase 03-03]: UAT automated via tests/uat_phase3.py script -- 14/14 tests pass without manual intervention
-- [Phase 04-01]: ToolDef registry in separate mcp_tool_registry.h/cpp (no Godot headers) for unit testability
-- [Phase 04-01]: Backward-compatible create_tools_list_response overload using GodotVersion{99,99,99}
-- [Phase 04-01]: MCPDock is plain C++ class (not ClassDB registered), button signals routed through MCPPlugin via callable_mp()
-- [Phase 04-01]: Status polling at 1.0s interval with dirty check on running/connected/tool_count state
-- [Phase 05-01]: run_game returns already_running status (not error) when game is playing -- supports idempotent AI workflows
-- [Phase 05-01]: get_game_output uses incremental log file reading with static position tracking
-- [Phase 05-01]: Signal tool definitions registered upfront in Plan 01 for single-pass registry testing
-- [Phase 05-02]: Signal tools use resolve_node helper for consistent node path resolution from scene root
-- [Phase 05-02]: connect_signal validates signal existence on source before attempting connection
-- [Phase 05-02]: get_node_signals returns full connection details (target path, method, flags) for AI reasoning
-- [Phase 05-03]: CI builds both template_release and template_debug per platform for development flexibility
-- [Phase 05-03]: CI unit tests on Linux only (cheapest runner, C++17 tests are platform-independent)
-- [Phase 05-03]: Release job on v* tags packages all platforms into single zip with addons/ directory structure
-- [Phase 05-03]: api_version=4.3 on all GDExtension scons commands for Godot 4.3-4.6 forward compatibility
-- [Phase 04-02]: mcp_prompts module kept Godot-free (pure C++17 + nlohmann/json) for unit testability
-- [Phase 04-02]: Prompt templates use argument substitution in message text rather than template engine
-- [Phase 04-02]: prompts capability advertised with listChanged: false (static prompt set, no runtime changes)
+- [Roadmap v1.1]: 6 phases derived from 27 requirements across 6 categories, research-informed ordering
+- [Roadmap v1.1]: Scene File Management first (fills critical gap: AI cannot save its work)
+- [Roadmap v1.1]: Running Game Bridge last (highest complexity, needs IPC architecture decision)
+- [Roadmap v1.1]: Prompt Templates depend on all tool names being finalized
 
 ### Pending Todos
 
@@ -132,12 +71,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- ~~[Research]: Bridge-to-GDExtension TCP relay is a novel architecture -- no existing project uses this pattern. Phase 1 exists to validate it.~~ RESOLVED: Phase 1 UAT validated the architecture end-to-end (8/8 tests passed).
-- [Research]: Port management (how bridge discovers GDExtension's TCP port) needs design decision. Currently hardcoded to 6800.
-- [Research]: Multiple editor instances need different ports -- no solution researched yet.
+- [Research]: Phase 10 IPC mechanism (file-based polling vs TCP vs EditorDebuggerPlugin) needs prototype before planning
+- [Research]: Animation UndoRedo feasibility -- may skip for track/keyframe mutations (too complex)
+- [Research]: Viewport screenshot timing -- one-frame-stale vs deferred response decision needed for Phase 9
+- [Carry-over]: Port management for multiple editor instances still unresolved
 
 ## Session Continuity
 
-Last session: 2026-03-18T12:00:00Z
-Stopped at: Completed 04-02-PLAN.md -- v1 milestone complete (15/15 plans, 31/31 requirements)
+Last session: 2026-03-18
+Stopped at: v1.1 roadmap created, ready to plan Phase 6
 Resume file: None

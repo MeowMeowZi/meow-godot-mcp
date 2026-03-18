@@ -82,38 +82,39 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCNF-01 | - | Pending |
-| SCNF-02 | - | Pending |
-| SCNF-03 | - | Pending |
-| SCNF-04 | - | Pending |
-| SCNF-05 | - | Pending |
-| SCNF-06 | - | Pending |
-| UISYS-01 | - | Pending |
-| UISYS-02 | - | Pending |
-| UISYS-03 | - | Pending |
-| UISYS-04 | - | Pending |
-| UISYS-05 | - | Pending |
-| UISYS-06 | - | Pending |
-| ANIM-01 | - | Pending |
-| ANIM-02 | - | Pending |
-| ANIM-03 | - | Pending |
-| ANIM-04 | - | Pending |
-| ANIM-05 | - | Pending |
-| VWPT-01 | - | Pending |
-| VWPT-02 | - | Pending |
-| VWPT-03 | - | Pending |
-| BRDG-01 | - | Pending |
-| BRDG-02 | - | Pending |
-| BRDG-03 | - | Pending |
-| BRDG-04 | - | Pending |
-| BRDG-05 | - | Pending |
-| PMPT-01 | - | Pending |
-| PMPT-02 | - | Pending |
+| SCNF-01 | Phase 6 | Pending |
+| SCNF-02 | Phase 6 | Pending |
+| SCNF-03 | Phase 6 | Pending |
+| SCNF-04 | Phase 6 | Pending |
+| SCNF-05 | Phase 6 | Pending |
+| SCNF-06 | Phase 6 | Pending |
+| UISYS-01 | Phase 7 | Pending |
+| UISYS-02 | Phase 7 | Pending |
+| UISYS-03 | Phase 7 | Pending |
+| UISYS-04 | Phase 7 | Pending |
+| UISYS-05 | Phase 7 | Pending |
+| UISYS-06 | Phase 7 | Pending |
+| ANIM-01 | Phase 8 | Pending |
+| ANIM-02 | Phase 8 | Pending |
+| ANIM-03 | Phase 8 | Pending |
+| ANIM-04 | Phase 8 | Pending |
+| ANIM-05 | Phase 8 | Pending |
+| VWPT-01 | Phase 9 | Pending |
+| VWPT-02 | Phase 9 | Pending |
+| VWPT-03 | Phase 9 | Pending |
+| BRDG-01 | Phase 10 | Pending |
+| BRDG-02 | Phase 10 | Pending |
+| BRDG-03 | Phase 10 | Pending |
+| BRDG-04 | Phase 10 | Pending |
+| BRDG-05 | Phase 10 | Pending |
+| PMPT-01 | Phase 11 | Pending |
+| PMPT-02 | Phase 11 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 27 total
-- Mapped to phases: 0
-- Unmapped: 27
+- Mapped to phases: 27
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-18*
+*Traceability updated: 2026-03-18*
