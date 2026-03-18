@@ -32,9 +32,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Runtime & Debug
 
-- [ ] **RNTM-01**: AI 可启动当前项目在调试模式下运行
-- [ ] **RNTM-02**: AI 可停止正在运行的项目实例
-- [ ] **RNTM-03**: AI 可捕获游戏运行时的 stdout/stderr 日志输出
+- [x] **RNTM-01**: AI 可启动当前项目在调试模式下运行
+- [x] **RNTM-02**: AI 可停止正在运行的项目实例
+- [x] **RNTM-03**: AI 可捕获游戏运行时的 stdout/stderr 日志输出
 - [ ] **RNTM-04**: AI 可查询节点上已定义和已连接的信号列表
 - [ ] **RNTM-05**: AI 可创建节点间的信号连接（指定信号名、目标节点、目标方法）
 - [ ] **RNTM-06**: AI 可断开节点间已有的信号连接
@@ -118,9 +118,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | EDIT-02 | Phase 4 | Complete |
 | EDIT-03 | Phase 4 | Complete |
 | EDIT-04 | Phase 4 | Pending |
-| RNTM-01 | Phase 5 | Pending |
-| RNTM-02 | Phase 5 | Pending |
-| RNTM-03 | Phase 5 | Pending |
+| RNTM-01 | Phase 5 | Complete |
+| RNTM-02 | Phase 5 | Complete |
+| RNTM-03 | Phase 5 | Complete |
 | RNTM-04 | Phase 5 | Pending |
 | RNTM-05 | Phase 5 | Pending |
 | RNTM-06 | Phase 5 | Pending |

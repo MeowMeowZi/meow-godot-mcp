@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-17T10:47:04.485Z"
-last_activity: 2026-03-17 -- Phase 4 Plan 01 complete (dock UI, tool registry, version filtering)
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-18T02:48:15.496Z"
+last_activity: 2026-03-18 -- Phase 5 Plan 01 complete (runtime tools, 18-tool registry)
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 11
-  percent: 91
+  total_plans: 15
+  completed_plans: 12
+  percent: 80
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-14)
 
 **Core value:** AI can read and manipulate the Godot editor scene tree via standard MCP protocol -- enabling real AI-assisted game development
-**Current focus:** Phase 4 in progress -- Editor Integration (1/2 plans complete). Dock UI + tool registry done, prompts next.
+**Current focus:** Phase 5 in progress -- Runtime, Signals, Distribution (1/3 plans complete). Runtime tools done, signals next.
 
 ## Current Position
 
-Phase: 4 of 5 (Editor Integration)
-Plan: 1 of 2 in current phase (04-01 complete)
+Phase: 5 of 5 (Runtime, Signals, Distribution)
+Plan: 1 of 3 in current phase (05-01 complete)
 Status: In Progress
-Last activity: 2026-03-17 -- Phase 4 Plan 01 complete (dock UI, tool registry, version filtering)
+Last activity: 2026-03-18 -- Phase 5 Plan 01 complete (runtime tools, 18-tool registry)
 
-Progress: [█████████ ] 91% (11/12 plans through Phase 4)
+Progress: [████████░░] 80% (12/15 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 8 min
-- Total execution time: 1.5 hours
+- Total execution time: 1.6 hours
 
 **By Phase:**
 
@@ -47,12 +47,14 @@ Progress: [█████████ ] 91% (11/12 plans through Phase 4)
 | 2 - Scene CRUD | 3/3 | 22 min | 7 min |
 | 3 - Script/Project | 3/3 | 24 min | 8 min |
 | 4 - Editor Integration | 1/2 | 8 min | 8 min |
+| 5 - Runtime/Signals/Dist | 1/3 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (8 min), 03-02 (5 min), 03-03 (11 min), 04-01 (8 min)
+- Last 5 plans: 03-02 (5 min), 03-03 (11 min), 04-01 (8 min), 05-01 (5 min)
 - Trend: Steady -- 5-11 min per plan
 
 *Updated after each plan completion*
+| Phase 05 P01 | 5min | 2 tasks | 6 files |
 | Phase 04 P01 | 8min | 2 tasks | 12 files |
 | Phase 03 P03 | 11min | 2 tasks | 1 file |
 | Phase 03 P02 | 5min | 2 tasks | 7 files |
@@ -63,6 +65,7 @@ Progress: [█████████ ] 91% (11/12 plans through Phase 4)
 | Phase 01 P04 | 30min | 2 tasks | 10 files |
 | Phase 01 P03 | 3min | 2 tasks | 6 files |
 | Phase 01 P02 | 7min | 2 tasks | 12 files |
+| Phase 05 P01 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -107,6 +110,9 @@ Recent decisions affecting current work:
 - [Phase 04-01]: Backward-compatible create_tools_list_response overload using GodotVersion{99,99,99}
 - [Phase 04-01]: MCPDock is plain C++ class (not ClassDB registered), button signals routed through MCPPlugin via callable_mp()
 - [Phase 04-01]: Status polling at 1.0s interval with dirty check on running/connected/tool_count state
+- [Phase 05-01]: run_game returns already_running status (not error) when game is playing -- supports idempotent AI workflows
+- [Phase 05-01]: get_game_output uses incremental log file reading with static position tracking
+- [Phase 05-01]: Signal tool definitions registered upfront in Plan 01 for single-pass registry testing
 
 ### Pending Todos
 
@@ -120,6 +126,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T10:47:04.483Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-runtime-signals-distribution/05-CONTEXT.md
+Last session: 2026-03-18T02:48:15.267Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None
