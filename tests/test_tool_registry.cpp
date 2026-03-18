@@ -53,9 +53,9 @@ TEST(GodotVersion, LesserPatch) {
 
 // --- Tool registry tests ---
 
-TEST(ToolRegistry, HasExactly18Tools) {
+TEST(ToolRegistry, HasExactly23Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 18);
+    ASSERT_EQ(tools.size(), 23);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
@@ -84,7 +84,8 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
         "read_script", "write_script", "edit_script", "attach_script",
         "detach_script", "list_project_files", "get_project_settings", "get_resource_info",
         "run_game", "stop_game", "get_game_output",
-        "get_node_signals", "connect_signal", "disconnect_signal"
+        "get_node_signals", "connect_signal", "disconnect_signal",
+        "save_scene", "open_scene", "list_open_scenes", "create_scene", "instantiate_scene"
     };
     ASSERT_EQ(tools.size(), expected_names.size());
     for (size_t i = 0; i < tools.size(); i++) {
@@ -94,10 +95,10 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 
 // --- Filtered tools JSON tests ---
 
-TEST(FilteredTools, Version430Returns18Tools) {
+TEST(FilteredTools, Version430Returns23Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 18);
+    EXPECT_EQ(json_tools.size(), 23);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -106,10 +107,10 @@ TEST(FilteredTools, Version420Returns0Tools) {
     EXPECT_EQ(json_tools.size(), 0);
 }
 
-TEST(FilteredTools, PermissiveVersionReturns18Tools) {
+TEST(FilteredTools, PermissiveVersionReturns23Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 18);
+    EXPECT_EQ(json_tools.size(), 23);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -132,8 +133,8 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 
 // --- Tool count tests ---
 
-TEST(ToolCount, Version430Returns18) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 18);
+TEST(ToolCount, Version430Returns23) {
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 23);
 }
 
 TEST(ToolCount, Version420Returns0) {
@@ -282,4 +283,78 @@ TEST(FilteredTools, DisconnectSignalSchemaValidation) {
         }
     }
     FAIL() << "disconnect_signal not found in filtered tools";
+}
+
+// --- Phase 6 scene file tool schema validation tests ---
+
+TEST(FilteredTools, SaveSceneSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "save_scene") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("path"));
+            EXPECT_TRUE(schema["required"].empty());
+            return;
+        }
+    }
+    FAIL() << "save_scene not found in filtered tools";
+}
+
+TEST(FilteredTools, OpenSceneSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "open_scene") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("path"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "path");
+            return;
+        }
+    }
+    FAIL() << "open_scene not found in filtered tools";
+}
+
+TEST(FilteredTools, ListOpenScenesSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "list_open_scenes") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["required"].empty());
+            return;
+        }
+    }
+    FAIL() << "list_open_scenes not found in filtered tools";
+}
+
+TEST(FilteredTools, CreateSceneSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "create_scene") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("root_type"));
+            EXPECT_TRUE(schema["properties"].contains("path"));
+            EXPECT_TRUE(schema["properties"].contains("root_name"));
+            ASSERT_EQ(schema["required"].size(), 2);
+            EXPECT_EQ(schema["required"][0], "root_type");
+            EXPECT_EQ(schema["required"][1], "path");
+            return;
+        }
+    }
+    FAIL() << "create_scene not found in filtered tools";
+}
+
+TEST(FilteredTools, InstantiateSceneSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "instantiate_scene") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("scene_path"));
+            EXPECT_TRUE(schema["properties"].contains("parent_path"));
+            EXPECT_TRUE(schema["properties"].contains("name"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "scene_path");
+            return;
+        }
+    }
+    FAIL() << "instantiate_scene not found in filtered tools";
 }
