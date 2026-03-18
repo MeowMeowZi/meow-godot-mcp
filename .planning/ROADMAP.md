@@ -30,7 +30,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full details.
 - [x] **Phase 7: UI System** - AI can build and style Control node hierarchies with themes and layouts
 - [x] **Phase 8: Animation System** - AI can create and edit animations with tracks and keyframes
 - [x] **Phase 9: Editor Viewport Screenshots** - AI can capture editor viewport images for visual feedback
-- [ ] **Phase 10: Running Game Bridge** - AI can inject input and capture screenshots from a running game
+- [x] **Phase 10: Running Game Bridge** - AI can inject input and capture screenshots from a running game (completed 2026-03-18)
 - [ ] **Phase 11: Prompt Templates** - AI gets curated workflow templates for UI building and animation setup
 
 ## Phase Details
@@ -107,7 +107,7 @@ Plans:
   3. AI can inject mouse events (move, click, scroll) into the running game at specified coordinates
   4. AI can inject Input Action events (action_press/release) into the running game
   5. AI can capture a screenshot of the running game's viewport and receive it as MCP ImageContent
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [ ] 10-01-PLAN.md -- Register 3 game bridge tool definitions in MCP tool registry + unit tests
 - [ ] 10-02-PLAN.md -- Implement game_bridge module (EditorDebuggerPlugin + companion GDScript) + deferred response + wire dispatch
@@ -139,5 +139,5 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 7. UI System | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 8. Animation System | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 9. Editor Viewport Screenshots | v1.1 | 3/3 | Complete | 2026-03-18 |
-| 10. Running Game Bridge | 2/3 | In Progress|  | - |
+| 10. Running Game Bridge | 3/3 | Complete   | 2026-03-18 | - |
 | 11. Prompt Templates | v1.1 | 0/0 | Not started | - |
