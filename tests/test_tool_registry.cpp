@@ -53,9 +53,9 @@ TEST(GodotVersion, LesserPatch) {
 
 // --- Tool registry tests ---
 
-TEST(ToolRegistry, HasExactly23Tools) {
+TEST(ToolRegistry, HasExactly29Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 23);
+    ASSERT_EQ(tools.size(), 29);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
@@ -85,7 +85,8 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
         "detach_script", "list_project_files", "get_project_settings", "get_resource_info",
         "run_game", "stop_game", "get_game_output",
         "get_node_signals", "connect_signal", "disconnect_signal",
-        "save_scene", "open_scene", "list_open_scenes", "create_scene", "instantiate_scene"
+        "save_scene", "open_scene", "list_open_scenes", "create_scene", "instantiate_scene",
+        "set_layout_preset", "set_theme_override", "create_stylebox", "get_ui_properties", "set_container_layout", "get_theme_overrides"
     };
     ASSERT_EQ(tools.size(), expected_names.size());
     for (size_t i = 0; i < tools.size(); i++) {
@@ -95,10 +96,10 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 
 // --- Filtered tools JSON tests ---
 
-TEST(FilteredTools, Version430Returns23Tools) {
+TEST(FilteredTools, Version430Returns29Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 23);
+    EXPECT_EQ(json_tools.size(), 29);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -107,10 +108,10 @@ TEST(FilteredTools, Version420Returns0Tools) {
     EXPECT_EQ(json_tools.size(), 0);
 }
 
-TEST(FilteredTools, PermissiveVersionReturns23Tools) {
+TEST(FilteredTools, PermissiveVersionReturns29Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 23);
+    EXPECT_EQ(json_tools.size(), 29);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -133,8 +134,8 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 
 // --- Tool count tests ---
 
-TEST(ToolCount, Version430Returns23) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 23);
+TEST(ToolCount, Version430Returns29) {
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 29);
 }
 
 TEST(ToolCount, Version420Returns0) {
@@ -357,4 +358,102 @@ TEST(FilteredTools, InstantiateSceneSchemaValidation) {
         }
     }
     FAIL() << "instantiate_scene not found in filtered tools";
+}
+
+// --- Phase 7 UI system tool schema validation tests ---
+
+TEST(FilteredTools, SetLayoutPresetSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "set_layout_preset") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            EXPECT_TRUE(schema["properties"].contains("preset"));
+            ASSERT_EQ(schema["required"].size(), 2);
+            EXPECT_EQ(schema["required"][0], "node_path");
+            EXPECT_EQ(schema["required"][1], "preset");
+            return;
+        }
+    }
+    FAIL() << "set_layout_preset not found in filtered tools";
+}
+
+TEST(FilteredTools, SetThemeOverrideSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "set_theme_override") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            EXPECT_TRUE(schema["properties"].contains("overrides"));
+            ASSERT_EQ(schema["required"].size(), 2);
+            EXPECT_EQ(schema["required"][0], "node_path");
+            EXPECT_EQ(schema["required"][1], "overrides");
+            return;
+        }
+    }
+    FAIL() << "set_theme_override not found in filtered tools";
+}
+
+TEST(FilteredTools, CreateStyleboxSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "create_stylebox") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            EXPECT_TRUE(schema["properties"].contains("override_name"));
+            EXPECT_TRUE(schema["properties"].contains("bg_color"));
+            EXPECT_TRUE(schema["properties"].contains("corner_radius"));
+            EXPECT_TRUE(schema["properties"].contains("border_width"));
+            ASSERT_EQ(schema["required"].size(), 2);
+            EXPECT_EQ(schema["required"][0], "node_path");
+            EXPECT_EQ(schema["required"][1], "override_name");
+            return;
+        }
+    }
+    FAIL() << "create_stylebox not found in filtered tools";
+}
+
+TEST(FilteredTools, GetUIPropertiesSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "get_ui_properties") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "node_path");
+            return;
+        }
+    }
+    FAIL() << "get_ui_properties not found in filtered tools";
+}
+
+TEST(FilteredTools, SetContainerLayoutSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "set_container_layout") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            EXPECT_TRUE(schema["properties"].contains("separation"));
+            EXPECT_TRUE(schema["properties"].contains("alignment"));
+            EXPECT_TRUE(schema["properties"].contains("columns"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "node_path");
+            return;
+        }
+    }
+    FAIL() << "set_container_layout not found in filtered tools";
+}
+
+TEST(FilteredTools, GetThemeOverridesSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "get_theme_overrides") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "node_path");
+            return;
+        }
+    }
+    FAIL() << "get_theme_overrides not found in filtered tools";
 }
