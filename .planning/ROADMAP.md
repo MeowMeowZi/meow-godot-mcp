@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Scene CRUD** - Node creation, modification, deletion with undo/redo and Godot type parsing
 - [x] **Phase 3: Script & Project Management** - GDScript read/write/attach, project structure query, and resource management
 - [ ] **Phase 4: Editor Integration** - Dock panel UI with connection status/controls, version-adaptive tools, and MCP prompt templates
-- [ ] **Phase 5: Runtime, Signals & Distribution** - Game run/stop control, debug output capture, signal management, and cross-platform packaging
+- [x] **Phase 5: Runtime, Signals & Distribution** - Game run/stop control, debug output capture, signal management, and cross-platform packaging (completed 2026-03-18)
 
 ## Phase Details
 
@@ -97,12 +97,12 @@ Plans:
   3. AI can query signals defined on a node, create new signal connections between nodes, and disconnect existing connections
   4. Pre-compiled binaries are available for Windows (x86_64), Linux (x86_64), and macOS (universal) with a working CI/CD pipeline
   5. The plugin works on Godot 4.3, 4.4, 4.5, and 4.6 using godot-cpp compatibility layer
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 05-01-PLAN.md -- Runtime tools (run_game, stop_game, get_game_output) + tool registry with all 18 tools (RNTM-01, RNTM-02, RNTM-03)
-- [ ] 05-02-PLAN.md -- Signal tools (get_node_signals, connect_signal, disconnect_signal) + server dispatch (RNTM-04, RNTM-05, RNTM-06)
-- [ ] 05-03-PLAN.md -- GitHub Actions CI/CD pipeline + end-to-end UAT verification (DIST-02, DIST-03)
+- [x] 05-01-PLAN.md -- Runtime tools (run_game, stop_game, get_game_output) + tool registry with all 18 tools (RNTM-01, RNTM-02, RNTM-03)
+- [x] 05-02-PLAN.md -- Signal tools (get_node_signals, connect_signal, disconnect_signal) + server dispatch (RNTM-04, RNTM-05, RNTM-06)
+- [x] 05-03-PLAN.md -- GitHub Actions CI/CD pipeline + end-to-end UAT verification (DIST-02, DIST-03)
 
 ## Progress
 
@@ -115,4 +115,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 2. Scene CRUD | 3/3 | Complete | 2026-03-16 |
 | 3. Script & Project Management | 3/3 | Complete | 2026-03-17 |
 | 4. Editor Integration | 1/2 | In progress | - |
-| 5. Runtime, Signals & Distribution | 0/3 | Not started | - |
+| 5. Runtime, Signals & Distribution | 3/3 | Complete   | 2026-03-18 |

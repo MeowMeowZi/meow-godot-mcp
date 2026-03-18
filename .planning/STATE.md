@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-03-18T02:54:26.872Z"
-last_activity: 2026-03-18 -- Phase 5 Plan 02 complete (signal tools, 18-tool MCP dispatch)
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-03-18T04:22:12Z"
+last_activity: 2026-03-18 -- Phase 5 Plan 03 complete (CI/CD + UAT, 12/12 tests pass, Phase 5 done)
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 15
-  completed_plans: 13
-  percent: 87
+  completed_plans: 14
+  percent: 93
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-14)
 
 **Core value:** AI can read and manipulate the Godot editor scene tree via standard MCP protocol -- enabling real AI-assisted game development
-**Current focus:** Phase 5 in progress -- Runtime, Signals, Distribution (2/3 plans complete). Runtime + signal tools done, distribution next.
+**Current focus:** Phase 5 complete (3/3 plans). Only Phase 4 Plan 02 (MCP Prompts) remains for v1.
 
 ## Current Position
 
-Phase: 5 of 5 (Runtime, Signals, Distribution)
-Plan: 2 of 3 in current phase (05-02 complete)
-Status: In Progress
-Last activity: 2026-03-18 -- Phase 5 Plan 02 complete (signal tools, 18-tool MCP dispatch)
+Phase: 5 of 5 (Runtime, Signals, Distribution) -- COMPLETE
+Plan: 3 of 3 in current phase (05-03 complete, Phase 5 done)
+Status: Phase 5 Complete -- Phase 4 Plan 02 remaining
+Last activity: 2026-03-18 -- Phase 5 Plan 03 complete (CI/CD + UAT, 12/12 tests pass)
 
-Progress: [█████████░] 87% (13/15 plans)
+Progress: [█████████░] 93% (14/15 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 8 min
-- Total execution time: 1.6 hours
+- Total execution time: 1.9 hours
 
 **By Phase:**
 
@@ -47,13 +47,14 @@ Progress: [█████████░] 87% (13/15 plans)
 | 2 - Scene CRUD | 3/3 | 22 min | 7 min |
 | 3 - Script/Project | 3/3 | 24 min | 8 min |
 | 4 - Editor Integration | 1/2 | 8 min | 8 min |
-| 5 - Runtime/Signals/Dist | 2/3 | 7 min | 4 min |
+| 5 - Runtime/Signals/Dist | 3/3 | 22 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (11 min), 04-01 (8 min), 05-01 (5 min), 05-02 (2 min)
-- Trend: Accelerating -- signal tools built in 2 min
+- Last 5 plans: 04-01 (8 min), 05-01 (5 min), 05-02 (2 min), 05-03 (15 min)
+- Trend: 05-03 longer due to UAT execution + 3 bug fixes during verification
 
 *Updated after each plan completion*
+| Phase 05 P03 | 15min | 3 tasks | 3 files |
 | Phase 05 P02 | 2min | 2 tasks | 3 files |
 | Phase 05 P01 | 5min | 2 tasks | 6 files |
 | Phase 04 P01 | 8min | 2 tasks | 12 files |
@@ -118,6 +119,10 @@ Recent decisions affecting current work:
 - [Phase 05-02]: Signal tools use resolve_node helper for consistent node path resolution from scene root
 - [Phase 05-02]: connect_signal validates signal existence on source before attempting connection
 - [Phase 05-02]: get_node_signals returns full connection details (target path, method, flags) for AI reasoning
+- [Phase 05-03]: CI builds both template_release and template_debug per platform for development flexibility
+- [Phase 05-03]: CI unit tests on Linux only (cheapest runner, C++17 tests are platform-independent)
+- [Phase 05-03]: Release job on v* tags packages all platforms into single zip with addons/ directory structure
+- [Phase 05-03]: api_version=4.3 on all GDExtension scons commands for Godot 4.3-4.6 forward compatibility
 
 ### Pending Todos
 
@@ -131,6 +136,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T02:54:26.870Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-03-18T04:22:12Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None

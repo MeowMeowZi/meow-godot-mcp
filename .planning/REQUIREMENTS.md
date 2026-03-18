@@ -56,8 +56,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Distribution & Compatibility
 
 - [x] **DIST-01**: 以 GDExtension addon 形式打包（addons/godot-mcp-meow/ 目录结构）
-- [ ] **DIST-02**: 提供 Windows（x86_64）、Linux（x86_64）、macOS（universal）预编译二进制
-- [ ] **DIST-03**: 支持 Godot 4.3+ 并通过 godot-cpp 兼容层向前兼容 4.4/4.5/4.6
+- [x] **DIST-02**: 提供 Windows（x86_64）、Linux（x86_64）、macOS（universal）预编译二进制
+- [x] **DIST-03**: 支持 Godot 4.3+ 并通过 godot-cpp 兼容层向前兼容 4.4/4.5/4.6
 
 ## v2 Requirements
 
@@ -125,8 +125,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | RNTM-05 | Phase 5 | Complete |
 | RNTM-06 | Phase 5 | Complete |
 | DIST-01 | Phase 1 | Complete |
-| DIST-02 | Phase 5 | Pending |
-| DIST-03 | Phase 5 | Pending |
+| DIST-02 | Phase 5 | Complete |
+| DIST-03 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 31 total
