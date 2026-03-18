@@ -401,6 +401,84 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", {"node_path"}}
             },
             {4, 3, 0}
+        },
+        // --- Phase 8: Animation System tools ---
+        {
+            "create_animation",
+            "Create an AnimationPlayer node with an AnimationLibrary and a named Animation resource. If player_path is provided, adds the animation to an existing AnimationPlayer instead of creating a new one.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"animation_name", {{"type", "string"}, {"description", "Name for the new Animation resource"}}},
+                    {"player_path", {{"type", "string"}, {"description", "Path to existing AnimationPlayer node. If omitted, creates a new AnimationPlayer."}}},
+                    {"parent_path", {{"type", "string"}, {"description", "Parent node path for new AnimationPlayer (default: scene root). Ignored if player_path is set."}}},
+                    {"node_name", {{"type", "string"}, {"description", "Name for the new AnimationPlayer node (default: AnimationPlayer). Ignored if player_path is set."}}}
+                }},
+                {"required", {"animation_name"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "add_animation_track",
+            "Add a typed track to an existing Animation. Returns the track index for use with set_keyframe.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"player_path", {{"type", "string"}, {"description", "Path to AnimationPlayer node relative to scene root"}}},
+                    {"animation_name", {{"type", "string"}, {"description", "Name of the Animation to add the track to"}}},
+                    {"track_type", {{"type", "string"}, {"description", "Track type: value, position_3d, rotation_3d, or scale_3d"}}},
+                    {"track_path", {{"type", "string"}, {"description", "Node path the track targets, relative to AnimationPlayer (e.g. '../Sprite2D:position')"}}}
+                }},
+                {"required", {"player_path", "animation_name", "track_type", "track_path"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "set_keyframe",
+            "Insert, update, or remove a keyframe on an animation track. Values are parsed as strings (e.g. 'Vector3(1,0,0)', '0.5', 'Color(1,0,0,1)').",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"player_path", {{"type", "string"}, {"description", "Path to AnimationPlayer node relative to scene root"}}},
+                    {"animation_name", {{"type", "string"}, {"description", "Name of the Animation containing the track"}}},
+                    {"track_index", {{"type", "integer"}, {"description", "Track index (returned by add_animation_track)"}}},
+                    {"time", {{"type", "number"}, {"description", "Time in seconds for the keyframe"}}},
+                    {"action", {{"type", "string"}, {"description", "Action to perform: insert, update, or remove"}}},
+                    {"value", {{"type", "string"}, {"description", "Keyframe value as string (required for insert/update, ignored for remove)"}}},
+                    {"transition", {{"type", "number"}, {"description", "Transition easing value (default: 1.0 = linear). Values <1 ease-in, >1 ease-out."}}}
+                }},
+                {"required", {"player_path", "animation_name", "track_index", "time", "action"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_animation_info",
+            "Query an AnimationPlayer's animations, track structure, and keyframe data. Returns full depth: animation list with per-animation tracks and per-track keyframes.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"player_path", {{"type", "string"}, {"description", "Path to AnimationPlayer node relative to scene root"}}},
+                    {"animation_name", {{"type", "string"}, {"description", "Query a specific animation only. If omitted, returns all animations."}}}
+                }},
+                {"required", {"player_path"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "set_animation_properties",
+            "Set Animation resource properties: duration, loop mode, and step. Supports undo/redo.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"player_path", {{"type", "string"}, {"description", "Path to AnimationPlayer node relative to scene root"}}},
+                    {"animation_name", {{"type", "string"}, {"description", "Name of the Animation to modify"}}},
+                    {"length", {{"type", "number"}, {"description", "Animation duration in seconds"}}},
+                    {"loop_mode", {{"type", "string"}, {"description", "Loop mode: none, linear, or pingpong"}}},
+                    {"step", {{"type", "number"}, {"description", "Time step for snapping in the editor (e.g. 0.1)"}}}
+                }},
+                {"required", {"player_path", "animation_name"}}
+            },
+            {4, 3, 0}
         }
     };
     return tools;
