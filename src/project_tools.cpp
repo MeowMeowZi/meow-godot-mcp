@@ -76,9 +76,8 @@ nlohmann::json get_project_settings(const std::string& category) {
     bool filter_by_category = !category.empty() && !return_all;
     static const std::vector<std::string> default_categories = {
         "application/config", "application/run",
-        "display/window", "autoload",
-        "input", "layer_names",
-        "rendering/environment"
+        "display/window/size", "display/window/stretch",
+        "autoload"
     };
 
     nlohmann::json result_settings = nlohmann::json::object();
@@ -118,7 +117,10 @@ nlohmann::json get_project_settings(const std::string& category) {
 
         Variant value = settings->get_setting(name);
         String value_str = String(value);
-        result_settings[name_str] = std::string(value_str.utf8().get_data());
+        std::string val_str(value_str.utf8().get_data());
+        // Skip empty values in default mode to reduce noise
+        if (!filter_by_category && !return_all && val_str.empty()) continue;
+        result_settings[name_str] = val_str;
     }
 
     nlohmann::json result = {
