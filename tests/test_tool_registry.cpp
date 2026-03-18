@@ -53,9 +53,9 @@ TEST(GodotVersion, LesserPatch) {
 
 // --- Tool registry tests ---
 
-TEST(ToolRegistry, HasExactly35Tools) {
+TEST(ToolRegistry, HasExactly38Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 35);
+    ASSERT_EQ(tools.size(), 38);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
@@ -88,7 +88,8 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
         "save_scene", "open_scene", "list_open_scenes", "create_scene", "instantiate_scene",
         "set_layout_preset", "set_theme_override", "create_stylebox", "get_ui_properties", "set_container_layout", "get_theme_overrides",
         "create_animation", "add_animation_track", "set_keyframe", "get_animation_info", "set_animation_properties",
-        "capture_viewport"
+        "capture_viewport",
+        "inject_input", "capture_game_viewport", "get_game_bridge_status"
     };
     ASSERT_EQ(tools.size(), expected_names.size());
     for (size_t i = 0; i < tools.size(); i++) {
@@ -98,10 +99,10 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 
 // --- Filtered tools JSON tests ---
 
-TEST(FilteredTools, Version430Returns35Tools) {
+TEST(FilteredTools, Version430Returns38Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 35);
+    EXPECT_EQ(json_tools.size(), 38);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -110,10 +111,10 @@ TEST(FilteredTools, Version420Returns0Tools) {
     EXPECT_EQ(json_tools.size(), 0);
 }
 
-TEST(FilteredTools, PermissiveVersionReturns35Tools) {
+TEST(FilteredTools, PermissiveVersionReturns38Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 35);
+    EXPECT_EQ(json_tools.size(), 38);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -136,8 +137,8 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 
 // --- Tool count tests ---
 
-TEST(ToolCount, Version430Returns35) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 35);
+TEST(ToolCount, Version430Returns38) {
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 38);
 }
 
 TEST(ToolCount, Version420Returns0) {
@@ -588,4 +589,88 @@ TEST(FilteredTools, CaptureViewportSchemaValidation) {
         }
     }
     FAIL() << "capture_viewport not found in filtered tools";
+}
+
+// --- Phase 10 Game Bridge tool schema validation tests ---
+
+TEST(FilteredTools, InjectInputSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "inject_input") {
+            auto schema = tool["inputSchema"];
+            // Check all 8 properties exist
+            EXPECT_TRUE(schema["properties"].contains("type"));
+            EXPECT_TRUE(schema["properties"].contains("keycode"));
+            EXPECT_TRUE(schema["properties"].contains("pressed"));
+            EXPECT_TRUE(schema["properties"].contains("action_name"));
+            EXPECT_TRUE(schema["properties"].contains("mouse_action"));
+            EXPECT_TRUE(schema["properties"].contains("position"));
+            EXPECT_TRUE(schema["properties"].contains("button"));
+            EXPECT_TRUE(schema["properties"].contains("direction"));
+            // required has exactly 1 entry: "type"
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "type");
+            // type property has enum with 3 values
+            auto type_prop = schema["properties"]["type"];
+            ASSERT_TRUE(type_prop.contains("enum"));
+            ASSERT_EQ(type_prop["enum"].size(), 3);
+            EXPECT_EQ(type_prop["enum"][0], "key");
+            EXPECT_EQ(type_prop["enum"][1], "mouse");
+            EXPECT_EQ(type_prop["enum"][2], "action");
+            // mouse_action has enum: move, click, scroll
+            auto ma_prop = schema["properties"]["mouse_action"];
+            ASSERT_TRUE(ma_prop.contains("enum"));
+            ASSERT_EQ(ma_prop["enum"].size(), 3);
+            EXPECT_EQ(ma_prop["enum"][0], "move");
+            EXPECT_EQ(ma_prop["enum"][1], "click");
+            EXPECT_EQ(ma_prop["enum"][2], "scroll");
+            // button has enum: left, right, middle
+            auto btn_prop = schema["properties"]["button"];
+            ASSERT_TRUE(btn_prop.contains("enum"));
+            ASSERT_EQ(btn_prop["enum"].size(), 3);
+            EXPECT_EQ(btn_prop["enum"][0], "left");
+            EXPECT_EQ(btn_prop["enum"][1], "right");
+            EXPECT_EQ(btn_prop["enum"][2], "middle");
+            // direction has enum: up, down
+            auto dir_prop = schema["properties"]["direction"];
+            ASSERT_TRUE(dir_prop.contains("enum"));
+            ASSERT_EQ(dir_prop["enum"].size(), 2);
+            EXPECT_EQ(dir_prop["enum"][0], "up");
+            EXPECT_EQ(dir_prop["enum"][1], "down");
+            return;
+        }
+    }
+    FAIL() << "inject_input not found in filtered tools";
+}
+
+TEST(FilteredTools, CaptureGameViewportSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "capture_game_viewport") {
+            auto schema = tool["inputSchema"];
+            // properties contains width and height
+            EXPECT_TRUE(schema["properties"].contains("width"));
+            EXPECT_TRUE(schema["properties"].contains("height"));
+            // width and height are integers
+            EXPECT_EQ(schema["properties"]["width"]["type"], "integer");
+            EXPECT_EQ(schema["properties"]["height"]["type"], "integer");
+            // required is empty
+            EXPECT_TRUE(schema["required"].empty());
+            return;
+        }
+    }
+    FAIL() << "capture_game_viewport not found in filtered tools";
+}
+
+TEST(FilteredTools, GetGameBridgeStatusSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "get_game_bridge_status") {
+            auto schema = tool["inputSchema"];
+            // required is empty
+            EXPECT_TRUE(schema["required"].empty());
+            return;
+        }
+    }
+    FAIL() << "get_game_bridge_status not found in filtered tools";
 }
