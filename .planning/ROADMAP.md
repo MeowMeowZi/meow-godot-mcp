@@ -107,7 +107,11 @@ Plans:
   3. AI can inject mouse events (move, click, scroll) into the running game at specified coordinates
   4. AI can inject Input Action events (action_press/release) into the running game
   5. AI can capture a screenshot of the running game's viewport and receive it as MCP ImageContent
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 10-01-PLAN.md -- Register 3 game bridge tool definitions in MCP tool registry + unit tests
+- [ ] 10-02-PLAN.md -- Implement game_bridge module (EditorDebuggerPlugin + companion GDScript) + deferred response + wire dispatch
+- [ ] 10-03-PLAN.md -- Create Phase 10 UAT test script for all BRDG requirements
 
 ### Phase 11: Prompt Templates
 **Goal**: AI gets guided workflow templates for common v1.1 tasks
@@ -135,5 +139,5 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 7. UI System | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 8. Animation System | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 9. Editor Viewport Screenshots | v1.1 | 3/3 | Complete | 2026-03-18 |
-| 10. Running Game Bridge | v1.1 | 0/0 | Not started | - |
+| 10. Running Game Bridge | v1.1 | 0/3 | In progress | - |
 | 11. Prompt Templates | v1.1 | 0/0 | Not started | - |
