@@ -5,6 +5,7 @@
 #include "scene_mutation.h"
 #include "script_tools.h"
 #include "project_tools.h"
+#include "runtime_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -477,6 +478,36 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
             }
             return mcp::create_tool_result(id, get_resource_info(path));
+        }
+
+        if (tool_name == "run_game") {
+            std::string mode;
+            std::string scene_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("mode") && args["mode"].is_string())
+                    mode = args["mode"].get<std::string>();
+                if (args.contains("scene_path") && args["scene_path"].is_string())
+                    scene_path = args["scene_path"].get<std::string>();
+            }
+            if (mode.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: mode");
+            }
+            return mcp::create_tool_result(id, run_game(mode, scene_path));
+        }
+
+        if (tool_name == "stop_game") {
+            return mcp::create_tool_result(id, stop_game());
+        }
+
+        if (tool_name == "get_game_output") {
+            bool clear_after_read = true;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("clear_after_read") && args["clear_after_read"].is_boolean())
+                    clear_after_read = args["clear_after_read"].get<bool>();
+            }
+            return mcp::create_tool_result(id, get_game_output(clear_after_read));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
