@@ -49,8 +49,8 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Prompt Templates
 
-- [ ] **PMPT-01**: 提供 UI 界面构建工作流模板（如"创建主菜单"、"创建 HUD"）
-- [ ] **PMPT-02**: 提供动画设置工作流模板（如"创建角色行走动画"、"创建 UI 过渡动画"）
+- [x] **PMPT-01**: 提供 UI 界面构建工作流模板（如"创建主菜单"、"创建 HUD"）
+- [x] **PMPT-02**: 提供动画设置工作流模板（如"创建角色行走动画"、"创建 UI 过渡动画"）
 
 ## v2 Requirements
 
@@ -107,8 +107,8 @@ Deferred to future release.
 | BRDG-03 | Phase 10 | Complete |
 | BRDG-04 | Phase 10 | Complete |
 | BRDG-05 | Phase 10 | Complete |
-| PMPT-01 | Phase 11 | Pending |
-| PMPT-02 | Phase 11 | Pending |
+| PMPT-01 | Phase 11 | Complete |
+| PMPT-02 | Phase 11 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 27 total

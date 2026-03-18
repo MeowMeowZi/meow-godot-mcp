@@ -31,7 +31,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full details.
 - [x] **Phase 8: Animation System** - AI can create and edit animations with tracks and keyframes
 - [x] **Phase 9: Editor Viewport Screenshots** - AI can capture editor viewport images for visual feedback
 - [x] **Phase 10: Running Game Bridge** - AI can inject input and capture screenshots from a running game (completed 2026-03-18)
-- [ ] **Phase 11: Prompt Templates** - AI gets curated workflow templates for UI building and animation setup
+- [x] **Phase 11: Prompt Templates** - AI gets curated workflow templates for UI building and animation setup (completed 2026-03-18)
 
 ## Phase Details
 
@@ -120,7 +120,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. AI can use a UI building prompt template that guides creation of a complete UI layout (e.g., main menu, HUD)
   2. AI can use an animation setup prompt template that guides creation of a complete animation (e.g., walk cycle, UI transition)
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 11-01-PLAN.md -- Add build_ui_layout + setup_animation prompt templates, update unit tests, create UAT
 
@@ -142,4 +142,4 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 8. Animation System | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 9. Editor Viewport Screenshots | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 10. Running Game Bridge | v1.1 | 3/3 | Complete | 2026-03-18 |
-| 11. Prompt Templates | v1.1 | 0/1 | Not started | - |
+| 11. Prompt Templates | 1/1 | Complete   | 2026-03-18 | - |

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI & Editor Expansion
-status: active
-stopped_at: Phase 10 complete, starting Phase 11 (final phase)
-last_updated: "2026-03-18T11:30:00.000Z"
-last_activity: 2026-03-18 -- Phase 10 complete, 156/156 tests, 38 MCP tools, moving to Phase 11
+status: complete
+stopped_at: v1.1 COMPLETE - All 6 phases, 16 plans done
+last_updated: "2026-03-18T16:30:46.000Z"
+last_activity: 2026-03-18 -- Phase 11 complete, PMPT-01/02 done, 51 unit tests, v1.1 milestone finished
 progress:
   total_phases: 6
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  completed_phases: 6
+  total_plans: 16
+  completed_plans: 16
   percent: 100
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** v1.1 Phase 10 COMPLETE -- Running Game Bridge
+**Current focus:** v1.1 COMPLETE -- All phases finished
 
 ## Current Position
 
-Phase: 10 of 11 (Running Game Bridge) -- fifth phase of v1.1
-Plan: 3 of 3 (all plans complete)
-Status: active
-Last activity: 2026-03-18 - Completed 10-03: Phase 10 UAT with 15 tests covering BRDG-01..05
+Phase: 11 of 11 (Prompt Templates) -- sixth (final) phase of v1.1
+Plan: 1 of 1 (all plans complete)
+Status: complete
+Last activity: 2026-03-18 - Completed 11-01: Prompt Templates with PMPT-01/02 (build_ui_layout, setup_animation)
 
-Progress: [██████████] 100%
+Progress: [██████████] 100% -- v1.1 MILESTONE COMPLETE
 
 ## Performance Metrics
 
@@ -50,7 +50,7 @@ Progress: [██████████] 100%
 | 5 - Runtime/Signals/Dist | 3/3 | 22 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-03 (4 min), 10-02 (6 min), 10-01 (3 min), 09-03 (2 min), 09-02 (2 min)
+- Last 5 plans: 11-01 (4 min), 10-03 (4 min), 10-02 (6 min), 10-01 (3 min), 09-03 (2 min)
 - Trend: Stable
 | Phase 07 P01 | 3min | 2 tasks | 2 files |
 | Phase 07 P02 | 6min | 2 tasks | 3 files |
@@ -64,6 +64,7 @@ Progress: [██████████] 100%
 | Phase 10 P01 | 3min | 2 tasks | 3 files |
 | Phase 10 P02 | 6min | 2 tasks | 8 files |
 | Phase 10 P03 | 4min | 1 tasks | 1 files |
+| Phase 11 P01 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ Recent decisions affecting v1.1:
 - [10-03]: UAT uses extended 15s timeout for capture_game_viewport (cross-process deferred response)
 - [10-03]: Early exit with summary if bridge fails to connect, preventing cascading false failures
 - [10-03]: Separate call_tool (raw) and call_tool_text (JSON parsed) helpers for ImageContent vs text responses
+- [11-01]: Each prompt variant generates complete step-by-step workflow text referencing real MCP tool names
+- [11-01]: build_ui_layout defaults to main_menu, setup_animation defaults to ui_transition
+- [11-01]: Generic fallback variants for unrecognized types still reference all required tool names
 
 ### Pending Todos
 
@@ -141,6 +145,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T11:19:07.086Z
-Stopped at: Completed 10-03-PLAN.md
+Last session: 2026-03-18T16:30:46Z
+Stopped at: v1.1 COMPLETE - All phases finished. Phase 11-01 was the final plan.
 Resume file: None
