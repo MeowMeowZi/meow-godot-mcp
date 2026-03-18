@@ -1,0 +1,113 @@
+name: Build GDExtension
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-22.04
+            arch: x86_64
+            lib_suffix: ".so"
+          - platform: windows
+            os: windows-latest
+            arch: x86_64
+            lib_suffix: ".dll"
+          - platform: macos
+            os: macos-latest
+            arch: universal
+            lib_suffix: ".dylib"
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.platform }}-${{ matrix.arch }})
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Setup SCons
+        run: pip install scons
+
+      - name: Build GDExtension (template_release)
+        run: scons platform=${{ matrix.platform }} target=template_release arch=${{ matrix.arch }} api_version=4.3 -j4
+
+      - name: Build GDExtension (template_debug)
+        run: scons platform=${{ matrix.platform }} target=template_debug arch=${{ matrix.arch }} api_version=4.3 -j4
+
+      - name: Build Bridge
+        run: scons bridge -j4
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-mcp-meow-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            project/addons/godot_mcp_meow/bin/*
+            project/addons/godot_mcp_meow/*.cfg
+            project/addons/godot_mcp_meow/*.gdextension
+
+  # Run unit tests on the build host (Linux only since GoogleTest CI is simplest there)
+  test:
+    runs-on: ubuntu-22.04
+    name: Unit Tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Build and Run Tests
+        run: |
+          cd tests
+          mkdir -p build && cd build
+          cmake ..
+          cmake --build .
+          ctest --output-on-failure
+
+  # Create release with all platform artifacts
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, test]
+    runs-on: ubuntu-22.04
+    name: Create Release
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Package release
+        run: |
+          mkdir -p release/addons/godot_mcp_meow/bin
+          # Copy all platform binaries into single addons directory
+          for dir in artifacts/godot-mcp-meow-*/; do
+            cp -r "$dir"/* release/addons/godot_mcp_meow/ 2>/dev/null || true
+          done
+          cd release
+          zip -r ../godot-mcp-meow-${GITHUB_REF_NAME}.zip addons/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: godot-mcp-meow-*.zip
+          generate_release_notes: true
