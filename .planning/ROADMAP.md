@@ -120,7 +120,9 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. AI can use a UI building prompt template that guides creation of a complete UI layout (e.g., main menu, HUD)
   2. AI can use an animation setup prompt template that guides creation of a complete animation (e.g., walk cycle, UI transition)
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 11-01-PLAN.md -- Add build_ui_layout + setup_animation prompt templates, update unit tests, create UAT
 
 ## Progress
 
@@ -140,4 +142,4 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 8. Animation System | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 9. Editor Viewport Screenshots | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 10. Running Game Bridge | v1.1 | 3/3 | Complete | 2026-03-18 |
-| 11. Prompt Templates | v1.1 | 0/0 | Not started | - |
+| 11. Prompt Templates | v1.1 | 0/1 | Not started | - |
