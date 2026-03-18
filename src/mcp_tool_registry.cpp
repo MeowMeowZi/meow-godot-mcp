@@ -504,6 +504,87 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", nlohmann::json::array()}
             },
             {4, 3, 0}
+        },
+        // --- Phase 10: Running Game Bridge tools ---
+        {
+            "inject_input",
+            "Inject input events into a running game. Supports keyboard keys, mouse events, and input actions. Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"type", {
+                        {"type", "string"},
+                        {"enum", {"key", "mouse", "action"}},
+                        {"description", "Input type to inject"}
+                    }},
+                    {"keycode", {
+                        {"type", "string"},
+                        {"description", "Key name for type=key (e.g. 'W', 'space', 'escape', 'enter'). Uses Godot key names."}
+                    }},
+                    {"pressed", {
+                        {"type", "boolean"},
+                        {"description", "Whether the key/action is pressed (true) or released (false). Default: true"}
+                    }},
+                    {"action_name", {
+                        {"type", "string"},
+                        {"description", "Action map name for type=action (e.g. 'ui_accept', 'move_left')"}
+                    }},
+                    {"mouse_action", {
+                        {"type", "string"},
+                        {"enum", {"move", "click", "scroll"}},
+                        {"description", "Mouse action for type=mouse"}
+                    }},
+                    {"position", {
+                        {"type", "object"},
+                        {"properties", {
+                            {"x", {{"type", "number"}}},
+                            {"y", {{"type", "number"}}}
+                        }},
+                        {"description", "Mouse position in viewport coordinates for type=mouse"}
+                    }},
+                    {"button", {
+                        {"type", "string"},
+                        {"enum", {"left", "right", "middle"}},
+                        {"description", "Mouse button for type=mouse click. Default: left"}
+                    }},
+                    {"direction", {
+                        {"type", "string"},
+                        {"enum", {"up", "down"}},
+                        {"description", "Scroll direction for type=mouse scroll"}
+                    }}
+                }},
+                {"required", {"type"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "capture_game_viewport",
+            "Capture a screenshot of the running game's viewport. Returns the image as base64-encoded PNG via MCP ImageContent. Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"width", {
+                        {"type", "integer"},
+                        {"description", "Optional output width in pixels. Omit for original game resolution."}
+                    }},
+                    {"height", {
+                        {"type", "integer"},
+                        {"description", "Optional output height in pixels. Omit for original game resolution."}
+                    }}
+                }},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_game_bridge_status",
+            "Query the connection status of the game bridge. Returns whether a game is running, bridge connected, and session info.",
+            {
+                {"type", "object"},
+                {"properties", nlohmann::json::object()},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
         }
     };
     return tools;
