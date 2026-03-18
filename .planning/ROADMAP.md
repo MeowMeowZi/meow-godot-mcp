@@ -61,7 +61,11 @@ Plans:
   3. AI can create a StyleBoxFlat with rounded corners, borders, and background color and apply it to a Control
   4. AI can query a Control node's UI-specific properties (anchors, size flags, minimum size, focus neighbors)
   5. AI can configure Container layout parameters (separation, alignment) and child size flags for correct flow
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 07-01-PLAN.md -- Register 6 UI tool definitions in MCP tool registry + unit tests
+- [ ] 07-02-PLAN.md -- Implement ui_tools module + wire into MCP server dispatch
+- [ ] 07-03-PLAN.md -- Create Phase 7 UAT test script for all UISYS requirements
 
 ### Phase 8: Animation System
 **Goal**: AI can create animations with tracks and keyframes for any animatable property
@@ -120,7 +124,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 4. Editor Integration | v1.0 | 2/2 | Complete | 2026-03-18 |
 | 5. Runtime, Signals & Distribution | v1.0 | 3/3 | Complete | 2026-03-18 |
 | 6. Scene File Management | v1.1 | 3/3 | Complete | 2026-03-18 |
-| 7. UI System | v1.1 | 0/0 | Not started | - |
+| 7. UI System | v1.1 | 0/3 | Planned | - |
 | 8. Animation System | v1.1 | 0/0 | Not started | - |
 | 9. Editor Viewport Screenshots | v1.1 | 0/0 | Not started | - |
 | 10. Running Game Bridge | v1.1 | 0/0 | Not started | - |
