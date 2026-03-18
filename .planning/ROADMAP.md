@@ -77,7 +77,11 @@ Plans:
   3. AI can insert, modify, and remove keyframes on any track at specified times
   4. AI can query an AnimationPlayer and get back its animation list, track structure, and keyframe data
   5. AI can set animation properties (duration, loop mode, step) and the animation plays correctly in-editor
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 08-01-PLAN.md -- Register 5 animation tool definitions in MCP tool registry + unit tests
+- [ ] 08-02-PLAN.md -- Implement animation_tools module + wire into MCP server dispatch
+- [ ] 08-03-PLAN.md -- Create Phase 8 UAT test script for all ANIM requirements
 
 ### Phase 9: Editor Viewport Screenshots
 **Goal**: AI can see what the editor viewport looks like via captured images
@@ -125,7 +129,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 5. Runtime, Signals & Distribution | v1.0 | 3/3 | Complete | 2026-03-18 |
 | 6. Scene File Management | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 7. UI System | v1.1 | 3/3 | Complete | 2026-03-18 |
-| 8. Animation System | v1.1 | 0/0 | Not started | - |
+| 8. Animation System | v1.1 | 0/3 | Planning complete | - |
 | 9. Editor Viewport Screenshots | v1.1 | 0/0 | Not started | - |
 | 10. Running Game Bridge | v1.1 | 0/0 | Not started | - |
 | 11. Prompt Templates | v1.1 | 0/0 | Not started | - |
