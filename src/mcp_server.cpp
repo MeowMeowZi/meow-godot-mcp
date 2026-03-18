@@ -10,6 +10,7 @@
 #include "scene_file_tools.h"
 #include "ui_tools.h"
 #include "animation_tools.h"
+#include "viewport_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -825,6 +826,32 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameters: player_path, animation_name");
             }
             return mcp::create_tool_result(id, set_animation_properties(player_path, animation_name, props, undo_redo));
+        }
+
+        // --- Phase 9: Viewport Screenshot tools ---
+
+        if (tool_name == "capture_viewport") {
+            std::string viewport_type = "2d";
+            int width = 0, height = 0;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("viewport_type") && args["viewport_type"].is_string())
+                    viewport_type = args["viewport_type"].get<std::string>();
+                if (args.contains("width") && args["width"].is_number_integer())
+                    width = args["width"].get<int>();
+                if (args.contains("height") && args["height"].is_number_integer())
+                    height = args["height"].get<int>();
+            }
+            auto result = capture_viewport(viewport_type, width, height);
+            // If error, return as regular TextContent
+            if (result.contains("error")) {
+                return mcp::create_tool_result(id, result);
+            }
+            // Success: return as MCP ImageContent
+            return mcp::create_image_tool_result(id,
+                result["data"].get<std::string>(),
+                result["mimeType"].get<std::string>(),
+                result.value("metadata", nlohmann::json()));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
