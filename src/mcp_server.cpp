@@ -9,6 +9,7 @@
 #include "signal_tools.h"
 #include "scene_file_tools.h"
 #include "ui_tools.h"
+#include "animation_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -719,6 +720,111 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameter: node_path");
             }
             return mcp::create_tool_result(id, get_theme_overrides(node_path));
+        }
+
+        // --- Phase 8: Animation System tools ---
+
+        if (tool_name == "create_animation") {
+            std::string animation_name, player_path, parent_path, node_name;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("animation_name") && args["animation_name"].is_string())
+                    animation_name = args["animation_name"].get<std::string>();
+                if (args.contains("player_path") && args["player_path"].is_string())
+                    player_path = args["player_path"].get<std::string>();
+                if (args.contains("parent_path") && args["parent_path"].is_string())
+                    parent_path = args["parent_path"].get<std::string>();
+                if (args.contains("node_name") && args["node_name"].is_string())
+                    node_name = args["node_name"].get<std::string>();
+            }
+            if (animation_name.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: animation_name");
+            }
+            return mcp::create_tool_result(id, create_animation(animation_name, player_path, parent_path, node_name, undo_redo));
+        }
+
+        if (tool_name == "add_animation_track") {
+            std::string player_path, animation_name, track_type, track_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("player_path") && args["player_path"].is_string())
+                    player_path = args["player_path"].get<std::string>();
+                if (args.contains("animation_name") && args["animation_name"].is_string())
+                    animation_name = args["animation_name"].get<std::string>();
+                if (args.contains("track_type") && args["track_type"].is_string())
+                    track_type = args["track_type"].get<std::string>();
+                if (args.contains("track_path") && args["track_path"].is_string())
+                    track_path = args["track_path"].get<std::string>();
+            }
+            if (player_path.empty() || animation_name.empty() || track_type.empty() || track_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: player_path, animation_name, track_type, track_path");
+            }
+            return mcp::create_tool_result(id, add_animation_track(player_path, animation_name, track_type, track_path));
+        }
+
+        if (tool_name == "set_keyframe") {
+            std::string player_path, animation_name, action_str, value_str;
+            int track_index = -1;
+            double time = 0.0;
+            double transition = 1.0;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("player_path") && args["player_path"].is_string())
+                    player_path = args["player_path"].get<std::string>();
+                if (args.contains("animation_name") && args["animation_name"].is_string())
+                    animation_name = args["animation_name"].get<std::string>();
+                if (args.contains("track_index") && args["track_index"].is_number_integer())
+                    track_index = args["track_index"].get<int>();
+                if (args.contains("time") && args["time"].is_number())
+                    time = args["time"].get<double>();
+                if (args.contains("action") && args["action"].is_string())
+                    action_str = args["action"].get<std::string>();
+                if (args.contains("value") && args["value"].is_string())
+                    value_str = args["value"].get<std::string>();
+                if (args.contains("transition") && args["transition"].is_number())
+                    transition = args["transition"].get<double>();
+            }
+            if (player_path.empty() || animation_name.empty() || track_index < 0 || action_str.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: player_path, animation_name, track_index, time, action");
+            }
+            return mcp::create_tool_result(id, set_keyframe(player_path, animation_name, track_index, time, action_str, value_str, transition));
+        }
+
+        if (tool_name == "get_animation_info") {
+            std::string player_path, animation_name;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("player_path") && args["player_path"].is_string())
+                    player_path = args["player_path"].get<std::string>();
+                if (args.contains("animation_name") && args["animation_name"].is_string())
+                    animation_name = args["animation_name"].get<std::string>();
+            }
+            if (player_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: player_path");
+            }
+            return mcp::create_tool_result(id, get_animation_info(player_path, animation_name));
+        }
+
+        if (tool_name == "set_animation_properties") {
+            std::string player_path, animation_name;
+            nlohmann::json props;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("player_path") && args["player_path"].is_string())
+                    player_path = args["player_path"].get<std::string>();
+                if (args.contains("animation_name") && args["animation_name"].is_string())
+                    animation_name = args["animation_name"].get<std::string>();
+                props = args;
+            }
+            if (player_path.empty() || animation_name.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: player_path, animation_name");
+            }
+            return mcp::create_tool_result(id, set_animation_properties(player_path, animation_name, props, undo_redo));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
