@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-03-18T02:48:15.496Z"
-last_activity: 2026-03-18 -- Phase 5 Plan 01 complete (runtime tools, 18-tool registry)
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-18T02:54:26.872Z"
+last_activity: 2026-03-18 -- Phase 5 Plan 02 complete (signal tools, 18-tool MCP dispatch)
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 15
-  completed_plans: 12
-  percent: 80
+  completed_plans: 13
+  percent: 87
 ---
 
 # Project State
@@ -21,21 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-14)
 
 **Core value:** AI can read and manipulate the Godot editor scene tree via standard MCP protocol -- enabling real AI-assisted game development
-**Current focus:** Phase 5 in progress -- Runtime, Signals, Distribution (1/3 plans complete). Runtime tools done, signals next.
+**Current focus:** Phase 5 in progress -- Runtime, Signals, Distribution (2/3 plans complete). Runtime + signal tools done, distribution next.
 
 ## Current Position
 
 Phase: 5 of 5 (Runtime, Signals, Distribution)
-Plan: 1 of 3 in current phase (05-01 complete)
+Plan: 2 of 3 in current phase (05-02 complete)
 Status: In Progress
-Last activity: 2026-03-18 -- Phase 5 Plan 01 complete (runtime tools, 18-tool registry)
+Last activity: 2026-03-18 -- Phase 5 Plan 02 complete (signal tools, 18-tool MCP dispatch)
 
-Progress: [████████░░] 80% (12/15 plans)
+Progress: [█████████░] 87% (13/15 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 8 min
 - Total execution time: 1.6 hours
 
@@ -47,13 +47,14 @@ Progress: [████████░░] 80% (12/15 plans)
 | 2 - Scene CRUD | 3/3 | 22 min | 7 min |
 | 3 - Script/Project | 3/3 | 24 min | 8 min |
 | 4 - Editor Integration | 1/2 | 8 min | 8 min |
-| 5 - Runtime/Signals/Dist | 1/3 | 5 min | 5 min |
+| 5 - Runtime/Signals/Dist | 2/3 | 7 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (5 min), 03-03 (11 min), 04-01 (8 min), 05-01 (5 min)
-- Trend: Steady -- 5-11 min per plan
+- Last 5 plans: 03-03 (11 min), 04-01 (8 min), 05-01 (5 min), 05-02 (2 min)
+- Trend: Accelerating -- signal tools built in 2 min
 
 *Updated after each plan completion*
+| Phase 05 P02 | 2min | 2 tasks | 3 files |
 | Phase 05 P01 | 5min | 2 tasks | 6 files |
 | Phase 04 P01 | 8min | 2 tasks | 12 files |
 | Phase 03 P03 | 11min | 2 tasks | 1 file |
@@ -66,6 +67,7 @@ Progress: [████████░░] 80% (12/15 plans)
 | Phase 01 P03 | 3min | 2 tasks | 6 files |
 | Phase 01 P02 | 7min | 2 tasks | 12 files |
 | Phase 05 P01 | 5min | 2 tasks | 6 files |
+| Phase 05 P02 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -113,6 +115,9 @@ Recent decisions affecting current work:
 - [Phase 05-01]: run_game returns already_running status (not error) when game is playing -- supports idempotent AI workflows
 - [Phase 05-01]: get_game_output uses incremental log file reading with static position tracking
 - [Phase 05-01]: Signal tool definitions registered upfront in Plan 01 for single-pass registry testing
+- [Phase 05-02]: Signal tools use resolve_node helper for consistent node path resolution from scene root
+- [Phase 05-02]: connect_signal validates signal existence on source before attempting connection
+- [Phase 05-02]: get_node_signals returns full connection details (target path, method, flags) for AI reasoning
 
 ### Pending Todos
 
@@ -126,6 +131,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T02:48:15.267Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-03-18T02:54:26.870Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
