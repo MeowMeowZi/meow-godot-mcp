@@ -18,6 +18,10 @@ config/name="Godot MCP Meow Test"
 run/main_scene="uid://bobwp6ghbusad"
 config/features=PackedStringArray("4.6")
 
+[autoload]
+
+MeowMCPBridge="*uid://c68oyvrc85sp8"
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/meow_godot_mcp/plugin.cfg")
