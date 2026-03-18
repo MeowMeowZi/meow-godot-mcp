@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI & Editor Expansion
 status: active
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-18T09:34:54.690Z"
-last_activity: 2026-03-18 -- Phase 8 Plan 01 complete (5 animation tool schemas registered, 34 total tools)
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-03-18T09:40:34.000Z"
+last_activity: 2026-03-18 -- Phase 8 Plan 02 complete (5 animation tool functions implemented, 34-tool MCP server)
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 8 of 11 (Animation System) -- third phase of v1.1
-Plan: 1 of 3
+Plan: 2 of 3
 Status: active
-Last activity: 2026-03-18 -- Phase 8 Plan 01 complete (5 animation tool schemas registered, 34 total tools)
+Last activity: 2026-03-18 -- Phase 8 Plan 02 complete (5 animation tool functions implemented, 34-tool MCP server)
 
-Progress: [████████░░] 78%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -50,12 +50,13 @@ Progress: [████████░░] 78%
 | 5 - Runtime/Signals/Dist | 3/3 | 22 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-01 (3 min), 07-03 (2 min), 07-02 (6 min), 07-01 (3 min), 06-03 (5 min)
+- Last 5 plans: 08-02 (3 min), 08-01 (3 min), 07-03 (2 min), 07-02 (6 min), 07-01 (3 min)
 - Trend: Stable
 | Phase 07 P01 | 3min | 2 tasks | 2 files |
 | Phase 07 P02 | 6min | 2 tasks | 3 files |
 | Phase 07 P03 | 2min | 1 tasks | 1 files |
 | Phase 08 P01 | 3min | 2 tasks | 3 files |
+| Phase 08 P02 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Recent decisions affecting v1.1:
 - [08-01]: All 5 animation tools use min_version {4,3,0} consistent with all existing tools
 - [08-01]: set_keyframe uses integer for track_index and number for time for precise keyframe targeting
 - [08-01]: create_animation requires only animation_name; player_path/parent_path/node_name optional
+- [08-02]: create_animation uses memdelete for cleanup on parent-not-found error (same as scene_mutation)
+- [08-02]: set_keyframe uses FIND_MODE_APPROX for floating-point time matching
+- [08-02]: Animation module follows ui_tools pattern: lookup helper + static maps + free functions
 
 ### Pending Todos
 
@@ -102,5 +106,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 08-01-PLAN.md (5 animation tool schemas registered, 34 total tools)
+Stopped at: Completed 08-02-PLAN.md (5 animation tool functions implemented, 34-tool MCP server)
 Resume file: None
