@@ -27,11 +27,11 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Animation System
 
-- [ ] **ANIM-01**: AI 可创建 AnimationPlayer 并添加 AnimationLibrary 和 Animation 资源
-- [ ] **ANIM-02**: AI 可在 Animation 中添加/删除轨道（Value、Position3D、Rotation3D 等类型）
-- [ ] **ANIM-03**: AI 可在轨道上插入/删除/修改关键帧
-- [ ] **ANIM-04**: AI 可查询 AnimationPlayer 的动画列表、轨道结构和关键帧数据
-- [ ] **ANIM-05**: AI 可设置 Animation 的时长、循环模式等属性
+- [x] **ANIM-01**: AI 可创建 AnimationPlayer 并添加 AnimationLibrary 和 Animation 资源
+- [x] **ANIM-02**: AI 可在 Animation 中添加/删除轨道（Value、Position3D、Rotation3D 等类型）
+- [x] **ANIM-03**: AI 可在轨道上插入/删除/修改关键帧
+- [x] **ANIM-04**: AI 可查询 AnimationPlayer 的动画列表、轨道结构和关键帧数据
+- [x] **ANIM-05**: AI 可设置 Animation 的时长、循环模式等属性
 
 ### Viewport Screenshots
 
@@ -94,11 +94,11 @@ Deferred to future release.
 | UISYS-04 | Phase 7 | Complete |
 | UISYS-05 | Phase 7 | Complete |
 | UISYS-06 | Phase 7 | Complete |
-| ANIM-01 | Phase 8 | Pending |
-| ANIM-02 | Phase 8 | Pending |
-| ANIM-03 | Phase 8 | Pending |
-| ANIM-04 | Phase 8 | Pending |
-| ANIM-05 | Phase 8 | Pending |
+| ANIM-01 | Phase 8 | Complete |
+| ANIM-02 | Phase 8 | Complete |
+| ANIM-03 | Phase 8 | Complete |
+| ANIM-04 | Phase 8 | Complete |
+| ANIM-05 | Phase 8 | Complete |
 | VWPT-01 | Phase 9 | Pending |
 | VWPT-02 | Phase 9 | Pending |
 | VWPT-03 | Phase 9 | Pending |
