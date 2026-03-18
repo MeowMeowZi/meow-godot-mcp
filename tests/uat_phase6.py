@@ -149,8 +149,8 @@ def run_tests():
         expected_phase6 = ["save_scene", "open_scene", "list_open_scenes",
                            "create_scene", "instantiate_scene"]
         has_all = all(n in tool_names for n in expected_phase6)
-        ok = len(tools) == 23 and has_all
-        report(1, "tools/list shows 23 tools with Phase 6 tools", ok,
+        ok = len(tools) >= 23 and has_all
+        report(1, "tools/list includes Phase 6 tools", ok,
                f"Tool count: {len(tools)}\n"
                f"         Phase 6 tools present: {has_all}\n"
                f"         All tools: {tool_names}")

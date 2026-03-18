@@ -34,10 +34,9 @@ nlohmann::json save_scene(const std::string& path) {
         if (scene_path.is_empty()) {
             return {{"error", "Scene has no file path. Provide a path parameter to save as new file."}};
         }
-        Error err = ei->save_scene();
-        if (err != OK) {
-            return {{"error", "Failed to save scene (error: " + std::to_string((int)err) + ")"}};
-        }
+        // Use save_scene_as with current path instead of save_scene()
+        // save_scene() crashes in Godot 4.6 when called from GDExtension
+        ei->save_scene_as(scene_path, false);
         return {{"success", true}, {"path", std::string(scene_path.utf8().get_data())}};
     }
 
@@ -47,7 +46,7 @@ nlohmann::json save_scene(const std::string& path) {
         return {{"error", error_out}};
     }
 
-    ei->save_scene_as(String(path.c_str()), true);
+    ei->save_scene_as(String(path.c_str()), false);
 
     // Verify file exists after save (save_scene_as returns void, cannot detect errors)
     if (!FileAccess::file_exists(String(path.c_str()))) {
