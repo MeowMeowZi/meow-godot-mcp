@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI & Editor Expansion
 status: active
-stopped_at: Phase 9 complete, starting Phase 10
-last_updated: "2026-03-18T10:30:00.000Z"
-last_activity: 2026-03-18 -- Phase 9 complete, 153/153 tests, 35 MCP tools, moving to Phase 10
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-03-18T11:01:00.000Z"
+last_activity: 2026-03-18 -- Phase 10 Plan 01 complete, 156/156 tests, 38 MCP tools
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
-  percent: 100
+  total_plans: 15
+  completed_plans: 13
+  percent: 87
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** v1.1 Phase 9 COMPLETE -- Editor Viewport Screenshots
+**Current focus:** v1.1 Phase 10 IN PROGRESS -- Running Game Bridge
 
 ## Current Position
 
-Phase: 9 of 11 (Editor Viewport Screenshots) -- fourth phase of v1.1
-Plan: 3 of 3 (PHASE COMPLETE)
+Phase: 10 of 11 (Running Game Bridge) -- fifth phase of v1.1
+Plan: 1 of 3 (tool registry done, implementation next)
 Status: active
-Last activity: 2026-03-18 - Completed 09-03: Phase 9 UAT with 10 viewport screenshot integration tests
+Last activity: 2026-03-18 - Completed 10-01: Registered 3 game bridge tools, 156 tests pass
 
-Progress: [██████████] 100%
+Progress: [████████░░] 87%
 
 ## Performance Metrics
 
@@ -50,7 +50,7 @@ Progress: [██████████] 100%
 | 5 - Runtime/Signals/Dist | 3/3 | 22 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-03 (2 min), 08-02 (3 min), 08-01 (3 min), 07-03 (2 min), 07-02 (6 min)
+- Last 5 plans: 10-01 (3 min), 09-03 (2 min), 09-02 (2 min), 09-01 (3 min), 08-03 (2 min)
 - Trend: Stable
 | Phase 07 P01 | 3min | 2 tasks | 2 files |
 | Phase 07 P02 | 6min | 2 tasks | 3 files |
@@ -61,6 +61,7 @@ Progress: [██████████] 100%
 | Phase 09 P01 | 3min | 2 tasks | 5 files |
 | Phase 09 P02 | 2min | 2 tasks | 3 files |
 | Phase 09 P03 | 2min | 1 tasks | 1 files |
+| Phase 10 P01 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,10 @@ Recent decisions affecting v1.1:
 - [09-03]: UAT follows exact uat_phase8.py structure for cross-phase consistency
 - [09-03]: call_tool returns raw result dict for ImageContent (data field, not text field)
 - [09-03]: PNG signature validation via base64 decode + first-8-byte comparison
+- [10-01]: inject_input uses unified type enum (key/mouse/action) with per-type conditional params
+- [10-01]: capture_game_viewport reuses Phase 9 ImageContent pattern with optional width/height
+- [10-01]: get_game_bridge_status has empty properties (pure status query)
+- [10-01]: position param modeled as nested object with x/y number sub-properties
 
 ### Pending Todos
 
@@ -127,6 +132,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T10:20:55.322Z
-Stopped at: Completed 09-03-PLAN.md
+Last session: 2026-03-18T11:01:00.000Z
+Stopped at: Completed 10-01-PLAN.md
 Resume file: None
