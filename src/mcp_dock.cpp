@@ -1,7 +1,9 @@
 #include "mcp_dock.h"
 
 #include <godot_cpp/variant/string.hpp>
+#include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/core/memory.hpp>
+#include <godot_cpp/classes/style_box_flat.hpp>
 
 using namespace godot;
 
@@ -45,6 +47,30 @@ MCPDock::MCPDock() {
     restart_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
     restart_button->set_disabled(true);  // Disabled when server is stopped
     btn_box->add_child(restart_button);
+
+    // Autoload warning banner (hidden by default)
+    autoload_warning = memnew(PanelContainer);
+    autoload_warning->set_visible(false);
+
+    Ref<StyleBoxFlat> warn_style;
+    warn_style.instantiate();
+    warn_style->set_bg_color(Color(0.6, 0.4, 0.1, 0.3));
+    warn_style->set_border_color(Color(0.9, 0.7, 0.2, 0.8));
+    warn_style->set_border_width_all(1);
+    warn_style->set_corner_radius_all(4);
+    warn_style->set_content_margin_all(8);
+    autoload_warning->add_theme_stylebox_override("panel", warn_style);
+
+    auto* warn_label = memnew(Label);
+    warn_label->set_text(
+        "Game Bridge: Autoload not configured.\n"
+        "Project Settings > Autoload > Add:\n"
+        "  Path: addons/meow_godot_mcp/companion/meow_mcp_bridge.gd\n"
+        "  Name: MeowMCPBridge"
+    );
+    warn_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+    autoload_warning->add_child(warn_label);
+    root->add_child(autoload_warning);
 
     // Initialize cached state
     last_running = false;
@@ -109,5 +135,11 @@ void MCPDock::update_buttons(bool running) {
     } else {
         toggle_button->set_text("Start");
         restart_button->set_disabled(true);
+    }
+}
+
+void MCPDock::set_autoload_warning(bool missing) {
+    if (autoload_warning) {
+        autoload_warning->set_visible(missing);
     }
 }

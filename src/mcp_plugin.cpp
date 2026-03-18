@@ -6,6 +6,7 @@
 
 #include <godot_cpp/classes/editor_undo_redo_manager.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 
@@ -80,6 +81,14 @@ void MCPPlugin::_enter_tree() {
     dock->update_status(true, false, port, version_string, tool_count);
     dock->update_buttons(true);
 
+    // Check if game bridge autoload is configured
+    bool autoload_missing = true;
+    auto* ps = ProjectSettings::get_singleton();
+    if (ps && ps->has_setting("autoload/MeowMCPBridge")) {
+        autoload_missing = false;
+    }
+    dock->set_autoload_warning(autoload_missing);
+
     set_process(true);
 
     UtilityFunctions::print("MCP Meow: Server started on port ", port,
@@ -131,6 +140,11 @@ void MCPPlugin::_process(double delta) {
         int current_port = running ? port : 0;
         dock->update_status(running, connected, current_port, version_string, tool_count);
         dock->update_buttons(running);
+
+        // Re-check autoload status (user may add/remove it at any time)
+        auto* ps = ProjectSettings::get_singleton();
+        bool autoload_missing = !ps || !ps->has_setting("autoload/MeowMCPBridge");
+        dock->set_autoload_warning(autoload_missing);
     }
 }
 

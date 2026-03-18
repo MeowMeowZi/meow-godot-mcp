@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/h_separator.hpp>
+#include <godot_cpp/classes/panel_container.hpp>
 
 #include <string>
 
@@ -32,6 +33,9 @@ public:
     // Update button text (Start vs Stop) and restart button disabled state
     void update_buttons(bool running);
 
+    // Show/hide autoload warning banner
+    void set_autoload_warning(bool missing);
+
 private:
     godot::VBoxContainer* root = nullptr;
     godot::Label* status_label = nullptr;
@@ -40,6 +44,8 @@ private:
     godot::Label* tools_label = nullptr;
     godot::Button* toggle_button = nullptr;
     godot::Button* restart_button = nullptr;
+
+    godot::PanelContainer* autoload_warning = nullptr;
 
     // Cached state for dirty checking
     bool last_running = false;
