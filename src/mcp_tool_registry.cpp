@@ -163,6 +163,86 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", {"path"}}
             },
             {4, 3, 0}
+        },
+        {
+            "run_game",
+            "Run the game in debug mode. Modes: 'main' (F5 - main scene), 'current' (F6 - current scene), 'custom' (specify scene_path). If game is already running, returns current status without restarting.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"mode", {{"type", "string"}, {"enum", {"main", "current", "custom"}},
+                              {"description", "Play mode: main scene, current scene, or custom scene"}}},
+                    {"scene_path", {{"type", "string"},
+                                   {"description", "Scene path for custom mode (e.g., res://levels/test.tscn)"}}}
+                }},
+                {"required", {"mode"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "stop_game",
+            "Stop the currently running game instance. Returns error if no game is running.",
+            {
+                {"type", "object"},
+                {"properties", nlohmann::json::object()},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_game_output",
+            "Get accumulated stdout/stderr log output from the running (or last-run) game. Returns lines written since last call by default. Use clear_after_read=false to keep reading from the same position.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"clear_after_read", {{"type", "boolean"},
+                                         {"description", "If true (default), advance read position so next call returns only new lines. If false, re-read from same position."}}}
+                }},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_node_signals",
+            "Get all signals defined on a node, including their parameters and current connections.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to the node relative to scene root"}}}
+                }},
+                {"required", {"node_path"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "connect_signal",
+            "Connect a signal from a source node to a method on a target node. Creates a signal connection in the scene.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"source_path", {{"type", "string"}, {"description", "Path to source node (emits the signal)"}}},
+                    {"signal_name", {{"type", "string"}, {"description", "Signal name to connect (e.g., 'pressed', 'body_entered')"}}},
+                    {"target_path", {{"type", "string"}, {"description", "Path to target node (receives the callback)"}}},
+                    {"method_name", {{"type", "string"}, {"description", "Method name on target node to call when signal fires"}}}
+                }},
+                {"required", {"source_path", "signal_name", "target_path", "method_name"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "disconnect_signal",
+            "Disconnect an existing signal connection between two nodes.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"source_path", {{"type", "string"}, {"description", "Path to source node"}}},
+                    {"signal_name", {{"type", "string"}, {"description", "Signal name to disconnect"}}},
+                    {"target_path", {{"type", "string"}, {"description", "Path to target node"}}},
+                    {"method_name", {{"type", "string"}, {"description", "Method name on target node"}}}
+                }},
+                {"required", {"source_path", "signal_name", "target_path", "method_name"}}
+            },
+            {4, 3, 0}
         }
     };
     return tools;
