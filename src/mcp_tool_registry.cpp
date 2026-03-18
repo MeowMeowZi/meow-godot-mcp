@@ -243,6 +243,69 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", {"source_path", "signal_name", "target_path", "method_name"}}
             },
             {4, 3, 0}
+        },
+        // --- Phase 6: Scene File Management tools ---
+        {
+            "save_scene",
+            "Save the current scene to disk. Without path: overwrites current file (Ctrl+S). With path: saves to new location (Ctrl+Shift+S). Returns error if scene has no file path and no path is provided.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"path", {{"type", "string"}, {"description", "Optional file path (e.g., res://scenes/level.tscn). Omit to overwrite current file. Extension determines format: .tscn (text) or .scn (binary)."}}}
+                }},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
+        },
+        {
+            "open_scene",
+            "Open an existing scene file in the editor. Adds a new tab without closing the current scene. The opened scene becomes the active edited scene.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"path", {{"type", "string"}, {"description", "Path to scene file (e.g., res://scenes/level.tscn)"}}}
+                }},
+                {"required", {"path"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "list_open_scenes",
+            "List all currently open scenes in the editor. Returns file paths, titles, and which scene is active.",
+            {
+                {"type", "object"},
+                {"properties", nlohmann::json::object()},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
+        },
+        {
+            "create_scene",
+            "Create a new scene with the specified root node type, save it to disk, and open it in the editor. The root node class must be a Node subclass.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"root_type", {{"type", "string"}, {"description", "Root node class name (e.g., Node2D, Node3D, Control, CharacterBody2D)"}}},
+                    {"path", {{"type", "string"}, {"description", "File path to save the scene (e.g., res://scenes/player.tscn)"}}},
+                    {"root_name", {{"type", "string"}, {"description", "Name for the root node. Defaults to the class name if omitted."}}}
+                }},
+                {"required", {"root_type", "path"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "instantiate_scene",
+            "Instantiate a PackedScene (.tscn/.scn) as a child node in the current scene. Supports undo/redo. The instance root gets its owner set to the scene root.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"scene_path", {{"type", "string"}, {"description", "Path to the scene file to instantiate (e.g., res://scenes/enemy.tscn)"}}},
+                    {"parent_path", {{"type", "string"}, {"description", "Path to parent node relative to scene root. Empty or omit for scene root."}}},
+                    {"name", {{"type", "string"}, {"description", "Override name for the instantiated node. Defaults to the scene file name if omitted."}}}
+                }},
+                {"required", {"scene_path"}}
+            },
+            {4, 3, 0}
         }
     };
     return tools;
