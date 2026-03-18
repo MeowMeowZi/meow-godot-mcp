@@ -9,12 +9,12 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Scene File Management
 
-- [ ] **SCNF-01**: AI 可保存当前场景到磁盘
-- [ ] **SCNF-02**: AI 可打开指定路径的场景文件
-- [ ] **SCNF-03**: AI 可查询当前编辑器中已打开的所有场景列表
-- [ ] **SCNF-04**: AI 可创建新的空场景并指定根节点类型
-- [ ] **SCNF-05**: AI 可将场景树打包为 .tscn/.scn 文件（PackedScene）
-- [ ] **SCNF-06**: AI 可在场景中实例化已有的 PackedScene（场景继承/复用）
+- [x] **SCNF-01**: AI 可保存当前场景到磁盘
+- [x] **SCNF-02**: AI 可打开指定路径的场景文件
+- [x] **SCNF-03**: AI 可查询当前编辑器中已打开的所有场景列表
+- [x] **SCNF-04**: AI 可创建新的空场景并指定根节点类型
+- [x] **SCNF-05**: AI 可将场景树打包为 .tscn/.scn 文件（PackedScene）
+- [x] **SCNF-06**: AI 可在场景中实例化已有的 PackedScene（场景继承/复用）
 
 ### UI System
 
@@ -82,12 +82,12 @@ Deferred to future release.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCNF-01 | Phase 6 | Pending |
-| SCNF-02 | Phase 6 | Pending |
-| SCNF-03 | Phase 6 | Pending |
-| SCNF-04 | Phase 6 | Pending |
-| SCNF-05 | Phase 6 | Pending |
-| SCNF-06 | Phase 6 | Pending |
+| SCNF-01 | Phase 6 | Complete |
+| SCNF-02 | Phase 6 | Complete |
+| SCNF-03 | Phase 6 | Complete |
+| SCNF-04 | Phase 6 | Complete |
+| SCNF-05 | Phase 6 | Complete |
+| SCNF-06 | Phase 6 | Complete |
 | UISYS-01 | Phase 7 | Pending |
 | UISYS-02 | Phase 7 | Pending |
 | UISYS-03 | Phase 7 | Pending |
