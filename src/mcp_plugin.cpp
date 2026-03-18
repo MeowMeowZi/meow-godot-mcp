@@ -56,8 +56,11 @@ void MCPPlugin::_enter_tree() {
     add_debugger_plugin(debugger_plugin);
 
     // Register companion autoload for game-side bridge
-    add_autoload_singleton("MeowMCPBridge",
-        "res://addons/meow_godot_mcp/companion/meow_mcp_bridge.gd");
+    // NOTE: add_autoload_singleton causes run_game crash in Godot 4.6
+    // Workaround: users add autoload manually in Project Settings if needed
+    // TODO: investigate Godot 4.6 autoload + debugger interaction crash
+    // add_autoload_singleton("MeowMCPBridge",
+    //     "res://addons/meow_godot_mcp/companion/meow_mcp_bridge.gd");
 
     // Connect game bridge to server for deferred responses
     server->set_game_bridge(debugger_plugin.ptr());
