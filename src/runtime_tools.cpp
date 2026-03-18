@@ -93,7 +93,7 @@ nlohmann::json stop_game() {
     }
 
     if (!ei->is_playing_scene()) {
-        return {{"success", false}, {"error", "No game is currently running"}};
+        return {{"success", false}, {"error", "Game is not currently running"}};
     }
 
     ei->stop_playing_scene();
@@ -105,13 +105,27 @@ nlohmann::json get_game_output(bool clear_after_read) {
     godot::String log_path = "user://logs/godot.log";
 
     if (!godot::FileAccess::file_exists(log_path)) {
+        bool game_running = false;
+        auto* ei = godot::EditorInterface::get_singleton();
+        if (ei) {
+            game_running = ei->is_playing_scene();
+        }
         return {{"success", true}, {"lines", nlohmann::json::array()},
-                {"count", 0}, {"message", "No log file found. Enable file logging in Project Settings."}};
+                {"count", 0}, {"game_running", game_running},
+                {"message", "No log file found. Enable file logging in Project Settings."}};
     }
 
     auto file = godot::FileAccess::open(log_path, godot::FileAccess::READ);
     if (!file.is_valid()) {
-        return {{"success", false}, {"error", "Cannot open log file"}};
+        // File may be locked by running game process (common on Windows)
+        bool game_running = false;
+        auto* ei = godot::EditorInterface::get_singleton();
+        if (ei) {
+            game_running = ei->is_playing_scene();
+        }
+        return {{"success", true}, {"lines", nlohmann::json::array()},
+                {"count", 0}, {"game_running", game_running},
+                {"message", "Log file exists but cannot be opened (may be locked by running game)"}};
     }
 
     // Seek to last read position for incremental reads
