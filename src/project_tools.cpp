@@ -65,11 +65,21 @@ nlohmann::json list_project_files() {
     };
 }
 
-nlohmann::json get_project_settings() {
+nlohmann::json get_project_settings(const std::string& category) {
     ProjectSettings* settings = ProjectSettings::get_singleton();
     if (!settings) {
         return {{"success", false}, {"error", "ProjectSettings singleton not available"}};
     }
+
+    // "all" = dump everything; specific category = filter; empty = defaults only
+    bool return_all = (category == "all");
+    bool filter_by_category = !category.empty() && !return_all;
+    static const std::vector<std::string> default_categories = {
+        "application/config", "application/run",
+        "display/window", "autoload",
+        "input", "layer_names",
+        "rendering/environment"
+    };
 
     nlohmann::json result_settings = nlohmann::json::object();
 
@@ -79,7 +89,6 @@ nlohmann::json get_project_settings() {
         String name = prop["name"];
         int usage = prop["usage"];
 
-        // Skip internal and private properties
         std::string name_str(name.utf8().get_data());
         if (name_str.empty() || name_str[0] == '_') {
             continue;
@@ -88,15 +97,38 @@ nlohmann::json get_project_settings() {
             continue;
         }
 
+        // Filter logic
+        if (return_all) {
+            // "all": no filtering
+        } else if (filter_by_category) {
+            if (name_str.substr(0, category.size()) != category) {
+                continue;
+            }
+        } else {
+            // No category: only include default categories
+            bool in_defaults = false;
+            for (const auto& prefix : default_categories) {
+                if (name_str.substr(0, prefix.size()) == prefix) {
+                    in_defaults = true;
+                    break;
+                }
+            }
+            if (!in_defaults) continue;
+        }
+
         Variant value = settings->get_setting(name);
         String value_str = String(value);
         result_settings[name_str] = std::string(value_str.utf8().get_data());
     }
 
-    return {
+    nlohmann::json result = {
         {"success", true},
         {"settings", result_settings}
     };
+    if (!filter_by_category) {
+        result["note"] = "Showing common settings only. Pass 'category' parameter (e.g. 'display', 'rendering', 'physics') to query specific categories, or 'all' for everything.";
+    }
+    return result;
 }
 
 nlohmann::json get_resource_info(const std::string& path) {

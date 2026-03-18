@@ -144,10 +144,12 @@ const std::vector<ToolDef>& get_all_tools() {
         },
         {
             "get_project_settings",
-            "Read project.godot settings as structured data. Returns project configuration key-value pairs.",
+            "Read project.godot settings as structured data. Returns project configuration key-value pairs. Without category, returns common settings only. Pass category to filter (e.g. 'display', 'rendering', 'physics', 'input') or 'all' for everything.",
             {
                 {"type", "object"},
-                {"properties", nlohmann::json::object()},
+                {"properties", {
+                    {"category", {{"type", "string"}, {"description", "Setting category prefix to filter (e.g. 'application', 'display', 'rendering', 'physics', 'input', 'autoload'). Use 'all' to return everything. Omit for common settings only."}}}
+                }},
                 {"required", nlohmann::json::array()}
             },
             {4, 3, 0}

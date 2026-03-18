@@ -489,7 +489,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_project_settings") {
-            return mcp::create_tool_result(id, get_project_settings());
+            std::string category;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("category") && args["category"].is_string())
+                    category = args["category"].get<std::string>();
+            }
+            return mcp::create_tool_result(id, get_project_settings(category));
         }
 
         if (tool_name == "get_resource_info") {

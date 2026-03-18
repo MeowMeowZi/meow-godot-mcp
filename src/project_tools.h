@@ -6,7 +6,7 @@
 
 #ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 nlohmann::json list_project_files();
-nlohmann::json get_project_settings();
+nlohmann::json get_project_settings(const std::string& category = "");
 nlohmann::json get_resource_info(const std::string& path);
 #endif
 
