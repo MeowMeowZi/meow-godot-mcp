@@ -8,16 +8,22 @@
 
 ## 特性
 
-- **18 个 MCP 工具**，覆盖完整编辑器工作流：
+- **38 个 MCP 工具**，覆盖完整编辑器 + 游戏运行时工作流：
   - 场景 CRUD：查询场景树、创建/修改/删除节点（支持 Ctrl+Z 撤销）
+  - 场景文件管理：保存/打开/列出/创建场景，实例化 PackedScene
   - 脚本管理：读/写/编辑 GDScript，附加/分离脚本
   - 项目查询：文件列表、项目设置、资源信息
   - 运行时控制：启动/停止游戏、捕获日志输出
   - 信号管理：查询/连接/断开节点信号
+  - UI 系统：布局预设、主题覆盖、StyleBox 创建、容器配置、UI 属性查询
+  - 动画系统：创建动画、添加轨道、关键帧 CRUD、动画属性设置
+  - 视口截图：捕获编辑器 2D/3D 视口截图（MCP ImageContent）
+  - 游戏桥接：输入注入（键盘/鼠标/Action）、游戏视口截图、桥接状态查询
 - **编辑器 Dock 面板**：实时连接状态、Godot 版本检测、Start/Stop/Restart 控制
-- **4 个 Prompt 模板**：创建玩家控制器、设置场景结构、调试物理、创建 UI 界面
+- **6 个 Prompt 模板**：创建玩家控制器、设置场景结构、调试物理、创建 UI 界面、构建 UI 布局、设置动画
+- **游戏桥接**：通过 EditorDebuggerPlugin 与运行中的游戏双向通信，注入输入、捕获截图
 - **版本自适应**：运行时检测 Godot 版本，动态启用/禁用对应工具
-- **完整 MCP 协议**：JSON-RPC 2.0、tools、resources、prompts（spec 2025-03-26）
+- **完整 MCP 协议**：JSON-RPC 2.0、tools、resources、prompts、ImageContent（spec 2025-03-26）
 
 ## 架构
 
@@ -82,26 +88,88 @@ Bridge 使用标准 stdio 传输，兼容任何支持 MCP 协议的 AI 客户端
 
 ## 工具列表
 
+### 场景操作（v1.0）
+
 | 工具 | 说明 |
 |------|------|
 | `get_scene_tree` | 获取当前场景树结构 |
-| `create_node` | 创建新节点 |
-| `set_node_property` | 设置节点属性 |
-| `delete_node` | 删除节点 |
+| `create_node` | 创建新节点（支持撤销） |
+| `set_node_property` | 设置节点属性（支持撤销） |
+| `delete_node` | 删除节点（支持撤销） |
+
+### 脚本管理（v1.0）
+
+| 工具 | 说明 |
+|------|------|
 | `read_script` | 读取 GDScript 文件 |
 | `write_script` | 创建新 GDScript 文件 |
 | `edit_script` | 编辑现有脚本 |
 | `attach_script` | 将脚本附加到节点 |
 | `detach_script` | 从节点分离脚本 |
+
+### 项目查询（v1.0）
+
+| 工具 | 说明 |
+|------|------|
 | `list_project_files` | 列出项目文件结构 |
 | `get_project_settings` | 读取项目设置 |
 | `get_resource_info` | 查询资源信息 |
-| `run_game` | 启动游戏 |
+
+### 运行时与信号（v1.0）
+
+| 工具 | 说明 |
+|------|------|
+| `run_game` | 启动游戏（主场景/当前/自定义） |
 | `stop_game` | 停止游戏 |
 | `get_game_output` | 获取游戏日志输出 |
 | `get_node_signals` | 查询节点信号 |
 | `connect_signal` | 连接信号 |
 | `disconnect_signal` | 断开信号 |
+
+### 场景文件管理（v1.1）
+
+| 工具 | 说明 |
+|------|------|
+| `save_scene` | 保存当前场景（支持另存为） |
+| `open_scene` | 打开 .tscn 文件 |
+| `list_open_scenes` | 列出编辑器中所有打开的场景 |
+| `create_scene` | 创建新场景并打开 |
+| `instantiate_scene` | 实例化 PackedScene 为子节点 |
+
+### UI 系统（v1.1）
+
+| 工具 | 说明 |
+|------|------|
+| `set_layout_preset` | 设置 Control 布局预设（full_rect、center 等） |
+| `set_theme_override` | 批量设置主题覆盖（颜色、字体、字号） |
+| `create_stylebox` | 创建 StyleBoxFlat 并应用到节点 |
+| `get_ui_properties` | 查询 Control 的 UI 属性（anchors、size_flags 等） |
+| `set_container_layout` | 配置 Container 布局参数 |
+| `get_theme_overrides` | 查询节点的所有主题覆盖 |
+
+### 动画系统（v1.1）
+
+| 工具 | 说明 |
+|------|------|
+| `create_animation` | 创建 AnimationPlayer + AnimationLibrary + Animation |
+| `add_animation_track` | 添加动画轨道（value/position/rotation/scale） |
+| `set_keyframe` | 插入/修改/删除关键帧 |
+| `get_animation_info` | 查询动画列表、轨道结构、关键帧数据 |
+| `set_animation_properties` | 设置动画时长、循环模式、步长 |
+
+### 视口截图（v1.1）
+
+| 工具 | 说明 |
+|------|------|
+| `capture_viewport` | 捕获编辑器 2D/3D 视口截图（返回 MCP ImageContent） |
+
+### 游戏桥接（v1.1）
+
+| 工具 | 说明 |
+|------|------|
+| `inject_input` | 向运行中的游戏注入输入（键盘/鼠标/Action） |
+| `capture_game_viewport` | 捕获运行中游戏的视口截图 |
+| `get_game_bridge_status` | 查询游戏桥接连接状态 |
 
 ## 系统要求
 
@@ -113,7 +181,7 @@ Bridge 使用标准 stdio 传输，兼容任何支持 MCP 协议的 AI 客户端
 - C++17, godot-cpp v10+
 - nlohmann/json 3.12.0
 - SCons 构建系统
-- GoogleTest 单元测试 (132 tests)
+- GoogleTest 单元测试 (160 tests)
 
 ## 许可证
 
