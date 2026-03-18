@@ -105,7 +105,7 @@ TEST(ToolsListResponse, HasGetSceneTreeTool) {
     EXPECT_EQ(response["id"], 2);
 
     auto tools = response["result"]["tools"];
-    ASSERT_EQ(tools.size(), 34);
+    ASSERT_EQ(tools.size(), 35);
     EXPECT_EQ(tools[0]["name"], "get_scene_tree");
 }
 
@@ -541,4 +541,47 @@ TEST(PromptsData, GetPromptMessagesValidPrompt) {
 TEST(PromptsData, GetPromptMessagesNonexistent) {
     auto messages = get_prompt_messages("nonexistent", {});
     EXPECT_TRUE(messages.is_null());
+}
+
+// --- create_image_tool_result tests ---
+
+TEST(ImageToolResult, HasCorrectStructure) {
+    auto response = mcp::create_image_tool_result(42, "iVBORw0KGgo=", "image/png");
+
+    EXPECT_EQ(response["jsonrpc"], "2.0");
+    EXPECT_EQ(response["id"], 42);
+    EXPECT_FALSE(response["result"]["isError"]);
+
+    auto content = response["result"]["content"];
+    ASSERT_EQ(content.size(), 1);
+    EXPECT_EQ(content[0]["type"], "image");
+    EXPECT_EQ(content[0]["data"], "iVBORw0KGgo=");
+    EXPECT_EQ(content[0]["mimeType"], "image/png");
+}
+
+TEST(ImageToolResult, IncludesMetadataAsTextContent) {
+    json metadata = {{"viewport_type", "2d"}, {"width", 1920}, {"height", 1080}};
+    auto response = mcp::create_image_tool_result(43, "base64data", "image/png", metadata);
+
+    auto content = response["result"]["content"];
+    ASSERT_EQ(content.size(), 2);
+    EXPECT_EQ(content[0]["type"], "image");
+    EXPECT_EQ(content[1]["type"], "text");
+    // Metadata text should be parseable JSON
+    auto parsed = json::parse(content[1]["text"].get<std::string>());
+    EXPECT_EQ(parsed["viewport_type"], "2d");
+    EXPECT_EQ(parsed["width"], 1920);
+}
+
+TEST(ImageToolResult, OmitsMetadataWhenNull) {
+    auto response = mcp::create_image_tool_result(44, "data", "image/png");
+
+    auto content = response["result"]["content"];
+    ASSERT_EQ(content.size(), 1);
+    EXPECT_EQ(content[0]["type"], "image");
+}
+
+TEST(ImageToolResult, PreservesStringId) {
+    auto response = mcp::create_image_tool_result("req-99", "data", "image/png");
+    EXPECT_EQ(response["id"], "req-99");
 }

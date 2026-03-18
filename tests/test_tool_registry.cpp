@@ -53,9 +53,9 @@ TEST(GodotVersion, LesserPatch) {
 
 // --- Tool registry tests ---
 
-TEST(ToolRegistry, HasExactly34Tools) {
+TEST(ToolRegistry, HasExactly35Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 34);
+    ASSERT_EQ(tools.size(), 35);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
@@ -87,7 +87,8 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
         "get_node_signals", "connect_signal", "disconnect_signal",
         "save_scene", "open_scene", "list_open_scenes", "create_scene", "instantiate_scene",
         "set_layout_preset", "set_theme_override", "create_stylebox", "get_ui_properties", "set_container_layout", "get_theme_overrides",
-        "create_animation", "add_animation_track", "set_keyframe", "get_animation_info", "set_animation_properties"
+        "create_animation", "add_animation_track", "set_keyframe", "get_animation_info", "set_animation_properties",
+        "capture_viewport"
     };
     ASSERT_EQ(tools.size(), expected_names.size());
     for (size_t i = 0; i < tools.size(); i++) {
@@ -97,10 +98,10 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 
 // --- Filtered tools JSON tests ---
 
-TEST(FilteredTools, Version430Returns34Tools) {
+TEST(FilteredTools, Version430Returns35Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 34);
+    EXPECT_EQ(json_tools.size(), 35);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -109,10 +110,10 @@ TEST(FilteredTools, Version420Returns0Tools) {
     EXPECT_EQ(json_tools.size(), 0);
 }
 
-TEST(FilteredTools, PermissiveVersionReturns34Tools) {
+TEST(FilteredTools, PermissiveVersionReturns35Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 34);
+    EXPECT_EQ(json_tools.size(), 35);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -135,8 +136,8 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 
 // --- Tool count tests ---
 
-TEST(ToolCount, Version430Returns34) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 34);
+TEST(ToolCount, Version430Returns35) {
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 35);
 }
 
 TEST(ToolCount, Version420Returns0) {
@@ -560,4 +561,31 @@ TEST(FilteredTools, SetAnimationPropertiesSchemaValidation) {
         }
     }
     FAIL() << "set_animation_properties not found in filtered tools";
+}
+
+// --- Phase 9 Viewport Screenshot tool schema validation tests ---
+
+TEST(FilteredTools, CaptureViewportSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "capture_viewport") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("viewport_type"));
+            EXPECT_TRUE(schema["properties"].contains("width"));
+            EXPECT_TRUE(schema["properties"].contains("height"));
+            // viewport_type has enum constraint
+            auto vt_prop = schema["properties"]["viewport_type"];
+            ASSERT_TRUE(vt_prop.contains("enum"));
+            ASSERT_EQ(vt_prop["enum"].size(), 2);
+            EXPECT_EQ(vt_prop["enum"][0], "2d");
+            EXPECT_EQ(vt_prop["enum"][1], "3d");
+            // width and height are integers
+            EXPECT_EQ(schema["properties"]["width"]["type"], "integer");
+            EXPECT_EQ(schema["properties"]["height"]["type"], "integer");
+            // All params optional
+            EXPECT_TRUE(schema["required"].empty());
+            return;
+        }
+    }
+    FAIL() << "capture_viewport not found in filtered tools";
 }
