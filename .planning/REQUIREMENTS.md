@@ -41,11 +41,11 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Running Game Bridge
 
-- [ ] **BRDG-01**: 插件自动注入 companion autoload 脚本到游戏进程，建立编辑器-游戏通信通道
-- [ ] **BRDG-02**: AI 可向运行中的游戏注入键盘按键事件（按下/释放）
-- [ ] **BRDG-03**: AI 可向运行中的游戏注入鼠标事件（移动、点击、滚轮）
-- [ ] **BRDG-04**: AI 可向运行中的游戏注入 Input Action 事件
-- [ ] **BRDG-05**: AI 可截取运行中游戏的视口画面
+- [x] **BRDG-01**: 插件自动注入 companion autoload 脚本到游戏进程，建立编辑器-游戏通信通道
+- [x] **BRDG-02**: AI 可向运行中的游戏注入键盘按键事件（按下/释放）
+- [x] **BRDG-03**: AI 可向运行中的游戏注入鼠标事件（移动、点击、滚轮）
+- [x] **BRDG-04**: AI 可向运行中的游戏注入 Input Action 事件
+- [x] **BRDG-05**: AI 可截取运行中游戏的视口画面
 
 ### Prompt Templates
 
@@ -102,11 +102,11 @@ Deferred to future release.
 | VWPT-01 | Phase 9 | Complete |
 | VWPT-02 | Phase 9 | Complete |
 | VWPT-03 | Phase 9 | Complete |
-| BRDG-01 | Phase 10 | Pending |
-| BRDG-02 | Phase 10 | Pending |
-| BRDG-03 | Phase 10 | Pending |
-| BRDG-04 | Phase 10 | Pending |
-| BRDG-05 | Phase 10 | Pending |
+| BRDG-01 | Phase 10 | Complete |
+| BRDG-02 | Phase 10 | Complete |
+| BRDG-03 | Phase 10 | Complete |
+| BRDG-04 | Phase 10 | Complete |
+| BRDG-05 | Phase 10 | Complete |
 | PMPT-01 | Phase 11 | Pending |
 | PMPT-02 | Phase 11 | Pending |
 

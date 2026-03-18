@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI & Editor Expansion
 status: active
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-03-18T11:01:00.000Z"
-last_activity: 2026-03-18 -- Phase 10 Plan 01 complete, 156/156 tests, 38 MCP tools
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-03-18T11:10:00.000Z"
+last_activity: 2026-03-18 -- Phase 10 Plan 02 complete, game bridge + deferred response, 156/156 tests
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 15
-  completed_plans: 13
-  percent: 87
+  completed_plans: 14
+  percent: 93
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 10 of 11 (Running Game Bridge) -- fifth phase of v1.1
-Plan: 1 of 3 (tool registry done, implementation next)
+Plan: 2 of 3 (implementation complete, UAT next)
 Status: active
-Last activity: 2026-03-18 - Completed 10-01: Registered 3 game bridge tools, 156 tests pass
+Last activity: 2026-03-18 - Completed 10-02: Game bridge implementation with deferred response, 156 tests pass
 
-Progress: [████████░░] 87%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -50,7 +50,7 @@ Progress: [████████░░] 87%
 | 5 - Runtime/Signals/Dist | 3/3 | 22 min | 7 min |
 
 **Recent Trend:**
-- Last 5 plans: 10-01 (3 min), 09-03 (2 min), 09-02 (2 min), 09-01 (3 min), 08-03 (2 min)
+- Last 5 plans: 10-02 (6 min), 10-01 (3 min), 09-03 (2 min), 09-02 (2 min), 09-01 (3 min)
 - Trend: Stable
 | Phase 07 P01 | 3min | 2 tasks | 2 files |
 | Phase 07 P02 | 6min | 2 tasks | 3 files |
@@ -62,6 +62,7 @@ Progress: [████████░░] 87%
 | Phase 09 P02 | 2min | 2 tasks | 3 files |
 | Phase 09 P03 | 2min | 1 tasks | 1 files |
 | Phase 10 P01 | 3min | 2 tasks | 3 files |
+| Phase 10 P02 | 6min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,10 @@ Recent decisions affecting v1.1:
 - [10-01]: capture_game_viewport reuses Phase 9 ImageContent pattern with optional width/height
 - [10-01]: get_game_bridge_status has empty properties (pure status query)
 - [10-01]: position param modeled as nested object with x/y number sub-properties
+- [10-02]: Deferred response marker (__deferred: true) for async viewport capture avoids main thread deadlock
+- [10-02]: Input injection is fire-and-forget via debugger message (no round-trip wait)
+- [10-02]: Companion GDScript calls queue_free() when EngineDebugger not active
+- [10-02]: Viewport resize reuses Phase 9 INTERPOLATE_LANCZOS pattern
 
 ### Pending Todos
 
@@ -132,6 +137,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T11:01:00.000Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-03-18T11:10:00.000Z
+Stopped at: Completed 10-02-PLAN.md
 Resume file: None
