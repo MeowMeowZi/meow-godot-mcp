@@ -24,7 +24,7 @@ void MeowDebuggerPlugin::_setup_session(int32_t p_session_id) {
 
 void MeowDebuggerPlugin::_on_session_started(int32_t p_session_id) {
     active_session_id = p_session_id;
-    UtilityFunctions::print("MCP Meow: Game debugger session started (session ", p_session_id, ")");
+    UtilityFunctions::print(String::utf8("MCP Meow: 游戏调试会话已启动 (会话 "), p_session_id, ")");
 }
 
 void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
@@ -40,7 +40,7 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
             has_pending_capture = false;
         }
 
-        UtilityFunctions::print("MCP Meow: Game debugger session stopped (session ", p_session_id, ")");
+        UtilityFunctions::print(String::utf8("MCP Meow: 游戏调试会话已停止 (会话 "), p_session_id, ")");
     }
 }
 
@@ -61,7 +61,7 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
     if (action == "ready") {
         game_connected = true;
         active_session_id = p_session_id;
-        UtilityFunctions::print("MCP Meow: Game bridge connected (session ", p_session_id, ")");
+        UtilityFunctions::print(String::utf8("MCP Meow: 游戏桥接已连接 (会话 "), p_session_id, ")");
         return true;
     }
 

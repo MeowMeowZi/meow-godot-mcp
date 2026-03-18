@@ -9,7 +9,7 @@ env.Append(CPPPATH=["src/", "thirdparty/"])
 
 # Enable C++ exception handling (required by nlohmann/json)
 if env["platform"] == "windows":
-    env.Append(CXXFLAGS=["/EHsc"])
+    env.Append(CXXFLAGS=["/EHsc", "/utf-8"])
 
 # Enable Godot-dependent code paths in dual-mode modules (e.g., variant_parser)
 env.Append(CPPDEFINES=["MEOW_GODOT_MCP_GODOT_ENABLED"])

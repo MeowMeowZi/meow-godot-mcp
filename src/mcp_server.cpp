@@ -66,7 +66,7 @@ void MCPServer::start(int p_port) {
     }
     running.store(true);
     io_thread = std::thread(&MCPServer::io_thread_func, this);
-    UtilityFunctions::print("MCP Meow: TCP server listening on port ", port, " (IO thread started)");
+    UtilityFunctions::print(String::utf8("MCP Meow: TCP 服务监听端口 "), port, String::utf8(" (IO 线程已启动)"));
 }
 
 void MCPServer::stop() {
@@ -119,7 +119,7 @@ void MCPServer::io_thread_func() {
             client_peer = tcp_server->take_connection();
             client_connected.store(true);
             initialized = false;
-            UtilityFunctions::print("MCP Meow: Client connected");
+            UtilityFunctions::print(String::utf8("MCP Meow: 客户端已连接"));
         }
 
         if (!client_peer.is_valid()) {
@@ -130,7 +130,7 @@ void MCPServer::io_thread_func() {
         client_peer->poll();
         auto status = client_peer->get_status();
         if (status == StreamPeerTCP::STATUS_NONE || status == StreamPeerTCP::STATUS_ERROR) {
-            UtilityFunctions::print("MCP Meow: Client disconnected");
+            UtilityFunctions::print(String::utf8("MCP Meow: 客户端已断开"));
             client_connected.store(false);
             client_peer.unref();
             read_buffer.clear();
@@ -220,7 +220,7 @@ bool MCPServer::process_message_io(const std::string& line) {
     if (result.message.is_notification) {
         if (result.message.method == "notifications/initialized") {
             initialized = true;
-            UtilityFunctions::print("MCP Meow: Client initialized");
+            UtilityFunctions::print(String::utf8("MCP Meow: 客户端已初始化"));
         }
         return true;
     }

@@ -14,19 +14,19 @@ MCPDock::MCPDock() {
 
     // Status section
     status_label = memnew(Label);
-    status_label->set_text("Status: Stopped");
+    status_label->set_text(String::utf8("状态：已停止"));
     root->add_child(status_label);
 
     port_label = memnew(Label);
-    port_label->set_text("Port: --");
+    port_label->set_text(String::utf8("端口：--"));
     root->add_child(port_label);
 
     version_label = memnew(Label);
-    version_label->set_text("Godot: detecting...");
+    version_label->set_text(String::utf8("Godot: 检测中..."));
     root->add_child(version_label);
 
     tools_label = memnew(Label);
-    tools_label->set_text("Tools: 0");
+    tools_label->set_text(String::utf8("工具数：0"));
     root->add_child(tools_label);
 
     // Separator between info and controls
@@ -38,14 +38,14 @@ MCPDock::MCPDock() {
     root->add_child(btn_box);
 
     toggle_button = memnew(Button);
-    toggle_button->set_text("Start");
+    toggle_button->set_text(String::utf8("启动"));
     toggle_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
     btn_box->add_child(toggle_button);
 
     restart_button = memnew(Button);
-    restart_button->set_text("Restart");
+    restart_button->set_text(String::utf8("重启"));
     restart_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-    restart_button->set_disabled(true);  // Disabled when server is stopped
+    restart_button->set_disabled(true);
     btn_box->add_child(restart_button);
 
     // Autoload warning banner (hidden by default)
@@ -62,12 +62,12 @@ MCPDock::MCPDock() {
     autoload_warning->add_theme_stylebox_override("panel", warn_style);
 
     auto* warn_label = memnew(Label);
-    warn_label->set_text(
-        "Game Bridge: Autoload not configured.\n"
-        "Project Settings > Autoload > Add:\n"
-        "  Path: addons/meow_godot_mcp/companion/meow_mcp_bridge.gd\n"
-        "  Name: MeowMCPBridge"
-    );
+    warn_label->set_text(String::utf8(
+        "游戏桥接：自动加载未配置\n"
+        "项目设置 > 自动加载 > 添加：\n"
+        "  路径: addons/meow_godot_mcp/companion/meow_mcp_bridge.gd\n"
+        "  名称: MeowMCPBridge"
+    ));
     warn_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
     autoload_warning->add_child(warn_label);
     root->add_child(autoload_warning);
@@ -103,24 +103,23 @@ void MCPDock::update_status(bool running, bool client_connected, int port,
 
     // Update status text based on three-state logic
     if (!running) {
-        status_label->set_text("Status: Stopped");
+        status_label->set_text(String::utf8("状态：已停止"));
     } else if (!client_connected) {
-        status_label->set_text("Status: Waiting for client...");
+        status_label->set_text(String::utf8("状态：等待客户端连接..."));
     } else {
-        status_label->set_text("Status: Connected");
+        status_label->set_text(String::utf8("状态：已连接"));
     }
 
     // Port display
     if (running) {
-        status_label->set_text(status_label->get_text());  // Already set above
-        port_label->set_text(String("Port: ") + String::num_int64(port));
+        port_label->set_text(String::utf8("端口：") + String::num_int64(port));
     } else {
-        port_label->set_text("Port: --");
+        port_label->set_text(String::utf8("端口：--"));
     }
 
     // Version and tool count
     version_label->set_text(String("Godot: ") + String(version.c_str()));
-    tools_label->set_text(String("Tools: ") + String::num_int64(tool_count));
+    tools_label->set_text(String::utf8("工具数：") + String::num_int64(tool_count));
 
     // Update cached state
     last_running = running;
@@ -130,10 +129,10 @@ void MCPDock::update_status(bool running, bool client_connected, int port,
 
 void MCPDock::update_buttons(bool running) {
     if (running) {
-        toggle_button->set_text("Stop");
+        toggle_button->set_text(String::utf8("停止"));
         restart_button->set_disabled(false);
     } else {
-        toggle_button->set_text("Start");
+        toggle_button->set_text(String::utf8("启动"));
         restart_button->set_disabled(true);
     }
 }

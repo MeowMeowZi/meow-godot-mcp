@@ -91,9 +91,10 @@ void MCPPlugin::_enter_tree() {
 
     set_process(true);
 
-    UtilityFunctions::print("MCP Meow: Server started on port ", port,
+    UtilityFunctions::print(String::utf8("MCP Meow: 服务已启动，端口 "),
+                            port,
                             " (Godot ", version_string.c_str(),
-                            ", ", tool_count, " tools)");
+                            String::utf8(", 工具数 "), tool_count, ")");
 }
 
 void MCPPlugin::_exit_tree() {
@@ -122,7 +123,7 @@ void MCPPlugin::_exit_tree() {
         server = nullptr;
     }
 
-    UtilityFunctions::print("MCP Meow: Server stopped");
+    UtilityFunctions::print(String::utf8("MCP Meow: 服务已停止"));
 }
 
 void MCPPlugin::_process(double delta) {
