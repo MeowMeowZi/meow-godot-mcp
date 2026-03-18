@@ -29,7 +29,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full details.
 - [x] **Phase 6: Scene File Management** - AI can save, open, create, and manage scene files
 - [x] **Phase 7: UI System** - AI can build and style Control node hierarchies with themes and layouts
 - [x] **Phase 8: Animation System** - AI can create and edit animations with tracks and keyframes
-- [ ] **Phase 9: Editor Viewport Screenshots** - AI can capture editor viewport images for visual feedback
+- [x] **Phase 9: Editor Viewport Screenshots** - AI can capture editor viewport images for visual feedback
 - [ ] **Phase 10: Running Game Bridge** - AI can inject input and capture screenshots from a running game
 - [ ] **Phase 11: Prompt Templates** - AI gets curated workflow templates for UI building and animation setup
 
@@ -134,6 +134,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 6. Scene File Management | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 7. UI System | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 8. Animation System | v1.1 | 3/3 | Complete | 2026-03-18 |
-| 9. Editor Viewport Screenshots | 2/3 | In Progress|  | - |
+| 9. Editor Viewport Screenshots | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 10. Running Game Bridge | v1.1 | 0/0 | Not started | - |
 | 11. Prompt Templates | v1.1 | 0/0 | Not started | - |
