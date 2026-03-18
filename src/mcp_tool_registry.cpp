@@ -306,6 +306,101 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", {"scene_path"}}
             },
             {4, 3, 0}
+        },
+        // --- Phase 7: UI System tools ---
+        {
+            "set_layout_preset",
+            "Set a Control node's layout preset (anchors and offsets). Presets: top_left, top_right, bottom_left, bottom_right, center_left, center_top, center_right, center_bottom, center, left_wide, top_wide, right_wide, bottom_wide, vcenter_wide, hcenter_wide, full_rect.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}},
+                    {"preset", {{"type", "string"}, {"description", "Layout preset name (e.g., full_rect, center, top_wide)"}}}
+                }},
+                {"required", {"node_path", "preset"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "set_theme_override",
+            "Batch set theme overrides on a Control node. Supports colors (hex or Color()), font sizes (int), and constants. Override type is auto-detected from key names or can be specified explicitly.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}},
+                    {"overrides", {{"type", "object"}, {"description", "Key-value pairs of theme overrides. Keys are theme override names (e.g., font_color, font_size). Values are strings: hex colors (#ff0000), integers (16), or Color() constructors."}}}
+                }},
+                {"required", {"node_path", "overrides"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "create_stylebox",
+            "Create a StyleBoxFlat resource and apply it as a theme override on a Control node. Supports bg_color, corner_radius, border_width, border_color, content_margin, shadow, and anti-aliasing properties.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}},
+                    {"override_name", {{"type", "string"}, {"description", "Theme override name to apply the StyleBox to (e.g., panel, normal, hover, pressed, disabled, focus)"}}},
+                    {"bg_color", {{"type", "string"}, {"description", "Background color as hex (#rrggbb or #rrggbbaa) or Color(r,g,b,a). Default: #999999"}}},
+                    {"corner_radius", {{"type", "integer"}, {"description", "Corner radius applied to all 4 corners. Default: 0"}}},
+                    {"corner_radius_top_left", {{"type", "integer"}, {"description", "Top-left corner radius (overrides corner_radius)"}}},
+                    {"corner_radius_top_right", {{"type", "integer"}, {"description", "Top-right corner radius (overrides corner_radius)"}}},
+                    {"corner_radius_bottom_right", {{"type", "integer"}, {"description", "Bottom-right corner radius (overrides corner_radius)"}}},
+                    {"corner_radius_bottom_left", {{"type", "integer"}, {"description", "Bottom-left corner radius (overrides corner_radius)"}}},
+                    {"border_width", {{"type", "integer"}, {"description", "Border width applied to all 4 sides. Default: 0"}}},
+                    {"border_color", {{"type", "string"}, {"description", "Border color as hex or Color(). Default: #cccccc"}}},
+                    {"content_margin", {{"type", "number"}, {"description", "Content margin applied to all 4 sides. Default: -1 (auto)"}}},
+                    {"shadow_color", {{"type", "string"}, {"description", "Shadow color as hex or Color()"}}},
+                    {"shadow_size", {{"type", "integer"}, {"description", "Shadow size in pixels. Default: 0"}}},
+                    {"anti_aliased", {{"type", "boolean"}, {"description", "Enable anti-aliasing. Default: true"}}}
+                }},
+                {"required", {"node_path", "override_name"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_ui_properties",
+            "Query a Control node's UI-specific properties: anchors, offsets, size flags, minimum size, pivot offset, grow direction, focus neighbors, and layout direction. For focus neighbor setting, use set_node_property with focus_neighbor_left/top/right/bottom.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}}
+                }},
+                {"required", {"node_path"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "set_container_layout",
+            "Configure a Container node's layout parameters. For BoxContainer: alignment and separation. For GridContainer: columns and h/v separation. Optionally batch-set all direct children's size_flags.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to Container node relative to scene root"}}},
+                    {"separation", {{"type", "integer"}, {"description", "Space between children in pixels (BoxContainer/GridContainer)"}}},
+                    {"h_separation", {{"type", "integer"}, {"description", "Horizontal separation for GridContainer"}}},
+                    {"v_separation", {{"type", "integer"}, {"description", "Vertical separation for GridContainer"}}},
+                    {"alignment", {{"type", "string"}, {"description", "BoxContainer alignment: begin, center, or end"}}},
+                    {"columns", {{"type", "integer"}, {"description", "Number of columns for GridContainer"}}},
+                    {"child_size_flags_horizontal", {{"type", "string"}, {"description", "Batch-set all direct children's horizontal size flags: shrink_begin, fill, expand, expand_fill, shrink_center, shrink_end"}}},
+                    {"child_size_flags_vertical", {{"type", "string"}, {"description", "Batch-set all direct children's vertical size flags: shrink_begin, fill, expand, expand_fill, shrink_center, shrink_end"}}}
+                }},
+                {"required", {"node_path"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_theme_overrides",
+            "Query all theme overrides currently set on a Control node, categorized by type (colors, font_sizes, constants, styles). Returns only overrides that have been explicitly set, not inherited values.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}}
+                }},
+                {"required", {"node_path"}}
+            },
+            {4, 3, 0}
         }
     };
     return tools;
