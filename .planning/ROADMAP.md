@@ -26,7 +26,7 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full details.
 
 **Milestone Goal:** AI can operate Godot's UI system (Control nodes, Themes, layouts), edit animations, manage scene files, capture viewport screenshots, and inject input into running games -- upgrading from "basic editor assistant" to "full editor assistant."
 
-- [ ] **Phase 6: Scene File Management** - AI can save, open, create, and manage scene files
+- [x] **Phase 6: Scene File Management** - AI can save, open, create, and manage scene files
 - [ ] **Phase 7: UI System** - AI can build and style Control node hierarchies with themes and layouts
 - [ ] **Phase 8: Animation System** - AI can create and edit animations with tracks and keyframes
 - [ ] **Phase 9: Editor Viewport Screenshots** - AI can capture editor viewport images for visual feedback
@@ -119,7 +119,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 3. Script & Project Management | v1.0 | 3/3 | Complete | 2026-03-17 |
 | 4. Editor Integration | v1.0 | 2/2 | Complete | 2026-03-18 |
 | 5. Runtime, Signals & Distribution | v1.0 | 3/3 | Complete | 2026-03-18 |
-| 6. Scene File Management | v1.1 | 0/3 | Planning complete | - |
+| 6. Scene File Management | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 7. UI System | v1.1 | 0/0 | Not started | - |
 | 8. Animation System | v1.1 | 0/0 | Not started | - |
 | 9. Editor Viewport Screenshots | v1.1 | 0/0 | Not started | - |
