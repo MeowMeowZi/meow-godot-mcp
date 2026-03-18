@@ -10,6 +10,7 @@
 
 class MCPServer;
 class MCPDock;
+class MeowDebuggerPlugin;
 
 class MCPPlugin : public godot::EditorPlugin {
     GDCLASS(MCPPlugin, godot::EditorPlugin);
@@ -32,6 +33,7 @@ private:
 
     MCPServer* server;
     MCPDock* dock;
+    godot::Ref<MeowDebuggerPlugin> debugger_plugin;
     int port;
 
     // Status polling

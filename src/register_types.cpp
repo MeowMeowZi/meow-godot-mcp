@@ -1,5 +1,6 @@
 #include "register_types.h"
 #include "mcp_plugin.h"
+#include "game_bridge.h"
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
@@ -9,6 +10,7 @@ using namespace godot;
 void initialize_mcp_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
         GDREGISTER_CLASS(MCPPlugin);
+        GDREGISTER_CLASS(MeowDebuggerPlugin);
     }
 }
 

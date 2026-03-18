@@ -1,6 +1,7 @@
 #include "mcp_server.h"
 #include "mcp_protocol.h"
 #include "mcp_prompts.h"
+#include "game_bridge.h"
 #include "scene_tools.h"
 #include "scene_mutation.h"
 #include "script_tools.h"
@@ -33,6 +34,21 @@ void MCPServer::set_undo_redo(godot::EditorUndoRedoManager* ur) {
 
 void MCPServer::set_godot_version(const GodotVersion& v) {
     godot_version = v;
+}
+
+void MCPServer::set_game_bridge(MeowDebuggerPlugin* bridge) {
+    game_bridge = bridge;
+    if (bridge) {
+        bridge->set_deferred_response_callback([this](const nlohmann::json& response) {
+            queue_deferred_response(response);
+        });
+    }
+}
+
+void MCPServer::queue_deferred_response(const nlohmann::json& response) {
+    std::lock_guard<std::mutex> lock(queue_mutex);
+    response_queue.push({response});
+    response_cv.notify_one();
 }
 
 bool MCPServer::has_client() const {
@@ -75,6 +91,9 @@ void MCPServer::stop() {
     }
     initialized = false;
     read_buffer.clear();
+
+    // Clear game bridge reference
+    game_bridge = nullptr;
 
     // Clear queues
     {
@@ -221,6 +240,11 @@ void MCPServer::poll() {
         request_queue.pop();
         // Execute on main thread (all Godot API calls are safe here)
         auto response = handle_request(req.method, req.id, req.params);
+        // Check for deferred response marker -- do not queue immediately
+        if (response.contains("__deferred") && response["__deferred"].get<bool>()) {
+            // Response will be queued later via queue_deferred_response
+            continue;
+        }
         response_queue.push({response});
         response_cv.notify_one();
     }
@@ -852,6 +876,51 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 result["data"].get<std::string>(),
                 result["mimeType"].get<std::string>(),
                 result.value("metadata", nlohmann::json()));
+        }
+
+        // --- Phase 10: Game Bridge tools ---
+
+        if (tool_name == "inject_input") {
+            nlohmann::json args;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                args = params["arguments"];
+            }
+            if (!args.contains("type") || !args["type"].is_string()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: type");
+            }
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+            }
+            return mcp::create_tool_result(id, game_bridge->inject_input_tool(args));
+        }
+
+        if (tool_name == "capture_game_viewport") {
+            int width = 0, height = 0;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("width") && args["width"].is_number_integer())
+                    width = args["width"].get<int>();
+                if (args.contains("height") && args["height"].is_number_integer())
+                    height = args["height"].get<int>();
+            }
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+            }
+            auto result = game_bridge->request_game_viewport_capture(id, width, height);
+            // If deferred, do NOT send response now -- it will come via _capture callback
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;  // Special marker
+            }
+            // Error case (not connected, already pending)
+            return mcp::create_tool_result(id, result);
+        }
+
+        if (tool_name == "get_game_bridge_status") {
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"connected", false}, {"error", "Game bridge not initialized"}});
+            }
+            return mcp::create_tool_result(id, game_bridge->get_bridge_status_tool());
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);

@@ -19,6 +19,8 @@ namespace godot {
 class EditorUndoRedoManager;
 }
 
+class MeowDebuggerPlugin;
+
 struct PendingRequest {
     std::string method;
     nlohmann::json id;
@@ -46,6 +48,8 @@ public:
 
     void set_undo_redo(godot::EditorUndoRedoManager* ur);
     void set_godot_version(const GodotVersion& v);
+    void set_game_bridge(MeowDebuggerPlugin* bridge);
+    void queue_deferred_response(const nlohmann::json& response);
 
 private:
     // Request handling (main thread only)
@@ -77,6 +81,7 @@ private:
     // Godot resources (main thread only)
     godot::EditorUndoRedoManager* undo_redo = nullptr;
     GodotVersion godot_version{4, 3, 0};
+    MeowDebuggerPlugin* game_bridge = nullptr;
 };
 
 #endif // MEOW_GODOT_MCP_MCP_SERVER_H

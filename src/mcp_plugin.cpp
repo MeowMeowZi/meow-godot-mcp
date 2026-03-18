@@ -2,6 +2,7 @@
 #include "mcp_server.h"
 #include "mcp_dock.h"
 #include "mcp_tool_registry.h"
+#include "game_bridge.h"
 
 #include <godot_cpp/classes/editor_undo_redo_manager.hpp>
 #include <godot_cpp/classes/engine.hpp>
@@ -50,6 +51,17 @@ void MCPPlugin::_enter_tree() {
     server->set_godot_version(detected_version);
     server->start(port);
 
+    // Register game bridge debugger plugin
+    debugger_plugin.instantiate();
+    add_debugger_plugin(debugger_plugin);
+
+    // Register companion autoload for game-side bridge
+    add_autoload_singleton("MeowMCPBridge",
+        "res://addons/meow_godot_mcp/companion/meow_mcp_bridge.gd");
+
+    // Connect game bridge to server for deferred responses
+    server->set_game_bridge(debugger_plugin.ptr());
+
     // Create dock panel
     dock = new MCPDock();
 
@@ -74,6 +86,15 @@ void MCPPlugin::_enter_tree() {
 }
 
 void MCPPlugin::_exit_tree() {
+    // Remove companion autoload
+    remove_autoload_singleton("MeowMCPBridge");
+
+    // Remove debugger plugin
+    if (debugger_plugin.is_valid()) {
+        remove_debugger_plugin(debugger_plugin);
+        debugger_plugin.unref();
+    }
+
     // Dock cleanup (order matters: remove from docks, then memdelete root, then delete wrapper)
     if (dock) {
         remove_control_from_docks(dock->get_root());
