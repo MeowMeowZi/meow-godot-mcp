@@ -53,9 +53,9 @@ TEST(GodotVersion, LesserPatch) {
 
 // --- Tool registry tests ---
 
-TEST(ToolRegistry, HasExactly12Tools) {
+TEST(ToolRegistry, HasExactly18Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 12);
+    ASSERT_EQ(tools.size(), 18);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
@@ -82,7 +82,9 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
     std::vector<std::string> expected_names = {
         "get_scene_tree", "create_node", "set_node_property", "delete_node",
         "read_script", "write_script", "edit_script", "attach_script",
-        "detach_script", "list_project_files", "get_project_settings", "get_resource_info"
+        "detach_script", "list_project_files", "get_project_settings", "get_resource_info",
+        "run_game", "stop_game", "get_game_output",
+        "get_node_signals", "connect_signal", "disconnect_signal"
     };
     ASSERT_EQ(tools.size(), expected_names.size());
     for (size_t i = 0; i < tools.size(); i++) {
@@ -92,10 +94,10 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 
 // --- Filtered tools JSON tests ---
 
-TEST(FilteredTools, Version430Returns12Tools) {
+TEST(FilteredTools, Version430Returns18Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 12);
+    EXPECT_EQ(json_tools.size(), 18);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -104,10 +106,10 @@ TEST(FilteredTools, Version420Returns0Tools) {
     EXPECT_EQ(json_tools.size(), 0);
 }
 
-TEST(FilteredTools, PermissiveVersionReturns12Tools) {
+TEST(FilteredTools, PermissiveVersionReturns18Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 12);
+    EXPECT_EQ(json_tools.size(), 18);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -130,8 +132,8 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 
 // --- Tool count tests ---
 
-TEST(ToolCount, Version430Returns12) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 12);
+TEST(ToolCount, Version430Returns18) {
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 18);
 }
 
 TEST(ToolCount, Version420Returns0) {
@@ -177,4 +179,107 @@ TEST(FilteredTools, CreateNodeSchemaMatchesExpected) {
         }
     }
     FAIL() << "create_node not found in filtered tools";
+}
+
+// --- Phase 5 new tool schema validation tests ---
+
+TEST(FilteredTools, RunGameSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "run_game") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("mode"));
+            EXPECT_TRUE(schema["properties"].contains("scene_path"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "mode");
+            // Verify mode enum
+            auto mode_prop = schema["properties"]["mode"];
+            ASSERT_TRUE(mode_prop.contains("enum"));
+            ASSERT_EQ(mode_prop["enum"].size(), 3);
+            EXPECT_EQ(mode_prop["enum"][0], "main");
+            EXPECT_EQ(mode_prop["enum"][1], "current");
+            EXPECT_EQ(mode_prop["enum"][2], "custom");
+            return;
+        }
+    }
+    FAIL() << "run_game not found in filtered tools";
+}
+
+TEST(FilteredTools, StopGameSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "stop_game") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["required"].empty());
+            return;
+        }
+    }
+    FAIL() << "stop_game not found in filtered tools";
+}
+
+TEST(FilteredTools, GetGameOutputSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "get_game_output") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("clear_after_read"));
+            EXPECT_TRUE(schema["required"].empty());
+            return;
+        }
+    }
+    FAIL() << "get_game_output not found in filtered tools";
+}
+
+TEST(FilteredTools, GetNodeSignalsSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "get_node_signals") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("node_path"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "node_path");
+            return;
+        }
+    }
+    FAIL() << "get_node_signals not found in filtered tools";
+}
+
+TEST(FilteredTools, ConnectSignalSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "connect_signal") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("source_path"));
+            EXPECT_TRUE(schema["properties"].contains("signal_name"));
+            EXPECT_TRUE(schema["properties"].contains("target_path"));
+            EXPECT_TRUE(schema["properties"].contains("method_name"));
+            ASSERT_EQ(schema["required"].size(), 4);
+            EXPECT_EQ(schema["required"][0], "source_path");
+            EXPECT_EQ(schema["required"][1], "signal_name");
+            EXPECT_EQ(schema["required"][2], "target_path");
+            EXPECT_EQ(schema["required"][3], "method_name");
+            return;
+        }
+    }
+    FAIL() << "connect_signal not found in filtered tools";
+}
+
+TEST(FilteredTools, DisconnectSignalSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "disconnect_signal") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("source_path"));
+            EXPECT_TRUE(schema["properties"].contains("signal_name"));
+            EXPECT_TRUE(schema["properties"].contains("target_path"));
+            EXPECT_TRUE(schema["properties"].contains("method_name"));
+            ASSERT_EQ(schema["required"].size(), 4);
+            EXPECT_EQ(schema["required"][0], "source_path");
+            EXPECT_EQ(schema["required"][1], "signal_name");
+            EXPECT_EQ(schema["required"][2], "target_path");
+            EXPECT_EQ(schema["required"][3], "method_name");
+            return;
+        }
+    }
+    FAIL() << "disconnect_signal not found in filtered tools";
 }
