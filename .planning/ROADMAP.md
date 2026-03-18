@@ -91,7 +91,7 @@ Plans:
   1. AI can request a screenshot of the editor 2D viewport and receive a base64 PNG image
   2. AI can request a screenshot of the editor 3D viewport and receive a base64 PNG image
   3. Screenshots are returned as MCP ImageContent (not text-embedded base64) and render in AI clients
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 Plans:
 - [ ] 09-01-PLAN.md -- Register capture_viewport tool + create_image_tool_result protocol builder + unit tests
 - [ ] 09-02-PLAN.md -- Implement viewport_tools module + wire into MCP server dispatch
@@ -134,6 +134,6 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 6. Scene File Management | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 7. UI System | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 8. Animation System | v1.1 | 3/3 | Complete | 2026-03-18 |
-| 9. Editor Viewport Screenshots | v1.1 | 0/3 | Planned | - |
+| 9. Editor Viewport Screenshots | 2/3 | In Progress|  | - |
 | 10. Running Game Bridge | v1.1 | 0/0 | Not started | - |
 | 11. Prompt Templates | v1.1 | 0/0 | Not started | - |
