@@ -1,5 +1,5 @@
-#ifndef GODOT_MCP_MEOW_MCP_SERVER_H
-#define GODOT_MCP_MEOW_MCP_SERVER_H
+#ifndef MEOW_GODOT_MCP_MCP_SERVER_H
+#define MEOW_GODOT_MCP_MCP_SERVER_H
 
 #include <godot_cpp/classes/tcp_server.hpp>
 #include <godot_cpp/classes/stream_peer_tcp.hpp>
@@ -79,4 +79,4 @@ private:
     GodotVersion godot_version{4, 3, 0};
 };
 
-#endif // GODOT_MCP_MEOW_MCP_SERVER_H
+#endif // MEOW_GODOT_MCP_MCP_SERVER_H

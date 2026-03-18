@@ -1,5 +1,5 @@
-#ifndef GODOT_MCP_MEOW_SCENE_MUTATION_H
-#define GODOT_MCP_MEOW_SCENE_MUTATION_H
+#ifndef MEOW_GODOT_MCP_SCENE_MUTATION_H
+#define MEOW_GODOT_MCP_SCENE_MUTATION_H
 
 #include <nlohmann/json.hpp>
 #include <string>
@@ -34,4 +34,4 @@ nlohmann::json set_node_property(const std::string& node_path, const std::string
 nlohmann::json delete_node(const std::string& node_path,
                             godot::EditorUndoRedoManager* undo_redo);
 
-#endif // GODOT_MCP_MEOW_SCENE_MUTATION_H
+#endif // MEOW_GODOT_MCP_SCENE_MUTATION_H

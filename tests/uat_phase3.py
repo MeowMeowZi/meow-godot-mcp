@@ -151,10 +151,10 @@ def run_tests():
     # --- Handshake ---
     print("  执行 MCP 握手...")
     resp = client.request("initialize")
-    assert resp["result"]["serverInfo"]["name"] == "godot-mcp-meow"
+    assert resp["result"]["serverInfo"]["name"] == "meow-godot-mcp"
     client.notify("notifications/initialized")
     time.sleep(0.3)
-    print("  握手成功: godot-mcp-meow v" + resp["result"]["serverInfo"]["version"])
+    print("  握手成功: meow-godot-mcp v" + resp["result"]["serverInfo"]["version"])
     print()
 
     # ===================================================================

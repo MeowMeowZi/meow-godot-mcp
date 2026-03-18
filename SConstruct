@@ -12,13 +12,13 @@ if env["platform"] == "windows":
     env.Append(CXXFLAGS=["/EHsc"])
 
 # Enable Godot-dependent code paths in dual-mode modules (e.g., variant_parser)
-env.Append(CPPDEFINES=["GODOT_MCP_MEOW_GODOT_ENABLED"])
+env.Append(CPPDEFINES=["MEOW_GODOT_MCP_GODOT_ENABLED"])
 
 # GDExtension library target
 sources = Glob("src/*.cpp")
 
 library = env.SharedLibrary(
-    "project/addons/godot_mcp_meow/bin/libgodot_mcp_meow{}{}".format(
+    "project/addons/meow_godot_mcp/bin/libmeow_godot_mcp{}{}".format(
         env["suffix"], env["SHLIBSUFFIX"]
     ),
     source=sources,
@@ -44,7 +44,7 @@ bridge_env.Append(CPPPATH=["bridge/"])
 
 bridge_sources = Glob("bridge/*.cpp")
 bridge = bridge_env.Program(
-    "project/addons/godot_mcp_meow/bin/godot-mcp-bridge",
+    "project/addons/meow_godot_mcp/bin/godot-mcp-bridge",
     source=bridge_sources,
 )
 Alias("bridge", bridge)

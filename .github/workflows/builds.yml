@@ -55,11 +55,11 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: godot-mcp-meow-${{ matrix.platform }}-${{ matrix.arch }}
+          name: meow-godot-mcp-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            project/addons/godot_mcp_meow/bin/*
-            project/addons/godot_mcp_meow/*.cfg
-            project/addons/godot_mcp_meow/*.gdextension
+            project/addons/meow_godot_mcp/bin/*
+            project/addons/meow_godot_mcp/*.cfg
+            project/addons/meow_godot_mcp/*.gdextension
 
   # Run unit tests on the build host (Linux only since GoogleTest CI is simplest there)
   test:
@@ -98,16 +98,16 @@ jobs:
 
       - name: Package release
         run: |
-          mkdir -p release/addons/godot_mcp_meow/bin
+          mkdir -p release/addons/meow_godot_mcp/bin
           # Copy all platform binaries into single addons directory
-          for dir in artifacts/godot-mcp-meow-*/; do
-            cp -r "$dir"/* release/addons/godot_mcp_meow/ 2>/dev/null || true
+          for dir in artifacts/meow-godot-mcp-*/; do
+            cp -r "$dir"/* release/addons/meow_godot_mcp/ 2>/dev/null || true
           done
           cd release
-          zip -r ../godot-mcp-meow-${GITHUB_REF_NAME}.zip addons/
+          zip -r ../meow-godot-mcp-${GITHUB_REF_NAME}.zip addons/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: godot-mcp-meow-*.zip
+          files: meow-godot-mcp-*.zip
           generate_release_notes: true

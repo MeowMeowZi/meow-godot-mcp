@@ -1,6 +1,6 @@
 #include "runtime_tools.h"
 
-#ifdef GODOT_MCP_MEOW_GODOT_ENABLED
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/file_access.hpp>
@@ -167,4 +167,4 @@ nlohmann::json get_game_output(bool clear_after_read) {
     };
 }
 
-#endif // GODOT_MCP_MEOW_GODOT_ENABLED
+#endif // MEOW_GODOT_MCP_GODOT_ENABLED

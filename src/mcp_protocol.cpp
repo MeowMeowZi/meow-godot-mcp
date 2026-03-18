@@ -76,7 +76,7 @@ nlohmann::json create_initialize_response(const nlohmann::json& id) {
                 {"prompts", {{"listChanged", false}}}
             }},
             {"serverInfo", {
-                {"name", "godot-mcp-meow"},
+                {"name", "meow-godot-mcp"},
                 {"version", "0.2.0"}
             }}
         }}

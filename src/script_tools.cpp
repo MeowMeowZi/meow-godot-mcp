@@ -98,7 +98,7 @@ EditResult edit_lines(const std::vector<std::string>& lines, const std::string& 
 
 // --- Godot-dependent implementations ---
 
-#ifdef GODOT_MCP_MEOW_GODOT_ENABLED
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/gd_script.hpp>
@@ -341,4 +341,4 @@ nlohmann::json detach_script(const std::string& node_path,
     return {{"success", true}, {"node_path", node_path}};
 }
 
-#endif // GODOT_MCP_MEOW_GODOT_ENABLED
+#endif // MEOW_GODOT_MCP_GODOT_ENABLED

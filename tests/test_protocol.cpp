@@ -78,7 +78,7 @@ TEST(InitializeResponse, HasCorrectProtocolVersion) {
 TEST(InitializeResponse, HasServerInfo) {
     auto response = create_initialize_response(1);
 
-    EXPECT_EQ(response["result"]["serverInfo"]["name"], "godot-mcp-meow");
+    EXPECT_EQ(response["result"]["serverInfo"]["name"], "meow-godot-mcp");
     EXPECT_EQ(response["result"]["serverInfo"]["version"], "0.2.0");
 }
 

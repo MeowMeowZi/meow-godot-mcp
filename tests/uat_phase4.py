@@ -112,10 +112,10 @@ def run_tests():
     # --- Handshake ---
     print("  Performing MCP handshake...")
     init_resp = client.request("initialize")
-    assert init_resp["result"]["serverInfo"]["name"] == "godot-mcp-meow"
+    assert init_resp["result"]["serverInfo"]["name"] == "meow-godot-mcp"
     client.notify("notifications/initialized")
     time.sleep(0.3)
-    print("  Handshake OK: godot-mcp-meow v" + init_resp["result"]["serverInfo"]["version"])
+    print("  Handshake OK: meow-godot-mcp v" + init_resp["result"]["serverInfo"]["version"])
     print()
 
     # ===================================================================

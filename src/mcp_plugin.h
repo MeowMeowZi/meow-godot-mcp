@@ -1,5 +1,5 @@
-#ifndef GODOT_MCP_MEOW_MCP_PLUGIN_H
-#define GODOT_MCP_MEOW_MCP_PLUGIN_H
+#ifndef MEOW_GODOT_MCP_MCP_PLUGIN_H
+#define MEOW_GODOT_MCP_MCP_PLUGIN_H
 
 #include <godot_cpp/classes/editor_plugin.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -43,4 +43,4 @@ private:
     int tool_count;
 };
 
-#endif // GODOT_MCP_MEOW_MCP_PLUGIN_H
+#endif // MEOW_GODOT_MCP_MCP_PLUGIN_H

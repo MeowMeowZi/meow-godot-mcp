@@ -127,7 +127,7 @@ nlohmann::json parse_variant_hint(const std::string& value_str, const std::strin
     return {{"type", "string"}, {"value", value_str}};
 }
 
-#ifdef GODOT_MCP_MEOW_GODOT_ENABLED
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/color.hpp>

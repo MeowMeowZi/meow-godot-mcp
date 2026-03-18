@@ -1,5 +1,5 @@
-#ifndef GODOT_MCP_MEOW_SCRIPT_TOOLS_H
-#define GODOT_MCP_MEOW_SCRIPT_TOOLS_H
+#ifndef MEOW_GODOT_MCP_SCRIPT_TOOLS_H
+#define MEOW_GODOT_MCP_SCRIPT_TOOLS_H
 
 #include <nlohmann/json.hpp>
 #include <string>
@@ -17,7 +17,7 @@ EditResult edit_lines(const std::vector<std::string>& lines, const std::string& 
 
 bool validate_res_path(const std::string& path, std::string& error_out);
 
-#ifdef GODOT_MCP_MEOW_GODOT_ENABLED
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 #include <godot_cpp/classes/editor_undo_redo_manager.hpp>
 
 // Godot-dependent tool functions (called from mcp_server.cpp)
@@ -31,4 +31,4 @@ nlohmann::json detach_script(const std::string& node_path,
                               godot::EditorUndoRedoManager* undo_redo);
 #endif
 
-#endif // GODOT_MCP_MEOW_SCRIPT_TOOLS_H
+#endif // MEOW_GODOT_MCP_SCRIPT_TOOLS_H

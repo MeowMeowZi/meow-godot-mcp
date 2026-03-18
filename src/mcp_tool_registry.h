@@ -1,5 +1,5 @@
-#ifndef GODOT_MCP_MEOW_MCP_TOOL_REGISTRY_H
-#define GODOT_MCP_MEOW_MCP_TOOL_REGISTRY_H
+#ifndef MEOW_GODOT_MCP_MCP_TOOL_REGISTRY_H
+#define MEOW_GODOT_MCP_MCP_TOOL_REGISTRY_H
 
 // Pure C++17 + nlohmann/json -- NO Godot headers
 // This allows unit testing without godot-cpp dependency
@@ -41,4 +41,4 @@ nlohmann::json get_filtered_tools_json(const GodotVersion& current);
 // Returns count of tools available for the given Godot version
 int get_tool_count(const GodotVersion& current);
 
-#endif // GODOT_MCP_MEOW_MCP_TOOL_REGISTRY_H
+#endif // MEOW_GODOT_MCP_MCP_TOOL_REGISTRY_H

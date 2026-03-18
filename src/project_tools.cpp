@@ -1,7 +1,7 @@
 #include "project_tools.h"
 #include "script_tools.h"  // for validate_res_path
 
-#ifdef GODOT_MCP_MEOW_GODOT_ENABLED
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -158,4 +158,4 @@ nlohmann::json get_resource_info(const std::string& path) {
     };
 }
 
-#endif // GODOT_MCP_MEOW_GODOT_ENABLED
+#endif // MEOW_GODOT_MCP_GODOT_ENABLED

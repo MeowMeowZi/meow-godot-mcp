@@ -1,5 +1,5 @@
-#ifndef GODOT_MCP_MEOW_MCP_PROMPTS_H
-#define GODOT_MCP_MEOW_MCP_PROMPTS_H
+#ifndef MEOW_GODOT_MCP_MCP_PROMPTS_H
+#define MEOW_GODOT_MCP_MCP_PROMPTS_H
 
 // Pure C++17 + nlohmann/json -- NO Godot headers
 // This allows unit testing without godot-cpp dependency
@@ -16,4 +16,4 @@ nlohmann::json get_prompt_messages(const std::string& name, const nlohmann::json
 // Check if a prompt name is valid
 bool prompt_exists(const std::string& name);
 
-#endif // GODOT_MCP_MEOW_MCP_PROMPTS_H
+#endif // MEOW_GODOT_MCP_MCP_PROMPTS_H

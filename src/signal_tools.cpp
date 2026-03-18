@@ -1,6 +1,6 @@
 #include "signal_tools.h"
 
-#ifdef GODOT_MCP_MEOW_GODOT_ENABLED
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/node.hpp>
@@ -170,4 +170,4 @@ nlohmann::json disconnect_signal(const std::string& source_path, const std::stri
     };
 }
 
-#endif // GODOT_MCP_MEOW_GODOT_ENABLED
+#endif // MEOW_GODOT_MCP_GODOT_ENABLED

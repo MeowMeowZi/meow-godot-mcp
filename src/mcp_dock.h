@@ -1,5 +1,5 @@
-#ifndef GODOT_MCP_MEOW_MCP_DOCK_H
-#define GODOT_MCP_MEOW_MCP_DOCK_H
+#ifndef MEOW_GODOT_MCP_MCP_DOCK_H
+#define MEOW_GODOT_MCP_MCP_DOCK_H
 
 #include <godot_cpp/classes/v_box_container.hpp>
 #include <godot_cpp/classes/h_box_container.hpp>
@@ -47,4 +47,4 @@ private:
     int last_tool_count = 0;
 };
 
-#endif // GODOT_MCP_MEOW_MCP_DOCK_H
+#endif // MEOW_GODOT_MCP_MCP_DOCK_H

@@ -1,4 +1,4 @@
-// GODOT_MCP_MEOW_GODOT_ENABLED is defined by the SCons build system
+// MEOW_GODOT_MCP_GODOT_ENABLED is defined by the SCons build system
 // to enable Godot-dependent code paths (e.g., parse_variant in variant_parser.h)
 #include "scene_mutation.h"
 #include "variant_parser.h"

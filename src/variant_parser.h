@@ -1,5 +1,5 @@
-#ifndef GODOT_MCP_MEOW_VARIANT_PARSER_H
-#define GODOT_MCP_MEOW_VARIANT_PARSER_H
+#ifndef MEOW_GODOT_MCP_VARIANT_PARSER_H
+#define MEOW_GODOT_MCP_VARIANT_PARSER_H
 
 #include <nlohmann/json.hpp>
 #include <string>
@@ -18,7 +18,7 @@
 //   {"type": "string", "value": "hello"}
 nlohmann::json parse_variant_hint(const std::string& value_str, const std::string& type_hint = "");
 
-#ifdef GODOT_MCP_MEOW_GODOT_ENABLED
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 // Godot-dependent parsing -- used at runtime by scene_mutation.cpp
 // Two-layer strategy:
 //   1. Try UtilityFunctions::str_to_var() (handles Vector2, Color, etc.)
@@ -31,4 +31,4 @@ nlohmann::json parse_variant_hint(const std::string& value_str, const std::strin
 godot::Variant parse_variant(const std::string& value_str, godot::Node* node, const std::string& property);
 #endif
 
-#endif // GODOT_MCP_MEOW_VARIANT_PARSER_H
+#endif // MEOW_GODOT_MCP_VARIANT_PARSER_H

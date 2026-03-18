@@ -1,10 +1,10 @@
-#ifndef GODOT_MCP_MEOW_RUNTIME_TOOLS_H
-#define GODOT_MCP_MEOW_RUNTIME_TOOLS_H
+#ifndef MEOW_GODOT_MCP_RUNTIME_TOOLS_H
+#define MEOW_GODOT_MCP_RUNTIME_TOOLS_H
 
 #include <nlohmann/json.hpp>
 #include <string>
 
-#ifdef GODOT_MCP_MEOW_GODOT_ENABLED
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 
 // Run the game in specified mode. Returns JSON with success, running status, mode.
 // mode: "main" | "current" | "custom"
@@ -23,4 +23,4 @@ void reset_log_position();
 
 #endif
 
-#endif // GODOT_MCP_MEOW_RUNTIME_TOOLS_H
+#endif // MEOW_GODOT_MCP_RUNTIME_TOOLS_H

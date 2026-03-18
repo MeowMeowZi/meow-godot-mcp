@@ -26,5 +26,5 @@ tests/build/
 config.log
 
 # Binary output (tracked via .gitkeep)
-project/addons/godot_mcp_meow/bin/*
-!project/addons/godot_mcp_meow/bin/.gitkeep
+project/addons/meow_godot_mcp/bin/*
+!project/addons/meow_godot_mcp/bin/.gitkeep
