@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 Phase: 9 of 11 (Editor Viewport Screenshots) -- fourth phase of v1.1
 Plan: --
 Status: Ready to discuss
-Last activity: 2026-03-18 -- Phase 8 verified and complete
+Last activity: 2026-03-18 - Completed quick task 260318-nff: macOS/Linux 构建 + 全平台 Release
 
 Progress: [██████████] 100%
 
@@ -105,6 +105,12 @@ None yet.
 - [Research]: Animation UndoRedo feasibility -- may skip for track/keyframe mutations (too complex)
 - [Research]: Viewport screenshot timing -- one-frame-stale vs deferred response decision needed for Phase 9
 - [Carry-over]: Port management for multiple editor instances still unresolved
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260318-nff | 构建 macOS/Linux 动态库，修复跨平台异常兼容性，上传全平台 Release | 2026-03-18 | 7cd0884 | [260318-nff-mac-release](./quick/260318-nff-mac-release/) |
 
 ## Session Continuity
 
