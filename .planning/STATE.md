@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: UI & Editor Expansion
 status: active
-stopped_at: Phase 8 verified and complete, starting Phase 9
-last_updated: "2026-03-18T10:00:00.000Z"
-last_activity: 2026-03-18 -- Phase 8 complete, 148/148 tests, 34 MCP tools, moving to Phase 9
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-18T10:10:01.000Z"
+last_activity: "2026-03-18 - Completed 09-01: capture_viewport tool registry + ImageContent builder"
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_plans: 12
+  completed_plans: 10
+  percent: 83
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 9 of 11 (Editor Viewport Screenshots) -- fourth phase of v1.1
-Plan: --
-Status: Ready to discuss
-Last activity: 2026-03-18 - Completed quick task 260318-nff: macOS/Linux 构建 + 全平台 Release
+Plan: 1 of 3
+Status: active
+Last activity: 2026-03-18 - Completed 09-01: capture_viewport tool registry + ImageContent builder
 
-Progress: [██████████] 100%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [██████████] 100%
 | Phase 08 P01 | 3min | 2 tasks | 3 files |
 | Phase 08 P02 | 3min | 2 tasks | 3 files |
 | Phase 08 P03 | 2min | 1 tasks | 1 files |
+| Phase 09 P01 | 3min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Recent decisions affecting v1.1:
 - [08-02]: Animation module follows ui_tools pattern: lookup helper + static maps + free functions
 - [08-03]: UAT follows exact uat_phase7.py structure for cross-phase consistency
 - [08-03]: 15 tests cover all 5 ANIM requirements plus error cases and round-trip validation
+- [09-01]: capture_viewport has all-optional params; viewport_type defaults to "2d" at dispatch time
+- [09-01]: create_image_tool_result includes optional metadata as second TextContent item
+- [09-01]: ImageContent uses MCP spec 2025-03-26 format: type image + data + mimeType
 
 ### Pending Todos
 
@@ -114,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T09:47:19.716Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-03-18T10:10:01.000Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None

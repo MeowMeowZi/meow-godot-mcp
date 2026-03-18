@@ -35,9 +35,9 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### Viewport Screenshots
 
-- [ ] **VWPT-01**: AI 可截取编辑器 2D 视口的当前画面
-- [ ] **VWPT-02**: AI 可截取编辑器 3D 视口的当前画面
-- [ ] **VWPT-03**: 截图以 base64 PNG 格式通过 MCP ImageContent 返回给 AI 客户端
+- [x] **VWPT-01**: AI 可截取编辑器 2D 视口的当前画面
+- [x] **VWPT-02**: AI 可截取编辑器 3D 视口的当前画面
+- [x] **VWPT-03**: 截图以 base64 PNG 格式通过 MCP ImageContent 返回给 AI 客户端
 
 ### Running Game Bridge
 
@@ -99,9 +99,9 @@ Deferred to future release.
 | ANIM-03 | Phase 8 | Complete |
 | ANIM-04 | Phase 8 | Complete |
 | ANIM-05 | Phase 8 | Complete |
-| VWPT-01 | Phase 9 | Pending |
-| VWPT-02 | Phase 9 | Pending |
-| VWPT-03 | Phase 9 | Pending |
+| VWPT-01 | Phase 9 | Complete |
+| VWPT-02 | Phase 9 | Complete |
+| VWPT-03 | Phase 9 | Complete |
 | BRDG-01 | Phase 10 | Pending |
 | BRDG-02 | Phase 10 | Pending |
 | BRDG-03 | Phase 10 | Pending |
