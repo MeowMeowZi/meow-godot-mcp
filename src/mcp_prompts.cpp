@@ -339,6 +339,367 @@ static const std::vector<PromptDef>& get_prompt_defs() {
                     {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
                 });
             }
+        },
+
+        // 5. build_ui_layout (PMPT-01)
+        {
+            "build_ui_layout",
+            "Step-by-step workflow for building a complete UI layout in Godot using MCP tools",
+            nlohmann::json::array({
+                {{"name", "layout_type"}, {"description", "UI layout type: main_menu, hud, settings, inventory, dialog (default: main_menu)"}, {"required", false}}
+            }),
+            [](const nlohmann::json& args) -> nlohmann::json {
+                std::string layout_type = "main_menu";
+                if (args.contains("layout_type") && args["layout_type"].is_string()) {
+                    layout_type = args["layout_type"].get<std::string>();
+                }
+
+                std::string text;
+                if (layout_type == "main_menu") {
+                    text = "Build a Main Menu UI layout in Godot using MCP tools:\n\n"
+                           "Step 1: Create the root Control node\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"Control\", \"name\": \"MainMenu\", \"parent\": \"/root/Scene\" }\n"
+                           "  Result: Root Control node for the menu\n\n"
+                           "Step 2: Set full-rect layout on root\n"
+                           "  Tool: set_layout_preset\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/MainMenu\", \"preset\": \"full_rect\" }\n"
+                           "  Result: MainMenu fills the entire screen\n\n"
+                           "Step 3: Create a centered VBoxContainer for menu items\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"VBoxContainer\", \"name\": \"MenuContainer\", \"parent\": \"/root/Scene/MainMenu\" }\n"
+                           "  Then: set_layout_preset with preset \"center\"\n\n"
+                           "Step 4: Add a title Label\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"Label\", \"name\": \"TitleLabel\", \"parent\": \"/root/Scene/MainMenu/MenuContainer\" }\n"
+                           "  Then: set_theme_override with overrides { \"font_size\": 48 }\n\n"
+                           "Step 5: Add menu buttons\n"
+                           "  Tool: create_node (repeated for each button)\n"
+                           "  Create Button nodes: \"PlayButton\", \"SettingsButton\", \"QuitButton\"\n"
+                           "  Parent: /root/Scene/MainMenu/MenuContainer\n\n"
+                           "Step 6: Style with a custom StyleBox\n"
+                           "  Tool: create_stylebox\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/MainMenu/MenuContainer\", \"override_name\": \"panel\", \"bg_color\": \"#2a2a3e\", \"corner_radius\": 8, \"content_margin\": 20 }\n"
+                           "  Result: Container gets a dark rounded background\n\n"
+                           "Step 7: Configure container layout\n"
+                           "  Tool: set_container_layout\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/MainMenu/MenuContainer\", \"separation\": 12, \"alignment\": 1 }\n"
+                           "  Result: Menu items are centered with 12px spacing\n\n"
+                           "Step 8: Verify the layout\n"
+                           "  Tool: get_ui_properties\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/MainMenu\" }\n"
+                           "  Result: Confirm anchors, size, and children are correct\n\n"
+                           "Step 9: Save the scene\n"
+                           "  Tool: save_scene\n"
+                           "  Result: Scene saved to disk";
+                } else if (layout_type == "hud") {
+                    text = "Build a HUD UI layout in Godot using MCP tools:\n\n"
+                           "Step 1: Create the root MarginContainer node\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"MarginContainer\", \"name\": \"HUD\", \"parent\": \"/root/Scene\" }\n"
+                           "  Result: Root container for the HUD overlay\n\n"
+                           "Step 2: Set full-rect layout on root\n"
+                           "  Tool: set_layout_preset\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/HUD\", \"preset\": \"full_rect\" }\n"
+                           "  Result: HUD fills the entire screen\n\n"
+                           "Step 3: Create a top bar HBoxContainer\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"HBoxContainer\", \"name\": \"TopBar\", \"parent\": \"/root/Scene/HUD\" }\n"
+                           "  Then: set_layout_preset with preset \"top_wide\"\n\n"
+                           "Step 4: Add a ProgressBar for health\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"ProgressBar\", \"name\": \"HealthBar\", \"parent\": \"/root/Scene/HUD/TopBar\" }\n"
+                           "  Result: Health bar in the top bar\n\n"
+                           "Step 5: Style the ProgressBar with a custom StyleBox\n"
+                           "  Tool: create_stylebox\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/HUD/TopBar/HealthBar\", \"override_name\": \"fill\", \"bg_color\": \"#ff3333\", \"corner_radius\": 4 }\n"
+                           "  Result: Custom red health bar appearance\n\n"
+                           "Step 6: Add a score Label\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"Label\", \"name\": \"ScoreLabel\", \"parent\": \"/root/Scene/HUD/TopBar\" }\n"
+                           "  Then: set_theme_override with overrides { \"font_size\": 24 }\n\n"
+                           "Step 7: Configure container layout\n"
+                           "  Tool: set_container_layout\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/HUD/TopBar\", \"separation\": 16 }\n"
+                           "  Result: Top bar items spaced evenly\n\n"
+                           "Step 8: Verify the layout\n"
+                           "  Tool: get_ui_properties\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/HUD\" }\n"
+                           "  Result: Confirm anchors, size, and children are correct\n\n"
+                           "Step 9: Save the scene\n"
+                           "  Tool: save_scene\n"
+                           "  Result: Scene saved to disk";
+                } else if (layout_type == "settings") {
+                    text = "Build a Settings UI layout in Godot using MCP tools:\n\n"
+                           "Step 1: Create the root TabContainer node\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"TabContainer\", \"name\": \"Settings\", \"parent\": \"/root/Scene\" }\n"
+                           "  Result: Root tabbed container for settings sections\n\n"
+                           "Step 2: Set full-rect layout on root\n"
+                           "  Tool: set_layout_preset\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/Settings\", \"preset\": \"full_rect\" }\n"
+                           "  Result: Settings fills the entire screen\n\n"
+                           "Step 3: Create Audio section\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"VBoxContainer\", \"name\": \"Audio\", \"parent\": \"/root/Scene/Settings\" }\n"
+                           "  Add HSlider for master volume, HSlider for SFX, HSlider for music\n\n"
+                           "Step 4: Create Video section\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"VBoxContainer\", \"name\": \"Video\", \"parent\": \"/root/Scene/Settings\" }\n"
+                           "  Add OptionButton for resolution, CheckButton for fullscreen, HSlider for brightness\n\n"
+                           "Step 5: Create Controls section\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"VBoxContainer\", \"name\": \"Controls\", \"parent\": \"/root/Scene/Settings\" }\n"
+                           "  Add relevant input remapping controls\n\n"
+                           "Step 6: Style with theme overrides\n"
+                           "  Tool: set_theme_override\n"
+                           "  Apply consistent font sizes and colors across all sections\n"
+                           "  Tool: create_stylebox\n"
+                           "  Add panel backgrounds to each section for visual separation\n\n"
+                           "Step 7: Configure container layout\n"
+                           "  Tool: set_container_layout\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/Settings/Audio\", \"separation\": 10 }\n"
+                           "  Apply consistent spacing to all tab sections\n\n"
+                           "Step 8: Verify the layout\n"
+                           "  Tool: get_ui_properties\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/Settings\" }\n"
+                           "  Result: Confirm tabs, children, and layout are correct\n\n"
+                           "Step 9: Save the scene\n"
+                           "  Tool: save_scene\n"
+                           "  Result: Scene saved to disk";
+                } else if (layout_type == "inventory") {
+                    text = "Build an Inventory UI layout in Godot using MCP tools:\n\n"
+                           "Step 1: Create the root PanelContainer node\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"PanelContainer\", \"name\": \"Inventory\", \"parent\": \"/root/Scene\" }\n"
+                           "  Result: Root panel for the inventory\n\n"
+                           "Step 2: Set center layout preset\n"
+                           "  Tool: set_layout_preset\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/Inventory\", \"preset\": \"center\" }\n"
+                           "  Result: Inventory panel centered on screen\n\n"
+                           "Step 3: Create a GridContainer for item slots\n"
+                           "  Tool: create_node\n"
+                           "  Parameters: { \"type\": \"GridContainer\", \"name\": \"ItemGrid\", \"parent\": \"/root/Scene/Inventory\" }\n"
+                           "  Result: Grid layout with columns=5 for inventory slots\n\n"
+                           "Step 4: Add TextureRect slots\n"
+                           "  Tool: create_node (repeated for each slot)\n"
+                           "  Create TextureRect nodes as item slots inside the GridContainer\n"
+                           "  Set custom_minimum_size to 64x64 for each slot\n\n"
+                           "Step 5: Style the inventory panel\n"
+                           "  Tool: create_stylebox\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/Inventory\", \"override_name\": \"panel\", \"bg_color\": \"#1a1a2e\", \"corner_radius\": 12, \"content_margin\": 16 }\n"
+                           "  Result: Dark themed inventory panel\n\n"
+                           "Step 6: Apply theme overrides\n"
+                           "  Tool: set_theme_override\n"
+                           "  Apply consistent styling to slot labels and item counts\n\n"
+                           "Step 7: Configure grid layout\n"
+                           "  Tool: set_container_layout\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/Inventory/ItemGrid\", \"columns\": 5, \"separation\": 4 }\n"
+                           "  Result: 5-column grid with 4px spacing between slots\n\n"
+                           "Step 8: Verify the layout\n"
+                           "  Tool: get_ui_properties\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/Inventory\" }\n"
+                           "  Result: Confirm grid, slots, and styling are correct\n\n"
+                           "Step 9: Save the scene\n"
+                           "  Tool: save_scene\n"
+                           "  Result: Scene saved to disk";
+                } else {
+                    text = "Build a " + layout_type + " UI layout in Godot using MCP tools:\n\n"
+                           "Step 1: Create the root Control node\n"
+                           "  Tool: create_node\n"
+                           "  Create the main container node for your " + layout_type + " layout\n\n"
+                           "Step 2: Set layout preset\n"
+                           "  Tool: set_layout_preset\n"
+                           "  Configure anchors and sizing for the root container\n\n"
+                           "Step 3: Build child nodes\n"
+                           "  Tool: create_node (repeated for each UI element)\n"
+                           "  Add containers (VBoxContainer, HBoxContainer, GridContainer) and control nodes\n\n"
+                           "Step 4: Apply theme overrides\n"
+                           "  Tool: set_theme_override\n"
+                           "  Set font sizes, colors, and other theme properties on controls\n\n"
+                           "Step 5: Style with custom StyleBoxes\n"
+                           "  Tool: create_stylebox\n"
+                           "  Add background panels, borders, and rounded corners\n\n"
+                           "Step 6: Configure container layout\n"
+                           "  Tool: set_container_layout\n"
+                           "  Set separation, alignment, and container-specific properties\n\n"
+                           "Step 7: Verify the layout\n"
+                           "  Tool: get_ui_properties\n"
+                           "  Confirm anchors, sizes, and children are correct\n\n"
+                           "Step 8: Save the scene\n"
+                           "  Tool: save_scene\n"
+                           "  Save the completed UI layout to disk";
+                }
+
+                return nlohmann::json::array({
+                    {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
+                });
+            }
+        },
+
+        // 6. setup_animation (PMPT-02)
+        {
+            "setup_animation",
+            "Step-by-step workflow for creating a complete animation in Godot using MCP tools",
+            nlohmann::json::array({
+                {{"name", "animation_type"}, {"description", "Animation type: walk_cycle, ui_transition, idle, attack, fade_in (default: ui_transition)"}, {"required", false}}
+            }),
+            [](const nlohmann::json& args) -> nlohmann::json {
+                std::string animation_type = "ui_transition";
+                if (args.contains("animation_type") && args["animation_type"].is_string()) {
+                    animation_type = args["animation_type"].get<std::string>();
+                }
+
+                std::string text;
+                if (animation_type == "ui_transition") {
+                    text = "Set up a UI Transition animation in Godot using MCP tools:\n\n"
+                           "Step 1: Create an AnimationPlayer node\n"
+                           "  Tool: create_animation\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"parent_path\": \"/root/Scene/UI\" }\n"
+                           "  Result: AnimationPlayer with AnimationLibrary containing \"fade_in\" animation\n\n"
+                           "Step 2: Add a track for the modulate alpha property\n"
+                           "  Tool: add_animation_track\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"track_type\": \"value\", \"node_path\": \".:modulate\", \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: Value track targeting the UI node's modulate property\n\n"
+                           "Step 3: Set the starting keyframe (fully transparent)\n"
+                           "  Tool: set_keyframe\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"track_index\": 0, \"time\": 0.0, \"value\": \"Color(1, 1, 1, 0)\", \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: At t=0, the node is fully transparent\n\n"
+                           "Step 4: Set the ending keyframe (fully visible)\n"
+                           "  Tool: set_keyframe\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"track_index\": 0, \"time\": 0.5, \"value\": \"Color(1, 1, 1, 1)\", \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: At t=0.5s, the node is fully opaque\n\n"
+                           "Step 5: Configure animation properties\n"
+                           "  Tool: set_animation_properties\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"duration\": 0.5, \"loop_mode\": 0, \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: Animation is 0.5s long, plays once (no loop)\n\n"
+                           "Step 6: Verify the animation\n"
+                           "  Tool: get_animation_info\n"
+                           "  Parameters: { \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: Confirm animation list, tracks, keyframes, and properties";
+                } else if (animation_type == "walk_cycle") {
+                    text = "Set up a Walk Cycle animation in Godot using MCP tools:\n\n"
+                           "Step 1: Create an AnimationPlayer node\n"
+                           "  Tool: create_animation\n"
+                           "  Parameters: { \"animation_name\": \"walk\", \"parent_path\": \"/root/Scene/Player\" }\n"
+                           "  Result: AnimationPlayer with AnimationLibrary containing \"walk\" animation\n\n"
+                           "Step 2: Add a position track for bobbing motion\n"
+                           "  Tool: add_animation_track\n"
+                           "  Parameters: { \"animation_name\": \"walk\", \"track_type\": \"value\", \"node_path\": \".:position\", \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Value track for position changes during walk\n\n"
+                           "Step 3: Add a rotation track for body sway\n"
+                           "  Tool: add_animation_track\n"
+                           "  Parameters: { \"animation_name\": \"walk\", \"track_type\": \"value\", \"node_path\": \".:rotation\", \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Value track for rotation during walk\n\n"
+                           "Step 4: Set keyframes for walk cycle positions\n"
+                           "  Tool: set_keyframe\n"
+                           "  Set keyframes at t=0.0, 0.25, 0.5, 0.75, 1.0 for a complete loop cycle\n"
+                           "  Start and end positions must match for seamless loop\n\n"
+                           "Step 5: Configure animation properties for loop\n"
+                           "  Tool: set_animation_properties\n"
+                           "  Parameters: { \"animation_name\": \"walk\", \"duration\": 1.0, \"loop_mode\": 1, \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Animation is 1.0s long, set to loop continuously\n\n"
+                           "Step 6: Verify the animation\n"
+                           "  Tool: get_animation_info\n"
+                           "  Parameters: { \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Confirm tracks, keyframes, duration, and loop mode are correct";
+                } else if (animation_type == "idle") {
+                    text = "Set up an Idle animation in Godot using MCP tools:\n\n"
+                           "Step 1: Create an AnimationPlayer node\n"
+                           "  Tool: create_animation\n"
+                           "  Parameters: { \"animation_name\": \"idle\", \"parent_path\": \"/root/Scene/Player\" }\n"
+                           "  Result: AnimationPlayer with AnimationLibrary containing \"idle\" animation\n\n"
+                           "Step 2: Add a position track for gentle bobbing\n"
+                           "  Tool: add_animation_track\n"
+                           "  Parameters: { \"animation_name\": \"idle\", \"track_type\": \"value\", \"node_path\": \".:position\", \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Value track for subtle position changes\n\n"
+                           "Step 3: Set keyframes for idle bob\n"
+                           "  Tool: set_keyframe\n"
+                           "  Set keyframes at t=0.0 (origin), t=1.0 (slight up), t=2.0 (origin) for smooth bob\n"
+                           "  Use small Y offset (e.g., 2-3 pixels) for subtle breathing effect\n\n"
+                           "Step 4: Configure animation properties for loop\n"
+                           "  Tool: set_animation_properties\n"
+                           "  Parameters: { \"animation_name\": \"idle\", \"duration\": 2.0, \"loop_mode\": 1, \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Animation is 2.0s long, set to loop continuously\n\n"
+                           "Step 5: Verify the animation\n"
+                           "  Tool: get_animation_info\n"
+                           "  Parameters: { \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Confirm track, keyframes, duration, and loop mode are correct";
+                } else if (animation_type == "attack") {
+                    text = "Set up an Attack animation in Godot using MCP tools:\n\n"
+                           "Step 1: Create an AnimationPlayer node\n"
+                           "  Tool: create_animation\n"
+                           "  Parameters: { \"animation_name\": \"attack\", \"parent_path\": \"/root/Scene/Player\" }\n"
+                           "  Result: AnimationPlayer with AnimationLibrary containing \"attack\" animation\n\n"
+                           "Step 2: Add a scale track for attack lunge\n"
+                           "  Tool: add_animation_track\n"
+                           "  Parameters: { \"animation_name\": \"attack\", \"track_type\": \"value\", \"node_path\": \".:scale\", \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Value track for scale burst during attack\n\n"
+                           "Step 3: Add a modulate track for flash effect\n"
+                           "  Tool: add_animation_track\n"
+                           "  Parameters: { \"animation_name\": \"attack\", \"track_type\": \"value\", \"node_path\": \".:modulate\", \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Value track for color flash on attack\n\n"
+                           "Step 4: Set keyframes for quick attack burst\n"
+                           "  Tool: set_keyframe\n"
+                           "  Scale: t=0.0 (1,1), t=0.1 (1.2,1.2), t=0.3 (1,1) for quick punch\n"
+                           "  Modulate: t=0.0 (white), t=0.05 (red flash), t=0.3 (white) for hit feedback\n\n"
+                           "Step 5: Configure animation properties (no loop)\n"
+                           "  Tool: set_animation_properties\n"
+                           "  Parameters: { \"animation_name\": \"attack\", \"duration\": 0.3, \"loop_mode\": 0, \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Animation is 0.3s long, plays once (no loop)\n\n"
+                           "Step 6: Verify the animation\n"
+                           "  Tool: get_animation_info\n"
+                           "  Parameters: { \"player_path\": \"/root/Scene/Player/AnimationPlayer\" }\n"
+                           "  Result: Confirm tracks, keyframes, and duration are correct";
+                } else if (animation_type == "fade_in") {
+                    text = "Set up a Fade In animation in Godot using MCP tools:\n\n"
+                           "Step 1: Create an AnimationPlayer node\n"
+                           "  Tool: create_animation\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"parent_path\": \"/root/Scene/UI\" }\n"
+                           "  Result: AnimationPlayer with AnimationLibrary containing \"fade_in\" animation\n\n"
+                           "Step 2: Add a track for the modulate alpha property\n"
+                           "  Tool: add_animation_track\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"track_type\": \"value\", \"node_path\": \".:modulate\", \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: Value track targeting the node's modulate property\n\n"
+                           "Step 3: Set the starting keyframe (fully transparent)\n"
+                           "  Tool: set_keyframe\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"track_index\": 0, \"time\": 0.0, \"value\": \"Color(1, 1, 1, 0)\", \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: At t=0, the node is fully transparent\n\n"
+                           "Step 4: Set the ending keyframe (fully visible)\n"
+                           "  Tool: set_keyframe\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"track_index\": 0, \"time\": 0.5, \"value\": \"Color(1, 1, 1, 1)\", \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: At t=0.5s, the node is fully opaque\n\n"
+                           "Step 5: Configure animation properties\n"
+                           "  Tool: set_animation_properties\n"
+                           "  Parameters: { \"animation_name\": \"fade_in\", \"duration\": 0.5, \"loop_mode\": 0, \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: Animation is 0.5s long, plays once (no loop)\n\n"
+                           "Step 6: Verify the animation\n"
+                           "  Tool: get_animation_info\n"
+                           "  Parameters: { \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }\n"
+                           "  Result: Confirm animation list, tracks, keyframes, and properties";
+                } else {
+                    text = "Set up a " + animation_type + " animation in Godot using MCP tools:\n\n"
+                           "Step 1: Create an AnimationPlayer node\n"
+                           "  Tool: create_animation\n"
+                           "  Create an AnimationPlayer with your animation in an AnimationLibrary\n\n"
+                           "Step 2: Add animation tracks\n"
+                           "  Tool: add_animation_track\n"
+                           "  Add value, position, rotation, or other tracks targeting node properties\n\n"
+                           "Step 3: Set keyframes\n"
+                           "  Tool: set_keyframe\n"
+                           "  Define keyframe values at specific times along each track\n\n"
+                           "Step 4: Configure animation properties\n"
+                           "  Tool: set_animation_properties\n"
+                           "  Set duration, loop mode, and other animation settings\n\n"
+                           "Step 5: Verify the animation\n"
+                           "  Tool: get_animation_info\n"
+                           "  Confirm tracks, keyframes, duration, and properties are correct";
+                }
+
+                return nlohmann::json::array({
+                    {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
+                });
+            }
         }
     };
     return defs;
