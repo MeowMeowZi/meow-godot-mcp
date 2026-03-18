@@ -45,7 +45,11 @@ See `.planning/milestones/v1.0-ROADMAP.md` for full details.
   3. AI can list all currently open scenes in the editor and get their file paths
   4. AI can create a brand-new scene with a specified root node type and it opens in the editor
   5. AI can instantiate a PackedScene (.tscn) as a child node in the current scene
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 06-01-PLAN.md -- Register 5 scene file tool definitions in MCP tool registry + unit tests
+- [ ] 06-02-PLAN.md -- Implement scene_file_tools module + wire into MCP server dispatch
+- [ ] 06-03-PLAN.md -- Create Phase 6 UAT test script for all SCNF requirements
 
 ### Phase 7: UI System
 **Goal**: AI can construct, layout, and style Control node UIs including theme customization
@@ -115,7 +119,7 @@ Phases execute in numeric order: 6 -> 7 -> 8 -> 9 -> 10 -> 11
 | 3. Script & Project Management | v1.0 | 3/3 | Complete | 2026-03-17 |
 | 4. Editor Integration | v1.0 | 2/2 | Complete | 2026-03-18 |
 | 5. Runtime, Signals & Distribution | v1.0 | 3/3 | Complete | 2026-03-18 |
-| 6. Scene File Management | v1.1 | 0/0 | Not started | - |
+| 6. Scene File Management | v1.1 | 0/3 | Planning complete | - |
 | 7. UI System | v1.1 | 0/0 | Not started | - |
 | 8. Animation System | v1.1 | 0/0 | Not started | - |
 | 9. Editor Viewport Screenshots | v1.1 | 0/0 | Not started | - |
