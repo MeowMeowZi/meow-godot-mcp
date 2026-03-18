@@ -53,9 +53,9 @@ TEST(GodotVersion, LesserPatch) {
 
 // --- Tool registry tests ---
 
-TEST(ToolRegistry, HasExactly29Tools) {
+TEST(ToolRegistry, HasExactly34Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 29);
+    ASSERT_EQ(tools.size(), 34);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
@@ -86,7 +86,8 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
         "run_game", "stop_game", "get_game_output",
         "get_node_signals", "connect_signal", "disconnect_signal",
         "save_scene", "open_scene", "list_open_scenes", "create_scene", "instantiate_scene",
-        "set_layout_preset", "set_theme_override", "create_stylebox", "get_ui_properties", "set_container_layout", "get_theme_overrides"
+        "set_layout_preset", "set_theme_override", "create_stylebox", "get_ui_properties", "set_container_layout", "get_theme_overrides",
+        "create_animation", "add_animation_track", "set_keyframe", "get_animation_info", "set_animation_properties"
     };
     ASSERT_EQ(tools.size(), expected_names.size());
     for (size_t i = 0; i < tools.size(); i++) {
@@ -96,10 +97,10 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 
 // --- Filtered tools JSON tests ---
 
-TEST(FilteredTools, Version430Returns29Tools) {
+TEST(FilteredTools, Version430Returns34Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 29);
+    EXPECT_EQ(json_tools.size(), 34);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -108,10 +109,10 @@ TEST(FilteredTools, Version420Returns0Tools) {
     EXPECT_EQ(json_tools.size(), 0);
 }
 
-TEST(FilteredTools, PermissiveVersionReturns29Tools) {
+TEST(FilteredTools, PermissiveVersionReturns34Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 29);
+    EXPECT_EQ(json_tools.size(), 34);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -134,8 +135,8 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 
 // --- Tool count tests ---
 
-TEST(ToolCount, Version430Returns29) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 29);
+TEST(ToolCount, Version430Returns34) {
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 34);
 }
 
 TEST(ToolCount, Version420Returns0) {
@@ -456,4 +457,107 @@ TEST(FilteredTools, GetThemeOverridesSchemaValidation) {
         }
     }
     FAIL() << "get_theme_overrides not found in filtered tools";
+}
+
+// --- Phase 8 Animation system tool schema validation tests ---
+
+TEST(FilteredTools, CreateAnimationSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "create_animation") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("animation_name"));
+            EXPECT_TRUE(schema["properties"].contains("player_path"));
+            EXPECT_TRUE(schema["properties"].contains("parent_path"));
+            EXPECT_TRUE(schema["properties"].contains("node_name"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "animation_name");
+            return;
+        }
+    }
+    FAIL() << "create_animation not found in filtered tools";
+}
+
+TEST(FilteredTools, AddAnimationTrackSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "add_animation_track") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("player_path"));
+            EXPECT_TRUE(schema["properties"].contains("animation_name"));
+            EXPECT_TRUE(schema["properties"].contains("track_type"));
+            EXPECT_TRUE(schema["properties"].contains("track_path"));
+            ASSERT_EQ(schema["required"].size(), 4);
+            EXPECT_EQ(schema["required"][0], "player_path");
+            EXPECT_EQ(schema["required"][1], "animation_name");
+            EXPECT_EQ(schema["required"][2], "track_type");
+            EXPECT_EQ(schema["required"][3], "track_path");
+            return;
+        }
+    }
+    FAIL() << "add_animation_track not found in filtered tools";
+}
+
+TEST(FilteredTools, SetKeyframeSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "set_keyframe") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("player_path"));
+            EXPECT_TRUE(schema["properties"].contains("animation_name"));
+            EXPECT_TRUE(schema["properties"].contains("track_index"));
+            EXPECT_TRUE(schema["properties"].contains("time"));
+            EXPECT_TRUE(schema["properties"].contains("action"));
+            EXPECT_TRUE(schema["properties"].contains("value"));
+            EXPECT_TRUE(schema["properties"].contains("transition"));
+            ASSERT_EQ(schema["required"].size(), 5);
+            EXPECT_EQ(schema["required"][0], "player_path");
+            EXPECT_EQ(schema["required"][1], "animation_name");
+            EXPECT_EQ(schema["required"][2], "track_index");
+            EXPECT_EQ(schema["required"][3], "time");
+            EXPECT_EQ(schema["required"][4], "action");
+            // Verify track_index is integer, time is number
+            EXPECT_EQ(schema["properties"]["track_index"]["type"], "integer");
+            EXPECT_EQ(schema["properties"]["time"]["type"], "number");
+            return;
+        }
+    }
+    FAIL() << "set_keyframe not found in filtered tools";
+}
+
+TEST(FilteredTools, GetAnimationInfoSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "get_animation_info") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("player_path"));
+            EXPECT_TRUE(schema["properties"].contains("animation_name"));
+            ASSERT_EQ(schema["required"].size(), 1);
+            EXPECT_EQ(schema["required"][0], "player_path");
+            return;
+        }
+    }
+    FAIL() << "get_animation_info not found in filtered tools";
+}
+
+TEST(FilteredTools, SetAnimationPropertiesSchemaValidation) {
+    auto json_tools = get_filtered_tools_json({4, 3, 0});
+    for (const auto& tool : json_tools) {
+        if (tool["name"] == "set_animation_properties") {
+            auto schema = tool["inputSchema"];
+            EXPECT_TRUE(schema["properties"].contains("player_path"));
+            EXPECT_TRUE(schema["properties"].contains("animation_name"));
+            EXPECT_TRUE(schema["properties"].contains("length"));
+            EXPECT_TRUE(schema["properties"].contains("loop_mode"));
+            EXPECT_TRUE(schema["properties"].contains("step"));
+            ASSERT_EQ(schema["required"].size(), 2);
+            EXPECT_EQ(schema["required"][0], "player_path");
+            EXPECT_EQ(schema["required"][1], "animation_name");
+            // Verify length and step are number types
+            EXPECT_EQ(schema["properties"]["length"]["type"], "number");
+            EXPECT_EQ(schema["properties"]["step"]["type"], "number");
+            return;
+        }
+    }
+    FAIL() << "set_animation_properties not found in filtered tools";
 }
