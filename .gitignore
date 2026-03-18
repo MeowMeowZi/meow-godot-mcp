@@ -25,6 +25,9 @@ tests/build/
 .sconf_temp/
 config.log
 
+# Secrets
+.secrets
+
 # Binary output (tracked via .gitkeep)
 project/addons/meow_godot_mcp/bin/*
 !project/addons/meow_godot_mcp/bin/.gitkeep

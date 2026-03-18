@@ -20,7 +20,7 @@ config/features=PackedStringArray("4.6")
 
 [autoload]
 
-MeowMCPBridge="*uid://c68oyvrc85sp8"
+MeowMcpBridge="*uid://c68oyvrc85sp8"
 
 [editor_plugins]
 
