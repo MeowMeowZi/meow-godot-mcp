@@ -7,10 +7,9 @@ namespace mcp {
 ParseResult parse_jsonrpc(const std::string& json_str) {
     nlohmann::json doc;
 
-    // Try to parse JSON
-    try {
-        doc = nlohmann::json::parse(json_str);
-    } catch (const nlohmann::json::parse_error&) {
+    // Try to parse JSON (no exceptions -- godot-cpp disables them on non-MSVC)
+    doc = nlohmann::json::parse(json_str, nullptr, false);
+    if (doc.is_discarded()) {
         return {
             false,
             {},

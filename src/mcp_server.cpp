@@ -158,26 +158,22 @@ void MCPServer::io_thread_func() {
             if (line.empty() || (line.size() == 1 && line[0] == '\r')) continue;
             if (!line.empty() && line.back() == '\r') line.pop_back();
             if (!line.empty()) {
-                try {
-                    bool handled = process_message_io(line);
-                    if (!handled) {
-                        // Request was queued -- wait for main thread response
-                        std::unique_lock<std::mutex> lock(queue_mutex);
-                        response_cv.wait(lock, [this]{ return !response_queue.empty() || !running.load(); });
-                        if (!running.load()) break;
-                        // Send all pending responses
-                        while (!response_queue.empty()) {
-                            auto resp = response_queue.front();
-                            response_queue.pop();
-                            std::string json_str = resp.response.dump() + "\n";
-                            PackedByteArray resp_data;
-                            resp_data.resize(static_cast<int64_t>(json_str.size()));
-                            memcpy(resp_data.ptrw(), json_str.data(), json_str.size());
-                            client_peer->put_data(resp_data);
-                        }
+                bool handled = process_message_io(line);
+                if (!handled) {
+                    // Request was queued -- wait for main thread response
+                    std::unique_lock<std::mutex> lock(queue_mutex);
+                    response_cv.wait(lock, [this]{ return !response_queue.empty() || !running.load(); });
+                    if (!running.load()) break;
+                    // Send all pending responses
+                    while (!response_queue.empty()) {
+                        auto resp = response_queue.front();
+                        response_queue.pop();
+                        std::string json_str = resp.response.dump() + "\n";
+                        PackedByteArray resp_data;
+                        resp_data.resize(static_cast<int64_t>(json_str.size()));
+                        memcpy(resp_data.ptrw(), json_str.data(), json_str.size());
+                        client_peer->put_data(resp_data);
                     }
-                } catch (const std::exception& e) {
-                    UtilityFunctions::printerr("MCP Meow: Error processing message: ", e.what());
                 }
             }
         }

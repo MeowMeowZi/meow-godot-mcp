@@ -266,12 +266,15 @@ nlohmann::json set_theme_override(const std::string& node_path,
                 detected_type = ThemeOverrideType::COLOR;
             } else {
                 // Try parse as integer -- treat as constant
-                try {
-                    (void)std::stoi(val_str);
-                    detected_type = ThemeOverrideType::CONSTANT;
-                } catch (...) {
-                    // Skip unknown override types
-                    continue;
+                {
+                    char* end = nullptr;
+                    (void)std::strtol(val_str.c_str(), &end, 10);
+                    if (end != val_str.c_str() && *end == '\0') {
+                        detected_type = ThemeOverrideType::CONSTANT;
+                    } else {
+                        // Skip unknown override types
+                        continue;
+                    }
                 }
             }
         }
@@ -303,9 +306,9 @@ nlohmann::json set_theme_override(const std::string& node_path,
                 if (val.is_number_integer()) {
                     size = val.get<int>();
                 } else {
-                    try {
-                        size = std::stoi(val_str);
-                    } catch (...) {
+                    char* end_fs = nullptr;
+                    size = static_cast<int>(std::strtol(val_str.c_str(), &end_fs, 10));
+                    if (end_fs == val_str.c_str() || *end_fs != '\0') {
                         continue; // Skip invalid font sizes
                     }
                 }
@@ -329,9 +332,9 @@ nlohmann::json set_theme_override(const std::string& node_path,
                 if (val.is_number_integer()) {
                     constant = val.get<int>();
                 } else {
-                    try {
-                        constant = std::stoi(val_str);
-                    } catch (...) {
+                    char* end_c = nullptr;
+                    constant = static_cast<int>(std::strtol(val_str.c_str(), &end_c, 10));
+                    if (end_c == val_str.c_str() || *end_c != '\0') {
                         continue; // Skip invalid constants
                     }
                 }

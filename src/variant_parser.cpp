@@ -105,22 +105,22 @@ nlohmann::json parse_variant_hint(const std::string& value_str, const std::strin
 
     // e. Int: type_hint is "int" OR string is all digits with optional leading minus
     if (type_hint == "int" || (type_hint.empty() && is_integer_string(value_str))) {
-        try {
-            long long val = std::stoll(value_str);
+        char* end = nullptr;
+        long long val = std::strtoll(value_str.c_str(), &end, 10);
+        if (end != value_str.c_str() && *end == '\0') {
             return {{"type", "int"}, {"value", val}};
-        } catch (...) {
-            // Fall through to string
         }
+        // Fall through to string
     }
 
     // f. Float: type_hint is "float" OR string matches number with decimal point
     if (type_hint == "float" || (type_hint.empty() && is_float_string(value_str))) {
-        try {
-            double val = std::stod(value_str);
+        char* end = nullptr;
+        double val = std::strtod(value_str.c_str(), &end);
+        if (end != value_str.c_str() && *end == '\0') {
             return {{"type", "float"}, {"value", val}};
-        } catch (...) {
-            // Fall through to string
         }
+        // Fall through to string
     }
 
     // g. Fallback: return as string
@@ -160,16 +160,22 @@ godot::Variant parse_variant(const std::string& value_str, godot::Node* node, co
                 if (value_str == "true") return godot::Variant(true);
                 if (value_str == "false") return godot::Variant(false);
                 break;
-            case godot::Variant::INT:
-                try {
-                    return godot::Variant(static_cast<int64_t>(std::stoll(value_str)));
-                } catch (...) {}
+            case godot::Variant::INT: {
+                char* end = nullptr;
+                long long ival = std::strtoll(value_str.c_str(), &end, 10);
+                if (end != value_str.c_str() && *end == '\0') {
+                    return godot::Variant(static_cast<int64_t>(ival));
+                }
                 break;
-            case godot::Variant::FLOAT:
-                try {
-                    return godot::Variant(std::stod(value_str));
-                } catch (...) {}
+            }
+            case godot::Variant::FLOAT: {
+                char* end = nullptr;
+                double dval = std::strtod(value_str.c_str(), &end);
+                if (end != value_str.c_str() && *end == '\0') {
+                    return godot::Variant(dval);
+                }
                 break;
+            }
             default:
                 break;
         }
