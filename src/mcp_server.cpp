@@ -7,6 +7,7 @@
 #include "project_tools.h"
 #include "runtime_tools.h"
 #include "signal_tools.h"
+#include "scene_file_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -562,6 +563,67 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameters: source_path, signal_name, target_path, method_name");
             }
             return mcp::create_tool_result(id, disconnect_signal(source_path, signal_name, target_path, method_name));
+        }
+
+        if (tool_name == "save_scene") {
+            std::string path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("path") && args["path"].is_string())
+                    path = args["path"].get<std::string>();
+            }
+            return mcp::create_tool_result(id, save_scene(path));
+        }
+
+        if (tool_name == "open_scene") {
+            std::string path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("path") && args["path"].is_string())
+                    path = args["path"].get<std::string>();
+            }
+            if (path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
+            }
+            return mcp::create_tool_result(id, open_scene(path));
+        }
+
+        if (tool_name == "list_open_scenes") {
+            return mcp::create_tool_result(id, list_open_scenes());
+        }
+
+        if (tool_name == "create_scene") {
+            std::string root_type, path, root_name;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("root_type") && args["root_type"].is_string())
+                    root_type = args["root_type"].get<std::string>();
+                if (args.contains("path") && args["path"].is_string())
+                    path = args["path"].get<std::string>();
+                if (args.contains("root_name") && args["root_name"].is_string())
+                    root_name = args["root_name"].get<std::string>();
+            }
+            if (root_type.empty() || path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: root_type, path");
+            }
+            return mcp::create_tool_result(id, create_scene(root_type, path, root_name));
+        }
+
+        if (tool_name == "instantiate_scene") {
+            std::string scene_path, parent_path, name;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("scene_path") && args["scene_path"].is_string())
+                    scene_path = args["scene_path"].get<std::string>();
+                if (args.contains("parent_path") && args["parent_path"].is_string())
+                    parent_path = args["parent_path"].get<std::string>();
+                if (args.contains("name") && args["name"].is_string())
+                    name = args["name"].get<std::string>();
+            }
+            if (scene_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: scene_path");
+            }
+            return mcp::create_tool_result(id, instantiate_scene(scene_path, parent_path, name, undo_redo));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
