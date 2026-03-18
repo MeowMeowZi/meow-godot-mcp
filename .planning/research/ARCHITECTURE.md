@@ -1,740 +1,641 @@
-# Architecture Patterns
+# Architecture Patterns: v1.1 Integration
 
-**Domain:** Godot GDExtension MCP Server Plugin (C++)
-**Researched:** 2026-03-14
+**Domain:** Godot GDExtension MCP Server Plugin -- v1.1 UI & Editor Expansion
+**Researched:** 2026-03-18
+**Scope:** How new features integrate with the existing v1.0 architecture
 
-## Overview
+## Existing Architecture Summary
 
-This project is architecturally novel: it is an MCP server whose protocol logic and Godot API access both live **inside** the Godot editor process as a GDExtension. All existing Godot MCP implementations (7+ found) use a three-layer architecture: `AI Client <--stdio--> Node.js/Python process <--WebSocket--> GDScript plugin`. This project eliminates the middle layer entirely.
-
-The core architectural challenge is twofold:
-
-1. **Subprocess problem:** MCP's stdio transport requires the AI client to launch the MCP server as a subprocess. A GDExtension is a shared library loaded into Godot -- it is not independently launchable. A lightweight bridge executable is needed to relay stdio to the GDExtension.
-
-2. **Threading problem:** The bridge relay and MCP protocol run on a background thread, but Godot's scene tree APIs must be called from the main thread. The architecture must safely marshal between these worlds.
-
-## Recommended Architecture
-
-### High-Level Component Diagram
+The v1.0 codebase follows a clear pattern:
 
 ```
-Claude Desktop / AI Client
-        |
-        | (launches as subprocess, stdio pipes)
-        |
-+-------v-----------------------+
-|  Bridge Executable (~50KB)     |
-|  - Reads stdin, writes stdout  |
-|  - Relays JSON-RPC over TCP    |
-|    to localhost:PORT            |
-+-------+------+----------------+
-        |      ^
-   TCP send  TCP recv
-        |      |
-        v      |
-+-------v------+---------------------------------------+
-|  Godot Editor Process (with GDExtension loaded)       |
-|                                                       |
-|  +--------------------------------------------------+ |
-|  |  McpMeowPlugin (EditorPlugin)                    | |
-|  |  - Owns all components                           | |
-|  |  - Lifecycle management (_enter_tree/_exit_tree)  | |
-|  |  - UI dock panel (status display, controls)      | |
-|  +------+------------------------------------+------+ |
-|         |                                    |        |
-|         v                                    v        |
-|  +------------------+          +--------------------+ |
-|  | TcpTransport     |          | ToolRegistry       | |
-|  | (background      |          | - Registers MCP    | |
-|  |  thread)          |          |   tools            | |
-|  | - TCP accept/read |          | - Maps tool name   | |
-|  | - Receives JSON   |          |   to handler       | |
-|  | - Sends responses |          +--------+-----------+ |
-|  +--------+----------+                   |            |
-|           |                              |            |
-|           v                              v            |
-|  +--------------------------------------------------+ |
-|  | McpProtocol (JSON-RPC 2.0 engine)                | |
-|  | - Parses JSON-RPC requests/notifications         | |
-|  | - MCP lifecycle (initialize -> ready -> shutdown) | |
-|  | - Capability negotiation                         | |
-|  | - Routes tools/list, tools/call, etc.            | |
-|  | - Serializes responses                           | |
-|  +------------------------+-------------------------+ |
-|                            |                          |
-|                            v                          |
-|  +--------------------------------------------------+ |
-|  | GodotBridge (thread-safe Godot API access)       | |
-|  | - Queues operations for main thread              | |
-|  | - Uses call_deferred / callable_mp               | |
-|  | - Reads scene tree, node properties              | |
-|  | - Creates/modifies/deletes nodes                 | |
-|  | - Accesses EditorInterface                       | |
-|  +--------------------------------------------------+ |
-+-------------------------------------------------------+
+AI Client <--stdio--> Bridge (~50KB) <--TCP--> GDExtension (MCPServer)
+                                                    |
+                                              MCPPlugin (EditorPlugin)
+                                                    |
+                                              MCPServer (plain C++)
+                                               /       \
+                                    IO thread    Main thread (poll)
+                                   (TCP r/w)     (Godot API calls)
+                                                    |
+                                            Tool modules (free functions)
+                                            - scene_tools.h/.cpp
+                                            - scene_mutation.h/.cpp
+                                            - script_tools.h/.cpp
+                                            - project_tools.h/.cpp
+                                            - runtime_tools.h/.cpp
+                                            - signal_tools.h/.cpp
 ```
 
-### Why a Bridge Executable?
+**Key patterns in existing code:**
 
-MCP's stdio spec says: "The client launches the MCP server as a subprocess." A GDExtension is a `.dll`/`.so`/`.dylib` loaded into Godot's process -- it cannot be that subprocess. Two options exist:
+1. **Tool modules are free functions** -- not classes. Each module is a `.h`/`.cpp` pair exporting functions like `nlohmann::json get_scene_tree(...)`.
+2. **MEOW_GODOT_MCP_GODOT_ENABLED ifdef** guards Godot-dependent code, allowing headers to be included in unit tests.
+3. **Tool registration** is a static vector in `mcp_tool_registry.cpp` -- ToolDef structs with name, description, input_schema, min_version.
+4. **Tool dispatch** is an if-else chain in `MCPServer::handle_request()` inside `mcp_server.cpp`.
+5. **All tool calls execute on the main thread** via `MCPServer::poll()` called from `MCPPlugin::_process()`.
+6. **Tool results** are always `nlohmann::json` objects returned as `type: "text"` MCP content blocks via `mcp::create_tool_result()`.
+7. **UndoRedo** is passed as a raw pointer from MCPServer to tool functions that need mutation support.
 
-**Option A: Bridge Executable (Recommended)**
-A tiny native binary (~100 lines, ~50KB) that the AI client spawns. It relays stdio to the GDExtension over TCP localhost. The GDExtension holds ALL protocol logic. The bridge is a dumb pipe relay.
+## New Modules Required
 
-- Advantage: Clean separation. No stdout contamination from Godot. Bridge is trivial to implement and debug.
-- Advantage: Godot can be running before or after the AI client connects.
-- Advantage: Bridge can reconnect if Godot restarts.
-- Tradeoff: Two executables to distribute (bridge binary + GDExtension).
+### 1. `ui_tools.h` / `ui_tools.cpp` -- NEW MODULE
 
-**Option B: Godot-as-subprocess (Alternative)**
-The AI client launches Godot itself as the subprocess. The GDExtension reads/writes Godot's stdin/stdout directly.
+**Responsibility:** Control node hierarchy queries, theme/stylebox management, container layout operations.
 
-- Advantage: Single process, no bridge needed.
-- Risk: Godot prints engine messages, warnings, and GDScript `print()` output to stdout. ANY non-JSON-RPC line on stdout breaks the MCP protocol. Suppressing all Godot stdout is extremely difficult and fragile.
-- Risk: Godot startup is slow (splash screen, editor init). MCP client may time out.
-- Risk: If Godot crashes, MCP client loses connection with no recovery.
+**Why separate module:** UI (Control) nodes have a fundamentally different property surface than Node2D/Node3D. They have anchors, offsets, size flags, theme overrides, layout presets -- concepts that do not exist for spatial nodes. Grouping these together is the clean boundary.
 
-**Recommendation:** Option A (bridge executable) is architecturally cleaner and avoids the stdout contamination problem entirely. The bridge is small enough to compile alongside the GDExtension in the same SConstruct.
+**Functions:**
 
-### Component Boundaries
-
-| Component | Responsibility | Communicates With | Thread |
-|-----------|---------------|-------------------|--------|
-| **Bridge executable** | Stdio relay: stdin/stdout <-> TCP localhost | AI Client (stdio), GDExtension (TCP) | Own process |
-| **McpMeowPlugin** | EditorPlugin lifecycle, UI panel, owns all sub-components | TcpTransport, ToolRegistry, GodotBridge | Main |
-| **TcpTransport** | TCP accept/read/write on localhost port, receives/sends JSON-RPC | McpProtocol | Background (IO thread) |
-| **McpProtocol** | JSON-RPC 2.0 parsing, MCP lifecycle (initialize, capability negotiation), request routing | TcpTransport, ToolRegistry | Background (IO thread) |
-| **ToolRegistry** | Registers MCP tools, maps tool names to handler functions, provides tools/list response | McpProtocol, GodotBridge | Shared (registration on main, lookup on IO) |
-| **GodotBridge** | Thread-safe interface to Godot editor APIs, queues scene tree operations for main thread | ToolRegistry handlers, Godot Engine | Both (called from IO, defers to main) |
-
-### Data Flow
-
-#### Request Flow (AI Client sends a tool call)
-
-```
-1. AI Client writes JSON-RPC to bridge's stdin
-        |
-2. Bridge forwards over TCP to GDExtension
-        |
-3. TcpTransport (IO thread) reads message from TCP socket
-        |
-4. McpProtocol (IO thread) parses JSON-RPC, identifies method
-        |
-5. If tools/call: ToolRegistry looks up handler by tool name
-        |
-6. Handler calls GodotBridge method
-        |
-7. GodotBridge queues operation for main thread via call_deferred
-        |  (IO thread blocks on std::future waiting for result)
-        |
-8. Main thread executes Godot API call (e.g., get scene tree)
-        |  (Main thread fulfills std::promise with result)
-        |
-9. GodotBridge returns result to handler (IO thread resumes)
-        |
-10. Handler constructs MCP tool result (content array)
-         |
-11. McpProtocol serializes JSON-RPC response
-         |
-12. TcpTransport sends response over TCP to bridge
-         |
-13. Bridge writes response to stdout for AI client
-```
-
-#### Lifecycle Flow
-
-```
-1. User opens Godot project with GDExtension installed
-        |
-2. Godot loads .gdextension, calls entry point at EDITOR level
-        |
-3. McpMeowPlugin::_enter_tree() fires
-        |  - Creates TcpTransport (starts listening on localhost:PORT)
-        |  - Creates McpProtocol
-        |  - Registers all tools via ToolRegistry
-        |  - Creates GodotBridge
-        |  - Starts IO thread for TCP accept
-        |
-4. AI Client launches bridge executable
-        |  - Bridge connects to GDExtension's TCP port
-        |
-5. AI Client sends "initialize" through bridge
-        |
-6. McpProtocol responds with server info + capabilities
-        |
-7. AI Client sends "initialized" notification
-        |
-8. Normal tool calling begins
-```
-
-## Key Architecture Decisions
-
-### Decision 1: In-Process Protocol Logic with External Bridge Relay
-
-**What:** All MCP protocol logic (JSON-RPC parsing, tool dispatch, Godot API access) lives in the GDExtension. A tiny bridge executable handles only stdio relay to TCP localhost.
-
-**Why:** Eliminates the Node.js/Python dependency entirely. The bridge is a compiled native binary (~50KB, zero dependencies). The GDExtension has direct C++ access to the Godot API. No WebSocket library needed -- plain TCP on localhost is sufficient for same-machine JSON message relay.
-
-**Tradeoff:** Two artifacts to distribute (bridge + GDExtension shared library). But both are compiled native binaries, no runtime to install.
-
-### Decision 2: TCP Localhost for Bridge-to-GDExtension IPC
-
-**What:** The bridge communicates with the GDExtension over TCP on localhost (127.0.0.1).
-
-**Why:** Cross-platform consistent (Winsock2 on Windows, POSIX sockets on Linux/macOS). More debuggable than named pipes (can use telnet/nc for manual testing). No library dependency -- platform socket APIs are sufficient. Well-understood, predictable behavior.
-
-**Alternatives considered:**
-- Named pipes: Different APIs per platform (CreateNamedPipe vs mkfifo), harder to debug.
-- Unix domain sockets: Not available on Windows without WSL.
-- Shared memory: Overkill for a message-based protocol.
-
-### Decision 3: Background IO Thread + Main Thread Bridge
-
-**What:** A dedicated `std::thread` handles TCP accept/read/write. Godot API calls are marshalled to the main thread via `call_deferred` with `std::promise`/`std::future` synchronization.
-
-**Why:** Godot's scene tree is NOT thread-safe. Godot 4.1+ enforces thread guards that crash on violations. TCP reads block. These constraints mandate a two-thread architecture. Using `std::thread` directly is more reliable in GDExtension than Godot's Thread class (confirmed by community experience).
-
-**Pattern:**
 ```cpp
-// IO thread context:
-json handle_tool_call(const std::string& tool_name, const json& params) {
-    // Create promise/future pair for cross-thread result
-    auto promise = std::make_shared<std::promise<json>>();
-    auto future = promise->get_future();
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 
-    // Queue work for main thread
-    godot_bridge->queue_operation([=]() -> json {
-        // This lambda runs on main thread
-        return execute_tool(tool_name, params);
-    }, promise);
+// Query Control-specific properties for a node (anchors, offsets, size_flags, theme overrides)
+nlohmann::json get_control_properties(const std::string& node_path);
 
-    // Block IO thread until main thread completes
-    return future.get();
-}
+// Set layout preset on a Control node (PRESET_TOP_LEFT, PRESET_FULL_RECT, etc.)
+nlohmann::json set_layout_preset(const std::string& node_path, const std::string& preset,
+                                  godot::EditorUndoRedoManager* undo_redo);
+
+// Set/remove theme override on a Control node
+// override_type: "color" | "constant" | "font" | "font_size" | "stylebox" | "icon"
+nlohmann::json set_theme_override(const std::string& node_path, const std::string& override_type,
+                                   const std::string& name, const std::string& value,
+                                   godot::EditorUndoRedoManager* undo_redo);
+
+nlohmann::json remove_theme_override(const std::string& node_path, const std::string& override_type,
+                                      const std::string& name,
+                                      godot::EditorUndoRedoManager* undo_redo);
+
+#endif
 ```
 
-### Decision 4: nlohmann/json for JSON-RPC
+**Godot APIs used:**
+- `Control::set_anchors_preset()`, `Control::set_offsets_preset()`, `Control::set_anchors_and_offsets_preset()`
+- `Control::set_anchor()`, `Control::get_anchor()`, `Control::set_offset()`, `Control::get_offset()`
+- `Control::set_h_size_flags()`, `Control::set_v_size_flags()`
+- `Control::add_theme_color_override()`, `Control::add_theme_stylebox_override()`, etc.
+- `Control::get_theme_stylebox()`, `Control::has_theme_stylebox_override()`
+- `Control::set_custom_minimum_size()`
 
-**What:** Use the nlohmann/json header-only library for all JSON parsing and serialization.
+**Confidence:** HIGH -- all APIs confirmed present in godot-cpp headers.
 
-**Why:** Industry standard C++ JSON library (header-only, zero build complexity). Used by cpp-mcp and TinyMCP reference implementations. Integrates trivially with SCons -- just add the include path. Avoids Godot's Dictionary/Variant for protocol-level parsing where strict JSON-RPC 2.0 compliance matters. Single vendored header file (`json.hpp`), no package manager needed.
+### 2. `animation_tools.h` / `animation_tools.cpp` -- NEW MODULE
 
-### Decision 5: EditorPlugin at EDITOR Initialization Level
+**Responsibility:** AnimationPlayer/AnimationLibrary management, track editing, keyframe operations.
 
-**What:** Register the plugin class at `MODULE_INITIALIZATION_LEVEL_EDITOR`.
+**Why separate module:** Animation is a complex subsystem with its own resource hierarchy (AnimationPlayer -> AnimationLibrary -> Animation -> Track -> Key). It warrants isolation to contain the complexity.
 
-**Why:** Required for any GDExtension extending EditorPlugin. The class must be registered after editor classes are available. Using SCENE level crashes because EditorPlugin does not exist at that point. This is the most common registration mistake in GDExtension EditorPlugin development.
+**Functions:**
 
-### Decision 6: Custom MCP Protocol Implementation
-
-**What:** Implement the MCP protocol layer from scratch (~500-800 lines) rather than embedding an existing C++ MCP SDK.
-
-**Why:** Three C++ MCP SDKs exist, none are suitable: cpp-mcp is stuck on spec 2024-11-05 (causes version errors with modern clients), gopher-mcp requires libevent+OpenSSL (enterprise overkill), mcp_server is a standalone server design that cannot be embedded. The MCP stdio protocol is straightforward: newline-delimited JSON-RPC 2.0 with a defined lifecycle (initialize, tools, resources). Full control over spec version negotiation. Target MCP spec 2025-03-26 for v1.
-
-## Component Details
-
-### Bridge Executable
-
-A minimal native binary (~100 lines of C++) that relays between stdio and TCP.
-
-**Responsibilities:**
-- Read lines from stdin, forward over TCP to GDExtension
-- Read lines from TCP socket, write to stdout
-- Exit cleanly when stdin closes (EOF) or TCP connection drops
-- No protocol awareness -- pure byte relay
-
-**Key design:**
 ```cpp
-// bridge/main.cpp (simplified)
-int main(int argc, char* argv[]) {
-    int port = parse_port(argc, argv);
-    int sock = tcp_connect("127.0.0.1", port);
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 
-    // Relay thread: TCP -> stdout
-    std::thread relay([&]() {
-        char buf[8192];
-        while (auto n = recv(sock, buf, sizeof(buf), 0) > 0) {
-            fwrite(buf, 1, n, stdout);
-            fflush(stdout);
-        }
-    });
+// List animations on an AnimationPlayer node
+nlohmann::json get_animations(const std::string& node_path);
 
-    // Main: stdin -> TCP
-    std::string line;
-    while (std::getline(std::cin, line)) {
-        line += "\n";
-        send(sock, line.c_str(), line.size(), 0);
-    }
+// Get detailed animation info including tracks and keyframes
+nlohmann::json get_animation_info(const std::string& node_path, const std::string& animation_name);
 
-    close(sock);
-    relay.join();
-    return 0;
-}
+// Create a new animation on an AnimationPlayer
+nlohmann::json create_animation(const std::string& node_path, const std::string& animation_name,
+                                 float length, const std::string& loop_mode);
+
+// Add a track to an animation
+nlohmann::json add_track(const std::string& node_path, const std::string& animation_name,
+                          const std::string& track_type, const std::string& track_path);
+
+// Insert a keyframe into a track
+nlohmann::json insert_keyframe(const std::string& node_path, const std::string& animation_name,
+                                int track_index, float time, const std::string& value);
+
+// Remove a keyframe from a track
+nlohmann::json remove_keyframe(const std::string& node_path, const std::string& animation_name,
+                                int track_index, int key_index);
+
+#endif
 ```
 
-**Claude Desktop configuration:**
-```json
+**Godot APIs used:**
+- `AnimationMixer::get_animation_library_list()`, `AnimationMixer::get_animation()`, `AnimationMixer::has_animation()`
+- `AnimationLibrary::add_animation()`, `AnimationLibrary::get_animation()`, `AnimationLibrary::get_animation_list()`
+- `Animation::add_track()`, `Animation::get_track_count()`, `Animation::track_get_type()`, `Animation::track_get_path()`
+- `Animation::track_insert_key()`, `Animation::track_get_key_count()`, `Animation::track_get_key_value()`, `Animation::track_get_key_time()`
+- `Animation::track_remove_key()`, `Animation::set_length()`, `Animation::set_loop_mode()`
+- `AnimationPlayer::get_current_animation()`, `AnimationPlayer::is_playing()`
+
+**Confidence:** HIGH -- all APIs confirmed present in godot-cpp headers. The Animation class has a rich API surface for programmatic track/keyframe manipulation.
+
+### 3. `editor_tools.h` / `editor_tools.cpp` -- NEW MODULE
+
+**Responsibility:** Scene file management (save/load/switch), viewport screenshots, and input injection to running game.
+
+**Why one module (not three):** These are all "editor-level operations" that use `EditorInterface` and `Input` singletons rather than node-level APIs. They share the same dependency surface and are conceptually "editor control" features. However, screenshot capture has binary data handling that is unique. If the module grows beyond ~400 lines, splitting `screenshot_tools` out is warranted.
+
+**Functions:**
+
+```cpp
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
+
+// --- Scene File Management ---
+
+// Save the currently edited scene
+nlohmann::json save_scene();
+
+// Save the currently edited scene to a new path
+nlohmann::json save_scene_as(const std::string& path);
+
+// Open a scene file in the editor
+nlohmann::json open_scene(const std::string& scene_filepath);
+
+// List currently open scenes in the editor
+nlohmann::json get_open_scenes();
+
+// --- Viewport Screenshot ---
+
+// Capture the editor viewport (2D or 3D) and return base64-encoded PNG
+// Returns MCP ImageContent-compatible JSON, NOT text content
+nlohmann::json capture_viewport(const std::string& viewport_type, int max_width = 0);
+
+// --- Input Injection ---
+
+// Inject a keyboard input event into the running game
+nlohmann::json inject_key_input(const std::string& key, bool pressed, bool shift, bool ctrl, bool alt);
+
+// Inject a mouse button event
+nlohmann::json inject_mouse_button(const std::string& button, bool pressed, float x, float y);
+
+// Inject a mouse motion event
+nlohmann::json inject_mouse_motion(float x, float y, float rel_x, float rel_y);
+
+#endif
+```
+
+**Godot APIs used:**
+- Scene: `EditorInterface::save_scene()`, `EditorInterface::save_scene_as()`, `EditorInterface::open_scene_from_path()`, `EditorInterface::get_open_scenes()`
+- Screenshot: `EditorInterface::get_editor_viewport_2d()`, `EditorInterface::get_editor_viewport_3d()`, `SubViewport` -> `Viewport::get_texture()` -> `Texture2D::get_image()` -> `Image::save_png_to_buffer()`, `Marshalls::raw_to_base64()`
+- Input: `Input::parse_input_event()`, `InputEventKey`, `InputEventMouseButton`, `InputEventMouseMotion` constructors and setters
+
+**Confidence:** HIGH for scene management and input injection (well-documented, stable APIs). MEDIUM for viewport screenshots -- `get_editor_viewport_2d()`/`get_editor_viewport_3d()` return SubViewport which has `get_texture()`, but the screenshot capture from the *running game* (as opposed to the editor viewport) requires the game's own viewport, which the editor plugin cannot directly access. The editor can only capture the *editor's* 2D/3D viewports. For the running game, the screenshot must be taken within the game process itself or via an alternative approach (detailed in Pitfalls section below).
+
+## Existing Modules That Need Modification
+
+### 1. `mcp_tool_registry.cpp` -- MODIFICATION (additive only)
+
+**What changes:** Add new ToolDef entries to the static `tools` vector for all new tools.
+
+**Estimated additions:** ~12-15 new ToolDef entries (3-4 UI tools, 4-6 animation tools, 3-4 editor tools, 1-2 screenshot/input tools).
+
+**Pattern:** Identical to existing entries. No structural changes needed.
+
+```cpp
+// Example new entry
 {
-  "mcpServers": {
-    "godot-meow": {
-      "command": "path/to/godot-mcp-bridge",
-      "args": ["--port", "6680"]
-    }
-  }
-}
+    "get_control_properties",
+    "Get Control-node-specific properties including anchors, offsets, size flags, and theme overrides",
+    {
+        {"type", "object"},
+        {"properties", {
+            {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}}
+        }},
+        {"required", {"node_path"}}
+    },
+    {4, 3, 0}  // Available in all supported versions
+},
 ```
 
-### McpMeowPlugin (EditorPlugin)
+### 2. `mcp_server.cpp` -- MODIFICATION (additive only)
 
-The root component. Extends `godot::EditorPlugin` via `GDCLASS`. Registered at `MODULE_INITIALIZATION_LEVEL_EDITOR`.
+**What changes:** Add new `#include` directives for new tool headers, and add new `if (tool_name == "...")` blocks inside `handle_request()`.
 
-**Responsibilities:**
-- Create and own all sub-components in `_enter_tree()`
-- Destroy and clean up in `_exit_tree()`
-- Add a dock panel showing MCP server status (listening/connected/disconnected, request count, last tool called)
-- Provide enable/disable toggle for the MCP server
-- Listen for `_edited_scene_changed()` to track scene switches
-- Process pending GodotBridge operations in `_process()` or via deferred calls
+**Current state:** The dispatch chain has 18 tool entries. Adding 12-15 more is manageable but makes the file longer (~700+ lines). The if-else chain pattern is straightforward and grep-friendly. No refactoring to a map-based dispatch is needed at this scale (30-35 tools), but it should be considered if tools exceed 50.
 
-**Key API surface:**
+**Pattern:** Identical to existing dispatch. Each new tool gets its own `if` block with parameter extraction and delegation to the tool module function.
+
+### 3. `mcp_protocol.h` / `mcp_protocol.cpp` -- MODIFICATION (new function)
+
+**What changes:** Add a new `create_image_tool_result()` function to handle screenshot responses, because the current `create_tool_result()` always wraps results as `type: "text"` content blocks.
+
+**New function:**
+
 ```cpp
-class McpMeowPlugin : public EditorPlugin {
-    GDCLASS(McpMeowPlugin, EditorPlugin)
+// In mcp_protocol.h:
+nlohmann::json create_image_tool_result(const nlohmann::json& id,
+                                         const std::string& base64_data,
+                                         const std::string& mime_type);
 
-    TcpTransport* transport;
-    McpProtocol* protocol;
-    ToolRegistry* registry;
-    GodotBridge* bridge;
-    Control* status_panel;
-
-    void _enter_tree() override;
-    void _exit_tree() override;
-    void _process(double delta) override;
-    void _edited_scene_changed(Node* scene_root);
-
-    void start_server();
-    void stop_server();
-};
+// Alternatively, a multi-content result builder:
+nlohmann::json create_multi_content_tool_result(const nlohmann::json& id,
+                                                  const nlohmann::json& content_array);
 ```
 
-### TcpTransport
+**Implementation:**
 
-TCP listener/handler on localhost. Runs on a background thread.
-
-**Responsibilities:**
-- Listen on a configurable localhost port (default: 6680)
-- Accept one client connection (single-client, matching MCP stdio semantics)
-- Read newline-delimited JSON messages from the TCP socket
-- Write newline-delimited JSON responses to the TCP socket
-- Signal disconnect/reconnect events
-- Provide thread-safe send interface
-
-**Key design:**
 ```cpp
-class TcpTransport {
-    std::thread io_thread;
-    std::mutex write_mutex;
-    std::atomic<bool> running;
-    int server_socket;
-    int client_socket;
-    int port;
-
-    // Callback for received messages
-    std::function<void(const std::string&)> on_message;
-    std::function<void()> on_disconnect;
-
-    void start(int port);
-    void stop();
-    void send(const std::string& json_line);
-
-private:
-    void io_loop();  // Accept + read loop on background thread
-};
-```
-
-### McpProtocol
-
-MCP protocol state machine. Parses JSON-RPC 2.0, manages MCP lifecycle.
-
-**Responsibilities:**
-- Parse incoming JSON-RPC 2.0 messages (requests, notifications)
-- Manage MCP lifecycle state: `uninitialized -> initializing -> ready -> shutdown`
-- Handle `initialize` request: return server info, protocol version (`2025-03-26`), capabilities
-- Handle `initialized` notification: transition to ready state
-- Route `tools/list` to ToolRegistry
-- Route `tools/call` to appropriate tool handler
-- Handle `resources/list`, `resources/read` if resources are exposed
-- Serialize JSON-RPC 2.0 responses (result or error)
-- Echo back request IDs correctly
-
-**Capabilities to advertise:**
-```json
-{
-  "capabilities": {
-    "tools": { "listChanged": true },
-    "resources": { "subscribe": false, "listChanged": true }
-  }
-}
-```
-
-### ToolRegistry
-
-Maps MCP tool names to handler callables. Pure data structure with thread-safe read access.
-
-**Responsibilities:**
-- Register tools at startup (name, description, input schema, handler)
-- Provide `tools/list` response payload
-- Look up handler by tool name for `tools/call`
-- Support dynamic tool registration/unregistration (for version-adaptive features)
-- Thread-safe: tools registered on main thread at init, looked up on IO thread during operation
-
-**Tool categories for this project:**
-
-| Category | Tools | Priority |
-|----------|-------|----------|
-| Scene Query | `get_scene_tree`, `get_node_properties`, `get_node_by_path` | Phase 1 (MVP) |
-| Node CRUD | `create_node`, `set_node_property`, `delete_node`, `rename_node` | Phase 1 (MVP) |
-| Script Mgmt | `get_script`, `set_script`, `create_script` | Phase 2 |
-| Project Info | `get_project_info`, `list_files`, `get_project_settings` | Phase 2 |
-| Resource Mgmt | `list_resources`, `get_resource_info` | Phase 2 |
-| Run/Debug | `run_project`, `stop_project`, `get_debug_output` | Phase 3 |
-| Signal Mgmt | `list_signals`, `connect_signal`, `disconnect_signal` | Phase 3 |
-| Export | `export_project`, `list_export_presets` | Phase 4 |
-
-### GodotBridge
-
-The critical bridge component. Translates tool handler requests into Godot API calls, marshalling between threads.
-
-**Responsibilities:**
-- Provide thread-safe wrappers for Godot editor operations
-- Queue operations for main thread execution via a pending operations queue
-- Wait for main thread completion and return results via promise/future
-- Access EditorInterface singleton for editor-specific operations
-- Handle error cases (null scene root, invalid node paths, missing nodes, etc.)
-
-**Thread bridge pattern:**
-```cpp
-class GodotBridge : public Object {
-    GDCLASS(GodotBridge, Object)
-
-public:
-    // Called from IO thread, blocks until main thread completes
-    json get_scene_tree();
-    json get_node_properties(const std::string& node_path);
-    json create_node(const std::string& parent_path,
-                     const std::string& type,
-                     const std::string& name);
-    json set_node_property(const std::string& path,
-                           const std::string& property,
-                           const json& value);
-    json delete_node(const std::string& path);
-
-    // Called from main thread (_process) to drain the queue
-    void process_pending();
-
-    // Generic queue method: callable runs on main thread, result returned to caller
-    template<typename F>
-    json run_on_main_thread(F&& operation);
-
-private:
-    struct PendingOperation {
-        std::function<json()> operation;
-        std::shared_ptr<std::promise<json>> promise;
-    };
-
-    std::queue<PendingOperation> pending_ops;
-    std::mutex ops_mutex;
-};
-```
-
-**Key insight:** `call_deferred()` cannot return values. The GodotBridge uses a `std::queue` of pending operations that the main thread drains in `_process()`. Each operation has an associated `std::promise` that the main thread fulfills, allowing the IO thread to block on `std::future::get()` until the result is available. Since MCP is sequential (one request at a time), having only one operation in flight is perfectly adequate.
-
-## Patterns to Follow
-
-### Pattern 1: Request-Response with Thread Marshalling
-
-**What:** Every MCP tool call follows a strict request-response pattern where the IO thread receives the request, marshals execution to the main thread, waits for the result, and sends the response.
-
-**When:** Every tools/call invocation.
-
-**Why:** MCP is inherently synchronous (request-response). Godot scene tree is main-thread-only. The IO thread must block while the main thread processes.
-
-**Example:**
-```cpp
-// IO thread receives tools/call for "get_scene_tree"
-json handle_get_scene_tree(const json& params) {
-    return bridge->run_on_main_thread([&]() -> json {
-        Node* root = EditorInterface::get_singleton()->get_edited_scene_root();
-        if (!root) {
-            return {{"error", "No scene is currently open"}};
-        }
-        return serialize_node_tree(root);
-    });
-}
-```
-
-### Pattern 2: Node Tree Serialization
-
-**What:** Recursively serialize a Godot node tree into JSON for MCP responses.
-
-**When:** `get_scene_tree` tool, scene queries.
-
-**Example:**
-```cpp
-json serialize_node(Node* node, int max_depth = 10, int depth = 0) {
-    json j;
-    j["name"] = node->get_name().utf8().get_data();
-    j["type"] = node->get_class().utf8().get_data();
-    j["path"] = String(node->get_path()).utf8().get_data();
-
-    if (depth < max_depth) {
-        json children = json::array();
-        for (int i = 0; i < node->get_child_count(); i++) {
-            children.push_back(
-                serialize_node(node->get_child(i), max_depth, depth + 1));
-        }
-        j["children"] = children;
-    } else {
-        j["children_truncated"] = node->get_child_count();
-    }
-
-    return j;
-}
-```
-
-### Pattern 3: MCP Tool Definition with JSON Schema
-
-**What:** Each tool is defined with a name, description, and JSON Schema for its input parameters, following the MCP specification exactly.
-
-**When:** Tool registration, tools/list responses.
-
-**Example:**
-```cpp
-json define_create_node_tool() {
+nlohmann::json create_image_tool_result(const nlohmann::json& id,
+                                         const std::string& base64_data,
+                                         const std::string& mime_type) {
     return {
-        {"name", "create_node"},
-        {"description", "Create a new node in the scene tree"},
-        {"inputSchema", {
-            {"type", "object"},
-            {"properties", {
-                {"parent_path", {
-                    {"type", "string"},
-                    {"description", "NodePath to the parent (e.g. '/root/Main')"}
-                }},
-                {"node_type", {
-                    {"type", "string"},
-                    {"description", "Godot node class (e.g. 'Node2D', 'Sprite2D')"}
-                }},
-                {"name", {
-                    {"type", "string"},
-                    {"description", "Name for the new node"}
-                }}
+        {"jsonrpc", "2.0"},
+        {"id", id},
+        {"result", {
+            {"content", {
+                {
+                    {"type", "image"},
+                    {"data", base64_data},
+                    {"mimeType", mime_type}
+                }
             }},
-            {"required", {"parent_path", "node_type", "name"}}
+            {"isError", false}
         }}
     };
 }
 ```
 
-### Pattern 4: Graceful Error Responses
+This is required because MCP spec 2025-06-18 defines `ImageContent` as `{"type": "image", "data": "base64...", "mimeType": "image/png"}` -- fundamentally different from the `TextContent` that `create_tool_result` currently produces.
 
-**What:** Tool handlers always return well-formed MCP responses, even on error. Never crash, never return malformed JSON.
+**Alternative approach:** The screenshot tool could return text JSON containing a base64 string, but this defeats the purpose -- MCP-aware clients (Claude, Cursor) render `ImageContent` blocks as actual images. Using the proper content type enables visual feedback in the AI chat.
 
-**When:** Every tool handler, especially for user-facing edge cases.
+### 4. `mcp_prompts.h` / `mcp_prompts.cpp` -- MODIFICATION (additive)
 
-**Example:**
+**What changes:** Add new prompt templates for UI building and animation workflows. The existing pattern (static prompt definitions with argument substitution) requires no structural changes.
+
+### 5. `scene_tools.h` / `scene_tools.cpp` -- POSSIBLE MODIFICATION
+
+**What might change:** The `serialize_node()` function currently inspects Node2D and Node3D for transform/visibility. For UI tools to work well, the scene tree serialization should also report Control-specific properties when a node is a Control subclass. This could mean adding a `Control* control = Object::cast_to<Control>(node)` branch that includes anchors, size, and size_flags in the serialized output.
+
+**Decision:** This is optional. The dedicated `get_control_properties` tool provides the full detail. Adding a lightweight summary (size, anchors_preset) to `serialize_node` output improves AI context quality without bloating the tree response. Recommend adding it as a small enhancement.
+
+## Component Boundary Diagram (v1.1)
+
+```
+src/
++-- mcp_server.h/.cpp          [MODIFY: add includes + dispatch for new tools]
++-- mcp_protocol.h/.cpp        [MODIFY: add create_image_tool_result()]
++-- mcp_tool_registry.h/.cpp   [MODIFY: add ~12-15 ToolDef entries]
++-- mcp_plugin.h/.cpp          [NO CHANGE]
++-- mcp_dock.h/.cpp             [NO CHANGE -- or update tool count display]
++-- mcp_prompts.h/.cpp          [MODIFY: add UI/animation prompt templates]
++-- register_types.h/.cpp       [NO CHANGE]
+|
++-- scene_tools.h/.cpp          [MINOR MODIFY: Control info in serialize_node]
++-- scene_mutation.h/.cpp       [NO CHANGE]
++-- script_tools.h/.cpp         [NO CHANGE]
++-- project_tools.h/.cpp        [NO CHANGE]
++-- runtime_tools.h/.cpp        [NO CHANGE]
++-- signal_tools.h/.cpp         [NO CHANGE]
++-- variant_parser.h/.cpp       [NO CHANGE]
+|
++-- ui_tools.h/.cpp             [NEW: Control properties, theme, layout]
++-- animation_tools.h/.cpp      [NEW: AnimationPlayer, tracks, keyframes]
++-- editor_tools.h/.cpp         [NEW: scene file mgmt, screenshots, input]
+```
+
+## Data Flow Changes
+
+### Standard Tools (UI, Animation, Scene Management, Input)
+
+No change to the data flow. These tools follow the exact same pattern as existing tools:
+
+```
+IO thread receives JSON-RPC
+  -> process_message_io queues PendingRequest
+  -> Main thread poll() dequeues
+  -> handle_request() dispatches to tool function
+  -> Tool function calls Godot API, returns nlohmann::json
+  -> create_tool_result() wraps as TextContent
+  -> PendingResponse queued
+  -> IO thread sends response
+```
+
+### Screenshot Tool (New Data Flow)
+
+The screenshot tool introduces a new content type in the response:
+
+```
+IO thread receives JSON-RPC (tools/call capture_viewport)
+  -> Main thread poll() dispatches
+  -> editor_tools::capture_viewport()
+     -> EditorInterface::get_editor_viewport_2d() or get_editor_viewport_3d()
+     -> SubViewport::get_texture() -> Texture2D::get_image()
+     -> Image::save_png_to_buffer() -> PackedByteArray
+     -> Marshalls::raw_to_base64() -> String
+     -> Convert to std::string
+     -> Return as {base64_data, mime_type} pair
+  -> mcp_server.cpp uses create_image_tool_result() instead of create_tool_result()
+  -> PendingResponse with ImageContent
+  -> IO thread sends response
+```
+
+**Key difference:** The dispatch logic in `mcp_server.cpp` must know that `capture_viewport` returns image content and call `create_image_tool_result()` instead of `create_tool_result()`. Two approaches:
+
+**Approach A (Recommended):** Tool function returns a struct/tagged-union indicating content type:
+
 ```cpp
-json handle_get_node_properties(const json& params) {
-    if (!params.contains("node_path")) {
-        return make_error_response("Missing required parameter: node_path");
+// In mcp_server.cpp handle_request():
+if (tool_name == "capture_viewport") {
+    // ... extract args ...
+    auto result = capture_viewport(viewport_type, max_width);
+    if (result.contains("error")) {
+        return mcp::create_tool_result(id, result);  // error as text
     }
+    return mcp::create_image_tool_result(id,
+        result["data"].get<std::string>(),
+        result["mimeType"].get<std::string>());
+}
+```
 
-    return bridge->run_on_main_thread([&]() -> json {
-        Node* root = EditorInterface::get_singleton()->get_edited_scene_root();
-        if (!root) {
-            return make_tool_result("No scene is currently open in the editor.");
-        }
+**Approach B:** Tool function returns a pre-built content array that mcp_server wraps directly. More flexible but breaks the pattern where tool functions return "just data."
 
-        String path = String(params["node_path"].get<std::string>().c_str());
-        Node* node = root->get_node_or_null(NodePath(path));
-        if (!node) {
-            return make_tool_result("Node not found at path: " + path);
-        }
+Approach A is simpler, maintains the existing pattern, and only adds special handling for the one tool that needs it.
 
-        return serialize_node_properties(node);
-    });
+### Input Injection Data Flow
+
+Input injection targets the **running game**, not the editor scene tree. This is important because:
+
+1. `Input::parse_input_event()` injects into the **global Input singleton** which is shared between editor and game.
+2. When `EditorInterface::is_playing_scene()` is true, input events injected via `Input::parse_input_event()` will be processed by the running game's viewport.
+3. The tool should verify the game is running before injecting.
+
+```
+IO thread receives JSON-RPC (tools/call inject_key_input)
+  -> Main thread poll() dispatches
+  -> editor_tools::inject_key_input()
+     -> Check: EditorInterface::is_playing_scene()? If not, return error
+     -> Construct InputEventKey with keycode, pressed state, modifiers
+     -> Input::get_singleton()->parse_input_event(event)
+     -> Return success JSON
+  -> Normal text content response
+```
+
+## Suggested Build Order (Phase Dependencies)
+
+The v1.1 features have the following dependency graph:
+
+```
+Scene File Management -----> (no deps, uses EditorInterface)
+UI System Tools -----------> (no deps, uses Control API)
+Animation Tools -----------> (no deps, uses Animation API)
+Viewport Screenshots ------> (needs mcp_protocol.cpp change for ImageContent)
+Input Injection -----------> (no deps, uses Input API, but needs game running)
+Prompt Templates ----------> (depends on all tools being defined)
+```
+
+**Recommended build order:**
+
+### Phase 1: Scene File Management (editor_tools -- partial)
+**Rationale:** Simplest new feature. Only 3-4 tools. Uses well-known EditorInterface methods that already exist in the codebase. Low risk. Immediately useful -- AI can now save work.
+
+Tools: `save_scene`, `save_scene_as`, `open_scene`, `get_open_scenes`
+
+**Dependencies:** None. **Estimated effort:** Small.
+
+### Phase 2: UI System Tools (ui_tools)
+**Rationale:** Next in complexity. Control node APIs are well-documented and stable. Theme overrides follow the same set/get pattern as existing property tools. The variant_parser may need minor extensions for theme types.
+
+Tools: `get_control_properties`, `set_layout_preset`, `set_theme_override`, `remove_theme_override`
+
+**Dependencies:** None, but benefits from Phase 1's `serialize_node` enhancement. **Estimated effort:** Medium.
+
+### Phase 3: Animation Tools (animation_tools)
+**Rationale:** Most complex new module. The Animation API has a deep hierarchy (Player -> Library -> Animation -> Track -> Key) with many track types and value formats. Build incrementally: read-only tools first, then mutation.
+
+Tools: `get_animations`, `get_animation_info`, `create_animation`, `add_track`, `insert_keyframe`, `remove_keyframe`
+
+**Dependencies:** None. **Estimated effort:** Large.
+
+### Phase 4: Viewport Screenshots (editor_tools -- partial)
+**Rationale:** Requires the `create_image_tool_result()` addition to mcp_protocol.cpp. Binary data handling is a new pattern. Build after text-only tools are solid.
+
+Tools: `capture_viewport`
+
+**Dependencies:** mcp_protocol.cpp change. **Estimated effort:** Medium (mostly the protocol change and base64 encoding pipeline).
+
+### Phase 5: Input Injection (editor_tools -- partial)
+**Rationale:** Requires a running game to test, which makes development/testing slower. Input event construction is straightforward but the interaction with the running game process has edge cases. Build last.
+
+Tools: `inject_key_input`, `inject_mouse_button`, `inject_mouse_motion`
+
+**Dependencies:** `runtime_tools` (game must be running). **Estimated effort:** Medium.
+
+### Phase 6: Prompt Templates
+**Rationale:** Depends on all tools being defined. Pure text, no API risk.
+
+New prompts: `build_ui_layout`, `setup_animation`, `debug_game` (or similar)
+
+**Dependencies:** All tool definitions finalized. **Estimated effort:** Small.
+
+## Patterns to Follow
+
+### Pattern 1: Tool Module Convention (existing pattern, apply to new modules)
+
+Every new tool module follows the same structure:
+
+```cpp
+// ui_tools.h
+#ifndef MEOW_GODOT_MCP_UI_TOOLS_H
+#define MEOW_GODOT_MCP_UI_TOOLS_H
+
+#include <nlohmann/json.hpp>
+#include <string>
+
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
+
+namespace godot { class EditorUndoRedoManager; }
+
+nlohmann::json get_control_properties(const std::string& node_path);
+// ... more functions ...
+
+#endif
+#endif
+```
+
+```cpp
+// ui_tools.cpp
+#include "ui_tools.h"
+
+#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
+
+#include <godot_cpp/classes/editor_interface.hpp>
+#include <godot_cpp/classes/control.hpp>
+// ... Godot headers ...
+
+// Helper: resolve a node path from scene root and cast to Control
+static godot::Control* resolve_control(const std::string& node_path) {
+    auto* ei = godot::EditorInterface::get_singleton();
+    if (!ei) return nullptr;
+    godot::Node* root = ei->get_edited_scene_root();
+    if (!root) return nullptr;
+    godot::Node* node = root->get_node_or_null(
+        godot::NodePath(godot::String(node_path.c_str())));
+    return godot::Object::cast_to<godot::Control>(node);
+}
+
+nlohmann::json get_control_properties(const std::string& node_path) {
+    godot::Control* ctrl = resolve_control(node_path);
+    if (!ctrl) {
+        return {{"success", false}, {"error", "Control node not found: " + node_path}};
+    }
+    // ... extract properties ...
+}
+
+#endif
+```
+
+### Pattern 2: Resolve-and-Cast Helper (new for typed node access)
+
+The existing `signal_tools.cpp` has `resolve_node()`. New modules need type-specific variants:
+
+```cpp
+// Resolve and cast to specific type. Returns nullptr if not found or wrong type.
+static godot::Control* resolve_control(const std::string& node_path);
+static godot::AnimationPlayer* resolve_animation_player(const std::string& node_path);
+```
+
+This avoids repeating the EditorInterface -> scene root -> get_node_or_null -> cast_to chain in every function.
+
+### Pattern 3: Error Response Convention (existing, follow exactly)
+
+All tool functions return `{"success": false, "error": "message"}` on failure and `{"success": true, ...data...}` on success. This is consistent across all v1.0 modules and must continue in v1.1.
+
+### Pattern 4: ImageContent Response (NEW pattern for screenshots)
+
+For the screenshot tool only, the response format differs from standard text content:
+
+```cpp
+// In mcp_server.cpp, special-case the screenshot tool:
+if (tool_name == "capture_viewport") {
+    auto result = capture_viewport(viewport_type, max_width);
+    if (!result["success"].get<bool>()) {
+        return mcp::create_tool_result(id, result);  // Error as text
+    }
+    // Success: return as MCP ImageContent
+    return mcp::create_image_tool_result(
+        id,
+        result["data"].get<std::string>(),
+        "image/png"
+    );
 }
 ```
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Accessing Scene Tree from IO Thread
+### Anti-Pattern 1: Over-Abstracting the Dispatch
 
-**What:** Calling `get_child()`, `get_node()`, `set()`, `add_child()` etc. directly from the background IO thread.
+**What:** Creating a generic tool dispatch system (e.g., `std::map<std::string, std::function<json(json)>>`) to replace the if-else chain.
 
-**Why bad:** Godot 4.1+ has thread guards that crash with "This function can only be accessed from either the main thread or a thread group." Even in older versions, this causes data races.
+**Why avoid:** The if-else chain works. Each tool has different parameter extraction logic. A generic dispatch would need parameter validation/extraction to be either generic (complex) or still per-tool (just moved elsewhere). At 30-35 tools, the if-else chain is readable and grep-friendly. Refactor only if tools exceed 50.
 
-**Instead:** Always use GodotBridge to marshal operations to the main thread.
+### Anti-Pattern 2: Capturing Running Game Viewport Directly from Editor
 
-### Anti-Pattern 2: Using Godot Variant/Dictionary for JSON-RPC
+**What:** Trying to call `get_viewport().get_texture()` on the running game's viewport from the editor process.
 
-**What:** Parsing MCP JSON-RPC messages using Godot's built-in `JSON::parse()` and `Dictionary` types.
+**Why it fails:** The running game is a separate process launched by `EditorInterface::play_main_scene()`. The editor and game do not share a viewport. The editor's viewports (`get_editor_viewport_2d()`, `get_editor_viewport_3d()`) show the *editor* view, not the game's rendered output.
 
-**Why bad:** Godot's JSON parser returns Variant types that need constant casting. JSON-RPC 2.0 has strict requirements (integer IDs, exact field names) that are cumbersome with Variant. The protocol layer should be Godot-independent for testability (can unit test without running Godot).
+**Instead:** Capture the editor's viewport (which shows the game preview when the game is running in embedded mode on Godot 4.4+), or document that screenshot capture is for editor viewports only. If game-viewport screenshots are needed, that requires injecting a screenshot command into the running game via a debug protocol -- far more complex and out of scope for v1.1.
 
-**Instead:** Use nlohmann/json for all protocol-level JSON handling. Convert to/from Godot types only at the GodotBridge boundary.
+### Anti-Pattern 3: Blocking Main Thread with Image Encoding
 
-### Anti-Pattern 3: Monolithic Tool Handlers
+**What:** Encoding a large viewport image to PNG and then to base64 on the main thread.
 
-**What:** Putting all tool logic in a single giant switch statement or if-else chain.
+**Why risky:** `Image::save_png_to_buffer()` and `Marshalls::raw_to_base64()` are CPU-bound. For a 1920x1080 viewport, the PNG encoding could take 50-200ms, which blocks the editor. For typical editor viewports (often smaller), this is acceptable.
 
-**Why bad:** Unmaintainable as tool count grows (30+ tools planned). Hard to test individual tools.
+**Mitigation:** Add an optional `max_width` parameter to `capture_viewport` that downscales the image before encoding. Default to a reasonable size (e.g., 800px width). Document that large screenshots may cause a brief editor pause.
 
-**Instead:** Use the ToolRegistry pattern. Group related tools by file (scene_tools.cpp, node_tools.cpp). Each tool handler is a standalone function.
+### Anti-Pattern 4: Assuming Theme Overrides are Simple String Values
 
-### Anti-Pattern 4: Hardcoding Godot Version Assumptions
+**What:** Treating theme override values the same as `set_node_property` string values.
 
-**What:** Calling APIs that only exist in specific Godot versions without checking.
+**Why it fails:** Theme overrides have typed APIs:
+- `add_theme_color_override(name, Color)` -- needs Color parsing
+- `add_theme_constant_override(name, int)` -- needs int parsing
+- `add_theme_font_size_override(name, int)` -- needs int parsing
+- `add_theme_stylebox_override(name, Ref<StyleBox>)` -- needs StyleBox construction
 
-**Why bad:** The project targets Godot 4.3+ (godot-cpp v10 minimum). APIs may differ between 4.3, 4.4, 4.5. Calling a non-existent method crashes the editor.
+**Instead:** The `set_theme_override` tool should accept the override type as a parameter and parse the value accordingly. For simple types (color, constant, font_size), reuse `variant_parser`. For StyleBox, support creating a `StyleBoxFlat` with common properties (bg_color, border_width, corner_radius) via a JSON object parameter.
 
-**Instead:** Use `compatibility_minimum = "4.3"` in `.gdextension`. For version-specific features, check at runtime using `Engine::get_singleton()->get_version_info()` and conditionally enable tools.
+### Anti-Pattern 5: Animation Keyframe Values Without Type Context
 
-### Anti-Pattern 5: Blocking Main Thread
+**What:** Accepting keyframe values as plain strings without knowing the track type.
 
-**What:** Performing expensive operations synchronously in `_process()` or deferred calls.
+**Why it fails:** Different track types have fundamentally different key value formats:
+- TYPE_VALUE: Variant (could be anything -- Vector2, float, Color, bool)
+- TYPE_POSITION_3D: Vector3
+- TYPE_ROTATION_3D: Quaternion
+- TYPE_SCALE_3D: Vector3
+- TYPE_BEZIER: float + in/out handles
+- TYPE_METHOD: Dictionary with method name + args
 
-**Why bad:** Godot's main thread drives the editor UI. Blocking it freezes the editor.
-
-**Instead:** Keep main-thread operations fast (scene tree reads are fast). For expensive operations (large file reads, deep recursion), consider chunking or setting depth limits.
-
-## Project File Structure
-
-```
-godot-mcp-meow/
-|
-+-- src/                              # GDExtension C++ source code
-|   +-- register_types.h
-|   +-- register_types.cpp            # Class registration (EDITOR level)
-|   +-- mcp/
-|   |   +-- protocol.h                # MCP protocol (JSON-RPC 2.0 + lifecycle)
-|   |   +-- protocol.cpp
-|   |   +-- server.h                  # MCP server (tool registry, request dispatch)
-|   |   +-- server.cpp
-|   |   +-- transport.h               # TCP listener for bridge connection
-|   |   +-- transport.cpp
-|   +-- editor/
-|   |   +-- mcp_plugin.h              # EditorPlugin subclass (dock UI, lifecycle)
-|   |   +-- mcp_plugin.cpp
-|   +-- tools/
-|   |   +-- scene_tools.h             # Scene query/manipulation tools
-|   |   +-- scene_tools.cpp
-|   |   +-- node_tools.h              # Node CRUD tools
-|   |   +-- node_tools.cpp
-|   |   +-- script_tools.h            # Script management tools
-|   |   +-- script_tools.cpp
-|   |   +-- project_tools.h           # Project info tools
-|   |   +-- project_tools.cpp
-|   +-- bridge/
-|       +-- godot_bridge.h            # Thread-safe Godot API wrapper
-|       +-- godot_bridge.cpp
-|
-+-- bridge/
-|   +-- main.cpp                      # Bridge executable: stdio <-> TCP relay
-|
-+-- thirdparty/
-|   +-- nlohmann/
-|       +-- json.hpp                  # Single-header JSON library (v3.12.0)
-|
-+-- godot-cpp/                        # Git submodule (official C++ bindings, v10+)
-|
-+-- project/                          # Demo/test Godot project
-|   +-- project.godot
-|   +-- addons/
-|   |   +-- godot_mcp_meow/
-|   |       +-- plugin.cfg            # Editor plugin config
-|   |       +-- bin/
-|   |           +-- godot_mcp_meow.gdextension
-|
-+-- tests/
-|   +-- test_protocol.cpp             # Unit tests: JSON-RPC parsing
-|   +-- test_tools.cpp                # Unit tests: tool argument validation
-|
-+-- SConstruct                        # Build: GDExtension + bridge executable
-```
+**Instead:** The `insert_keyframe` tool should either infer the expected type from the track type (recommended), or require the caller to specify. For TYPE_VALUE tracks, the existing `variant_parser` can handle string-to-Variant conversion. For specialized tracks (position, rotation, scale), parse the value as the expected vector/quaternion type.
 
 ## Scalability Considerations
 
-| Concern | At MVP (5 tools) | At Feature Complete (30+ tools) | Future (community extensions) |
-|---------|-------------------|-------------------------------|-------------------------------|
-| Tool dispatch | Simple map lookup, O(1) | Same map lookup, O(1) | Consider plugin-based tool loading |
-| JSON parsing | nlohmann/json sufficient | Same | Same |
-| Thread model | 1 IO thread + main thread | Same | Same (MCP is sequential per connection) |
-| Memory | Minimal overhead | Cached scene tree snapshots may grow for large scenes | Depth limits, pagination |
-| TCP connections | Single client | Single client | Could support multiple clients with connection pool |
-| Startup time | Instant | Tool registration loop, still fast | Lazy tool registration if needed |
+| Concern | v1.0 (18 tools) | v1.1 (~30 tools) | Future (50+ tools) |
+|---------|-----------------|-------------------|---------------------|
+| Tool dispatch | if-else chain | if-else chain (still manageable) | Consider map-based dispatch |
+| Tool registry | Static vector, ~250 lines | ~400 lines | Consider per-module registration |
+| Binary responses | Not supported | 1 tool (screenshot) | May need generic binary content support |
+| mcp_server.cpp size | ~570 lines | ~800-900 lines | Consider splitting dispatch into handler files |
+| Test surface | 132 unit tests | Add ~50 for new modules | Per-module test files |
 
-## Suggested Build Order (Phase Dependencies)
+## Key Technical Decisions
 
-```
-Phase 1: Foundation
-  register_types.cpp + McpMeowPlugin (empty EditorPlugin shell)
-  --> Bridge executable (stdio <-> TCP relay, test independently)
-  --> TcpTransport (TCP listener, verify bridge can connect)
-  --> McpProtocol (initialize/initialized handshake only)
-  --> Verify: AI client can connect via bridge and see server capabilities
+### Decision 1: Editor Viewport Screenshots, NOT Game Viewport
 
-Phase 2: Thread Bridge + First Tool
-  --> GodotBridge (thread marshalling infrastructure)
-  --> ToolRegistry + tools/list, tools/call routing
-  --> scene_tools: get_scene_tree (first real tool, proves entire pipeline)
-  --> Verify: AI can query scene tree of open project
+**What:** The `capture_viewport` tool captures the editor's 2D or 3D viewport using `EditorInterface::get_editor_viewport_2d()`/`get_editor_viewport_3d()`.
 
-Phase 3: Core CRUD
-  --> node_tools: create_node, set_node_property, delete_node
-  --> Richer scene_tools: get_node_properties, get_node_by_path
-  --> Verify: AI can read AND write to the scene
+**Why:** The running game is a separate OS process. The editor cannot directly read its framebuffer. The editor viewports are accessible via SubViewport objects. When the game runs in embedded mode (Godot 4.4+), the editor's game preview viewport may show the running game, but this is not guaranteed across versions.
 
-Phase 4: Editor Integration + Expansion
-  --> UI dock panel (status display, enable/disable toggle)
-  --> script_tools (read, create, edit GDScript)
-  --> project_tools (file listing, project settings)
-  --> Version detection + conditional tool availability
+**Implication:** The tool description should clearly state it captures the "editor viewport" not the "game screen."
 
-Phase 5: Advanced Features
-  --> Run/debug control (launch game, capture output)
-  --> Signal management (query, connect, disconnect)
-  --> Resource management (.tres/.res files)
-  --> MCP Resources (expose data per spec, not just tools)
-```
+### Decision 2: MCP ImageContent for Screenshots
 
-**Build order rationale:**
-- Phase 1 de-risks the highest-risk question: can the bridge+GDExtension architecture work with real MCP clients?
-- Phase 2 de-risks the second highest risk: cross-thread marshalling between IO and main thread
-- Phase 3 delivers the core value proposition (AI can modify Godot scenes)
-- Phase 4 adds polish and expands capability
-- Phase 5 adds advanced features that depend on stable foundations
+**What:** Return screenshots as MCP `ImageContent` blocks (`type: "image"`, base64 data, mime type) rather than as text containing a base64 string.
 
-Each phase produces a testable, deployable increment. A user could ship Phase 3 as a useful product.
+**Why:** MCP-aware clients (Claude Desktop, Cursor) render ImageContent as actual images in the chat. Returning base64 in a text block loses this capability. The MCP spec (2025-06-18) explicitly defines ImageContent for this purpose.
+
+**Implication:** Requires adding `create_image_tool_result()` to `mcp_protocol.cpp`.
+
+### Decision 3: Input Injection via `Input::parse_input_event()`
+
+**What:** Use Godot's `Input::parse_input_event()` to inject synthetic input events.
+
+**Why:** This is the standard Godot API for programmatic input. It feeds events into the same input processing pipeline as real hardware input. Available in godot-cpp.
+
+**Limitation:** This injects into the *editor process*, not the game process. When the game runs as a separate process (which is the default), the injected input does not reach the game. Input injection only works when the game runs in the editor's embedded game preview. This is a significant limitation that should be clearly documented.
+
+**Alternative consideration:** For out-of-process games, input injection would require OS-level input simulation (SendInput on Windows, xdotool on Linux) or a separate mechanism. This is out of scope for v1.1.
+
+### Decision 4: No UndoRedo for Animation Track/Key Operations
+
+**What:** Animation track and keyframe operations will NOT use EditorUndoRedoManager initially.
+
+**Why:** Animation resources are modified through the Animation class API directly, not through the scene tree node property system. Implementing UndoRedo for animation operations requires recording the old state (all keyframes on a track), setting the new state, and providing a reverse operation -- significantly more complex than node property changes. The editor's built-in animation editor does handle undo/redo, but through internal mechanisms not exposed via EditorUndoRedoManager in a clean way for external callers.
+
+**Mitigation:** Mark animation tools as "direct mutation, no undo support" in their tool descriptions. Revisit in v1.2 if users request it.
+
+### Decision 5: Theme Override Types as Explicit Parameter
+
+**What:** The `set_theme_override` tool takes an explicit `override_type` parameter rather than auto-detecting the type.
+
+**Why:** Theme override APIs are type-specific (`add_theme_color_override`, `add_theme_constant_override`, etc.). Auto-detection would require querying the theme for the expected type of a given name, which is fragile -- the same name could be a color in one control type and a constant in another. Explicit typing is unambiguous.
 
 ## Sources
 
-- [MCP Architecture Overview](https://modelcontextprotocol.io/docs/learn/architecture) - Official MCP architecture documentation
-- [MCP Transports Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports) - Stdio transport spec (newline-delimited JSON-RPC)
-- [MCP Tools Specification](https://modelcontextprotocol.io/specification/2025-11-25/server/tools) - Tool definition and invocation spec
-- [GDExtension C++ Example (Godot 4.4 docs)](https://docs.godotengine.org/en/4.4/tutorials/scripting/gdextension/gdextension_cpp_example.html) - Official GDExtension tutorial
-- [godot-cpp GitHub](https://github.com/godotengine/godot-cpp) - Official C++ bindings, v10 independent versioning
-- [godot-cpp Issue #418](https://github.com/godotengine/godot-cpp/issues/418) - Version detection discussion
-- [EditorInterface API (stable)](https://docs.godotengine.org/en/stable/classes/class_editorinterface.html) - Editor API reference
-- [Godot Thread-safe APIs](https://docs.godotengine.org/en/stable/tutorials/performance/thread_safe_apis.html) - Threading rules
-- [Using Thread in GDExtension (forum)](https://forum.godotengine.org/t/using-thread-in-a-gdextension/73547) - std::thread in GDExtension works
-- [Godot Thread Guards (Issue #83900)](https://github.com/godotengine/godot/issues/83900) - Thread safety enforcement in 4.1+
-- [cpp-mcp GitHub](https://github.com/hkr04/cpp-mcp) - C++ MCP SDK reference (spec 2024-11-05, outdated)
-- [TinyMCP GitHub](https://github.com/Qihoo360/TinyMCP) - C++ MCP server with lifecycle management
-- [nlohmann/json GitHub](https://github.com/nlohmann/json) - Header-only C++ JSON library
-- [tomyud1/godot-mcp](https://github.com/tomyud1/godot-mcp) - Existing Godot MCP (Node.js + WebSocket, 32 tools)
-- [ee0pdt/Godot-MCP](https://github.com/ee0pdt/Godot-MCP) - Existing Godot MCP (Node.js + stdio)
-- [Coding-Solo/godot-mcp](https://github.com/Coding-Solo/godot-mcp) - Most popular existing Godot MCP (2.3k stars)
-- [MCP 2025-11-25 Spec Update](https://workos.com/blog/mcp-2025-11-25-spec-update) - Latest protocol changes
-- [GDExtension EditorPlugin Issues](https://github.com/godotengine/godot/issues/85268) - Known GDExtension EditorPlugin caveats
-- [Edited scene root null on init (forum)](https://forum.godotengine.org/t/how-to-get-edited-scene-tree-in-editorplugin/47478) - Scene root timing issue
+- [EditorInterface -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/classes/class_editorinterface.html) -- Scene management, viewport access
+- [EditorInterface -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/classes/class_editorinterface.html) -- Version-specific API
+- [Animation -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/classes/class_animation.html) -- Track and keyframe API
+- [AnimationPlayer -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/classes/class_animationplayer.html) -- Playback and library management
+- [Animation Track Types -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/tutorials/animation/animation_track_types.html) -- Track type reference
+- [Animation System DeepWiki](https://deepwiki.com/godotengine/godot/4.7-animation-system) -- Internal architecture
+- [Control -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/classes/class_control.html) -- UI node properties, theme overrides
+- [StyleBox -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/classes/class_stylebox.html) -- StyleBox resource API
+- [Using the Theme Editor -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/tutorials/ui/gui_using_theme_editor.html) -- Theme system overview
+- [MCP Tools Specification (2025-06-18)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools) -- ImageContent, TextContent response types
+- [InputEventKey -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/classes/class_inputeventkey.html) -- Key input construction
+- [Using InputEvent -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/tutorials/inputs/inputevent.html) -- Input injection via parse_input_event
+- [In-Engine Screenshots (2025)](https://shaggydev.com/2025/02/05/godot-screenshots/) -- Viewport screenshot pattern
+- [Expose Editor Viewports PR #68696](https://github.com/godotengine/godot/pull/68696) -- get_editor_viewport_2d/3d introduction
+- [close_scene proposal #8806](https://github.com/godotengine/godot-proposals/issues/8806) -- Missing close_scene API
+- [GDExtension Input Handling](https://godotforums.org/d/32909-input-handling-in-godot-40-using-gdextension) -- C++ input event handling in GDExtension
+- godot-cpp headers verified: `animation.hpp`, `animation_player.hpp`, `animation_mixer.hpp`, `animation_library.hpp`, `control.hpp`, `viewport.hpp`, `sub_viewport.hpp`, `image.hpp`, `marshalls.hpp`, `input.hpp`, `input_event_key.hpp`, `input_event_mouse_button.hpp`, `input_event_mouse_motion.hpp`, `editor_interface.hpp`

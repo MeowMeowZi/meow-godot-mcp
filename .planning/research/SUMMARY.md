@@ -1,184 +1,227 @@
 # Project Research Summary
 
-**Project:** Godot MCP Meow - GDExtension MCP Server Plugin
-**Domain:** C++ GDExtension embedding an MCP server inside the Godot editor process
-**Researched:** 2026-03-14
-**Confidence:** MEDIUM
+**Project:** Godot MCP Meow — v1.1 UI & Editor Expansion
+**Domain:** Godot GDExtension MCP Server Plugin (C++)
+**Researched:** 2026-03-18
+**Confidence:** HIGH (stack and architecture), MEDIUM (input injection and game-side screenshot bridge)
 
 ## Executive Summary
 
-Godot MCP Meow is a C++ GDExtension that embeds an MCP server directly inside the Godot editor process, eliminating the external Node.js/Python runtime that every existing Godot MCP server (7+ implementations) requires. The recommended approach uses godot-cpp v10 with C++17, nlohmann/json for protocol handling, SCons for building, and a custom MCP protocol implementation targeting spec version 2025-03-26. The project ships two native artifacts: the GDExtension shared library and a tiny (~50KB) bridge executable. No package manager, no runtime dependencies beyond Godot itself.
+The v1.1 milestone adds five feature areas to an established 18-tool MCP server: UI system tools, animation editing tools, scene file management, input injection, and viewport screenshots. The existing C++ GDExtension architecture — two-process bridge + TCP relay, IO thread + main thread queue, per-module tool functions, `nlohmann::json` returns, `EditorUndoRedoManager` for mutations — extends cleanly to all five areas without any new external dependencies. No new libraries are required; all features use godot-cpp bindings to APIs already present in Godot 4.3+. The tool registry and dispatch chain require only additive modifications. Five new source file pairs and three modified existing files cover the entire v1.1 scope.
 
-The fundamental architectural challenge is the subprocess problem. MCP's stdio transport requires the AI client to spawn the server as a subprocess, but a GDExtension is a shared library loaded into Godot's process -- it cannot be spawned independently. The solution is a lightweight bridge executable: a ~100-line C++ binary that the AI client launches, which relays stdio over TCP localhost to the GDExtension running inside Godot. The GDExtension holds all protocol logic and Godot API access; the bridge is a dumb relay. This architecture also solves the stdout contamination problem (Godot's own console output would corrupt MCP's JSON-RPC stream if they shared stdout) and allows Godot to start before or after the AI client connects.
+The recommended build sequence is: scene file management first (pure `EditorInterface` API, low risk, immediately fills the critical gap where the AI cannot save its own work), then UI tools, then animation tools, and finally the running-game bridge (input injection + game screenshots) which is the most architecturally complex feature. The running-game bridge is the sole feature that requires cross-process communication: the game runs as a separate OS process and neither its viewport nor its `Input` singleton is accessible from the editor plugin. A companion GDScript autoload is the recommended bridge approach, matching what Godot MCP Pro and GoPeak use. The companion autoload serves as shared infrastructure for both game screenshots and input injection, so these two features must be designed together.
 
-The second critical risk is threading. MCP requests arrive on a background IO thread (via TCP from the bridge), but Godot's scene tree is NOT thread-safe -- Godot 4.1+ enforces thread guards that crash on violations. The architecture must use a producer-consumer pattern: the IO thread queues requests, the main thread processes them in `_process()` using `std::promise`/`std::future` for synchronization. All existing GDExtension threading pitfalls (constructor crashes, implicit `@tool` behavior, cross-version ABI breaks) are well-documented and avoidable with known patterns.
+The most important pitfalls to resolve before implementation begins are: (1) `set_anchors_preset()` is silently broken — always use `set_anchors_and_offsets_preset()` instead; (2) animation track NodePaths are relative to the AnimationPlayer's root node, not the player itself — paths must be computed dynamically; (3) running-game screenshots and input injection both cross an OS process boundary, making them a fundamental architectural decision rather than a minor implementation detail; and (4) the synchronous `poll()` loop must be extended to support deferred responses for screenshot capture that requires waiting for `RenderingServer::frame_post_draw`. Addressing all four before writing code prevents major rework.
+
+---
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack is intentionally minimal: two dependencies total. godot-cpp (git submodule) provides C++ bindings for the GDExtension API, targeting Godot 4.3+ via the `api_version` parameter for forward compatibility through 4.4/4.5/4.6. nlohmann/json (single vendored header file, v3.12.0) handles all JSON parsing and serialization for the MCP protocol. SCons is the build system, matching godot-cpp's official tooling and avoiding known CMake MSVC flag issues.
+No changes to the existing stack. v1.1 is a pure extension of the validated C++17 + godot-cpp v10+ + nlohmann/json + SCons foundation. All 30+ new godot-cpp headers required by v1.1 features have been verified present in `godot-cpp/gen/include/godot_cpp/classes/`. Five new `.cpp` source files are auto-detected by SCons' existing glob pattern. No build system changes are needed.
 
-**Core technologies:**
-- **godot-cpp v10+ (C++17):** GDExtension bindings -- official, independently versioned, targets Godot 4.3+ with forward compatibility
-- **nlohmann/json 3.12.0:** JSON-RPC 2.0 parsing/serialization -- header-only, de facto C++ standard, superior ergonomics for protocol work
-- **SCons 4.5+:** Build system -- official godot-cpp tooling, GitHub Actions CI templates included, avoids MSVC `/MT` vs `/MD` edge case
-- **Custom MCP implementation:** ~500-800 lines targeting spec 2025-03-26 -- all three C++ MCP SDKs are unsuitable (spec-outdated, enterprise-bloated, or architecturally incompatible)
-- **TCP localhost:** Bridge-to-GDExtension IPC -- cross-platform consistent, debuggable, no library needed
-- **GoogleTest 1.15.x:** Unit testing the protocol layer independently of Godot
+**Core technologies (unchanged from v1.0):**
+- **C++17 + godot-cpp v10+**: GDExtension plugin — sole implementation language
+- **nlohmann/json 3.12.0**: MCP protocol serialization — all tool return values
+- **SCons**: Build system — auto-detects new `.cpp` files, no changes needed
+- **stdio bridge + TCP relay**: AI client transport — unchanged for v1.1
+- **GoogleTest**: Unit testing — new modules need coverage behind `MEOW_GODOT_MCP_GODOT_ENABLED` guards
+
+**New godot-cpp header groups verified present:**
+- UI: `control.hpp`, `style_box_flat.hpp`, `theme.hpp`, `box_container.hpp`, `grid_container.hpp`, `margin_container.hpp`
+- Animation: `animation.hpp`, `animation_player.hpp`, `animation_mixer.hpp`, `animation_library.hpp`
+- Scene management: `editor_interface.hpp` (already used — new methods only)
+- Input: `input.hpp`, `input_event_key.hpp`, `input_event_mouse_button.hpp`, `input_event_mouse_motion.hpp`
+- Screenshots: `sub_viewport.hpp`, `viewport_texture.hpp`, `image.hpp`, `marshalls.hpp`
 
 ### Expected Features
 
+The competitive landscape (GoPeak: 95+ tools, Godot MCP Pro: 162 tools, GDAI: ~30 tools) shows every major gap clearly. v1.1 closes all meaningful gaps while maintaining the zero-dependency GDExtension advantage no competitor has. Projected tool count: v1.0 is 18 tools; v1.1 adds ~14-16 for a total of ~32-34.
+
 **Must have (table stakes):**
-- Scene tree query (read hierarchy with node types, names, paths)
-- Node CRUD (create, modify, delete nodes and properties)
-- Script read/create/edit and attachment to nodes
-- Project structure query (file listing, project settings)
-- MCP stdio transport with JSON-RPC 2.0 (via bridge relay)
-- Editor plugin UI dock (connection status, start/stop controls)
-- Run/stop game and debug output capture
-- Cross-platform support (Windows, Linux, macOS)
-- Godot 4.3+ compatibility with version detection
+- `save_scene` / `open_scene` / `get_open_scenes` — AI currently cannot save its own work; most critical missing capability
+- `get_control_properties` — AI needs Control-specific data (anchors, size flags, theme overrides) to understand UI layouts
+- `set_theme_override` — per-control theme customization without creating full Theme resources
+- `set_layout_preset` (via `set_anchors_and_offsets_preset`) — standard way to position Controls
+- `get_animations` / `get_animation_info` — read-only query of AnimationPlayer state
+- `create_animation` + `add_track` + `insert_keyframe` — programmatic animation creation
+- `capture_editor_viewport` — editor 2D/3D viewport screenshots (no game running needed)
+- `inject_key` / `inject_mouse_click` / `inject_action` — game input for AI playtesting
 
-**Should have (differentiators):**
-- Native GDExtension with zero external dependencies -- the core competitive advantage
-- Undo/redo integration for all scene mutations (only Godot MCP Pro has this)
-- Signal management (query, connect, disconnect) -- central to Godot workflow
-- Smart type parsing (auto-convert "Vector2(100,200)", "#ff0000" to proper Godot types)
-- MCP Resources and Prompts (most competitors only implement tools, not the full spec)
-- Resource file management (.tres/.res)
-- Version-adaptive API (runtime detection, conditional tool availability)
+**Should have (competitive differentiators):**
+- `create_new_scene` — AI-driven new scene creation
+- `capture_game_screenshot` — running game screenshots that close the build-test-fix loop
+- `instantiate_scene` (PackedScene) — prefab-style workflows
+- Animation playback control (`play`, `stop`, `seek`) for in-editor preview
+- UI layout builder compound tool — reduces AI round-trips for common UI patterns
 
-**Defer (v2+):**
-- Batch operations (useful but not critical early)
-- Screenshot/viewport capture (high complexity, though market is moving toward it -- revisit)
-- Input simulation (depends on stable run/debug foundation)
-- HTTP/SSE transport (no demand signal for v1; stdio works with all major AI clients)
-- Domain-specific tools (AnimationTree, TileMap, Shader, Particle, Navigation)
+**Defer to v1.2+:**
+- Input sequence / macro (timed sequences of inputs)
+- Screenshot comparison / diffing
+- AnimationTree state machine editing (too complex, poor API surface)
+- Gamepad input simulation (low demand signal)
+- Close scene (no public API — proposal #8806 still open)
 
 ### Architecture Approach
 
-The architecture has five major components inside the Godot editor process, plus one external bridge executable. The bridge relays stdio to TCP localhost. Inside the GDExtension: TcpTransport accepts the bridge connection on a background thread; McpProtocol parses JSON-RPC 2.0 and manages the MCP lifecycle state machine; ToolRegistry maps tool names to handler functions; GodotBridge marshals operations from the IO thread to the main thread using a queue-and-promise pattern; and McpMeowPlugin (EditorPlugin subclass) owns all components and provides the dock UI.
+All new tools follow the identical pattern as v1.0 tools: free functions in `.h`/`.cpp` module pairs, `MEOW_GODOT_MCP_GODOT_ENABLED` guards for testability, additive entries in `mcp_tool_registry.cpp`, additive `if (tool_name == "...")` branches in `mcp_server.cpp::handle_request()`, and all Godot API calls on the main thread via `poll()`. Three existing files require substantive changes: `mcp_protocol.h/.cpp` needs a `create_image_tool_result()` function for MCP `ImageContent` responses (screenshots require this — text content cannot carry image data), `mcp_server.cpp` needs new dispatch branches, and `mcp_tool_registry.cpp` needs ~12-15 new ToolDef entries.
 
-**Major components:**
-1. **Bridge Executable** -- tiny native binary (~50KB) spawned by AI client; relays stdin/stdout to TCP localhost; zero protocol awareness
-2. **TcpTransport** -- background IO thread; TCP accept/read/write on localhost; newline-delimited JSON message framing
-3. **McpProtocol** -- JSON-RPC 2.0 state machine; MCP lifecycle (initialize, capability negotiation, ready, shutdown); request routing
-4. **ToolRegistry** -- maps tool names to handler functions; provides `tools/list` response; thread-safe (register on main, lookup on IO)
-5. **GodotBridge** -- the critical component; queues operations for main thread via `std::promise`/`std::future`; all Godot API access goes through here
-6. **McpMeowPlugin** -- EditorPlugin at `MODULE_INITIALIZATION_LEVEL_EDITOR`; owns all sub-components; dock UI for status and controls
+**New source file pairs:**
+1. **`ui_tools.h/.cpp`** — Control property inspection, `set_anchors_and_offsets_preset()` layout, per-control theme overrides via `add_theme_*_override()`, StyleBoxFlat creation
+2. **`animation_tools.h/.cpp`** — AnimationPlayer/Library/Animation CRUD, track management (add/remove), keyframe operations (insert/remove), read-only queries
+3. **`editor_tools.h/.cpp`** — Scene file management (save/open/list), editor viewport screenshot capture, editor-side input injection; may split into separate files if it grows beyond ~400 lines
+
+**Modified existing files:**
+4. **`mcp_protocol.cpp`** — New `create_image_tool_result()` function wrapping base64 PNG data as MCP `ImageContent`
+5. **`mcp_server.cpp`** — New dispatch branches, special-case `capture_viewport` to call `create_image_tool_result()`
+6. **`mcp_tool_registry.cpp`** — ~12-15 new ToolDef entries
+
+**New companion component (game-side):**
+7. **Companion GDScript autoload** — Cross-process bridge for running game screenshots and input injection; lives in the game project, not the editor plugin
+
+The screenshot data flow is the only new pattern: `capture_viewport` must call `create_image_tool_result()` instead of `create_tool_result()`. All other tools retain the existing text content path.
 
 ### Critical Pitfalls
 
-1. **Stdio ownership problem** -- A GDExtension shares Godot's stdout. Writing MCP JSON-RPC to stdout corrupts the protocol stream with engine log output. **Avoid:** Use the bridge executable architecture; the GDExtension never touches stdin/stdout directly, communicating only over TCP localhost.
+1. **Running game is a separate OS process** (Pitfalls 1 and 4) — both game viewport screenshots and input injection require cross-process communication. `get_viewport()` and `Input::parse_input_event()` in the editor process have zero effect on the running game. Verified by all existing Godot MCP implementations that handle screenshots. Architecture decision required before implementing either feature: use a companion GDScript autoload (recommended), EditorDebuggerPlugin IPC, or limit to editor-only scope.
 
-2. **Thread-unsafe Godot API access** -- Calling scene tree methods from the IO thread crashes with thread guard violations (Godot 4.1+). **Avoid:** All Godot API calls go through GodotBridge's main-thread queue. Never call any Godot API from the network thread -- not even `String::utf8()`.
+2. **`set_anchors_preset()` is silently broken** (Pitfall 2) — confirmed broken across Godot 4.0-4.6 in GitHub issues #66651, #67161, #85185, #92487. Always use `set_anchors_and_offsets_preset()`. Anchor presets on Container children have no effect at all — detect parent type and use `size_flags_*` instead.
 
-3. **Constructor and initialization crashes** -- GDExtension constructors run before the object is integrated into Godot's system; `EditorHelp` instantiates every class for documentation. **Avoid:** Trivial constructors only. Move all initialization to `_enter_tree()`. Never start servers or open sockets in constructors.
+3. **Animation track paths are relative to the AnimationPlayer's root node** (Pitfall 3) — tracks silently animate nothing if the NodePath is computed relative to the AnimationPlayer itself. Use `root_node.get_path_to(target_node)` to compute correct paths. Also: call `track_set_path()` before `track_insert_key()`, and always add animations through `AnimationLibrary` (Godot 4 requirement, Pitfall 9).
 
-4. **Cross-version ABI breaks** -- GDExtension ABI has broken at nearly every minor version boundary before 4.3. **Avoid:** Target Godot 4.3+ minimum with `compatibility_minimum = "4.3"` (always quoted). Use godot-cpp v10's `api_version=4.3` for forward compatibility.
+4. **No `await` in C++ GDExtension** (Pitfall 13) — screenshot capture must wait for `RenderingServer::frame_post_draw` before the image is valid. The synchronous `poll()` model must be extended. Options: flag + next-frame fulfillment in the following `poll()` call, or accept one-frame-stale data (sufficient for most use cases and far simpler to implement).
 
-5. **Stdout pollution in bridge** -- Any stray `printf` or library output to stdout in the bridge binary corrupts the MCP stream. **Avoid:** All logging to stderr from day one. Audit third-party libraries for stdout output. Never use `std::cout` or `printf` in the bridge.
+5. **Image-to-base64 pipeline has multiple failure modes** (Pitfall 10) — `save_png_to_buffer()` crashes on compressed textures; large images exceed MCP buffer limits. Always call `img->decompress()` first, resize to a maximum width, prefer JPEG encoding for smaller payload, and use MCP `ImageContent` type rather than text-embedded base64.
+
+---
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+All five feature areas are independent of each other (no inter-feature dependencies), but the running-game bridge (input injection + game screenshots) requires its own companion autoload infrastructure that the other three areas do not need. The natural grouping is: editor-only features first (scene management, UI, animation), then the cross-process bridge features last.
 
-### Phase 1: Foundation and Transport
+### Phase 1: Scene File Management
 
-**Rationale:** De-risks the highest-risk architectural question: can the bridge + GDExtension + TCP relay architecture establish an MCP connection with real AI clients? Everything else depends on this working.
-**Delivers:** A GDExtension that loads in the editor, a bridge executable that relays stdio to TCP, successful MCP `initialize`/`initialized` handshake with Claude Desktop or Cursor.
-**Addresses:** MCP stdio transport, GDExtension scaffold, bridge executable, TcpTransport, McpProtocol (handshake only), `.gdextension` configuration, SCons build for both artifacts.
-**Avoids:** Pitfall 1 (stdio ownership -- solved by bridge architecture), Pitfall 4 (cross-version -- 4.3+ minimum set from start), Pitfall 5 (constructor crashes -- trivial constructors established), Pitfall 15 (.gdextension quoting bug).
+**Rationale:** Smallest scope, lowest risk, pure `EditorInterface` API, zero dependencies on new infrastructure. Fills the most critical gap (AI cannot save its work) with 3-4 tools. Provides foundation for multi-scene workflows needed by all later phases.
 
-### Phase 2: Thread Bridge and First Tool
+**Delivers:** `save_scene`, `save_scene_as`, `open_scene`, `get_open_scenes`, `get_current_scene_info`
 
-**Rationale:** De-risks the second highest risk: cross-thread marshalling between the IO thread and Godot's main thread. Proves the entire pipeline end-to-end with one real tool.
-**Delivers:** GodotBridge with queue-and-promise pattern, ToolRegistry with `tools/list` and `tools/call` routing, `get_scene_tree` as the first functional tool. AI client can query the scene tree of an open project.
-**Addresses:** GodotBridge implementation, ToolRegistry, scene query tool, `_process()` draining of pending operations.
-**Avoids:** Pitfall 3 (thread-unsafe API access -- GodotBridge pattern proven here), Pitfall 7 (JSON-RPC compliance -- strict protocol tests written alongside).
+**Addresses:** Scene file management table stakes; enables AI to persist all edits from v1.0 and future v1.1 work
 
-### Phase 3: Core Scene CRUD
+**Avoids:** Pitfall 6 — validate `get_edited_scene_root()` before saving, check Error return value. Pitfall 14 — do not rely on `scene_changed` signal alone after `open_scene_from_path`; add a frame delay and poll `get_edited_scene_root()`.
 
-**Rationale:** Delivers the core value proposition -- AI can read AND write to the Godot scene tree. This is the minimum viable product that users would install.
-**Delivers:** Node creation, property modification, node deletion, node path queries. The plugin becomes usable for basic AI-assisted scene building.
-**Addresses:** Node CRUD tools (`create_node`, `set_node_property`, `delete_node`, `rename_node`), richer scene queries (`get_node_properties`, `get_node_by_path`).
-**Avoids:** Pitfall 12 (STL vs Godot containers -- boundary conversion patterns established).
+**Research flag:** No deeper research needed. API surface is small and well-documented.
 
-### Phase 4: Editor Integration and Expansion
+### Phase 2: UI System Tools
 
-**Rationale:** Adds polish, trust features (undo/redo), and expands tool coverage to scripts and project info. Makes the plugin feel production-ready.
-**Delivers:** Dock UI panel (status, controls), script management tools, project info tools, undo/redo integration for all mutations, version detection with conditional tool availability.
-**Addresses:** Editor plugin UI, script read/create/edit, project structure query, undo/redo wrapping, Godot version detection, smart type parsing.
-**Avoids:** Pitfall 2 (implicit @tool -- UI lifecycle properly managed), Pitfall 10 (hot-reload -- robust socket cleanup with SO_REUSEADDR).
+**Rationale:** Control node APIs are stable and well-documented. No running-game dependency. The critical `set_anchors_preset` bug is fully understood and the fix is one function name change. Theme overrides follow a typed-method pattern that is distinct from `set_node_property`.
 
-### Phase 5: Advanced Features and Runtime Loop
+**Delivers:** `get_control_properties`, `set_layout_preset`, `set_theme_override`, `remove_theme_override`; optional enhancement to `scene_tools::serialize_node()` to include Control-specific summary fields
 
-**Rationale:** Adds the autonomous build-test-fix loop (run game, capture output, iterate) and Godot-specific differentiators (signals, resources). Depends on stable foundations from Phases 1-4.
-**Delivers:** Run/stop game control, debug output capture, signal management, resource file management, MCP Resources and Prompts per spec.
-**Addresses:** Run/debug tools, signal management, resource management, MCP Resources (structured data), MCP Prompts (workflow templates).
-**Avoids:** Pitfall 8 (Windows GUI/console -- cross-platform validation here), Pitfall 14 (UTF-8 encoding -- explicit encoding setup for Windows).
+**Addresses:** UI system table stakes; enables AI to build and style Control hierarchies
+
+**Avoids:** Pitfall 2 — use `set_anchors_and_offsets_preset()`, never `set_anchors_preset()`. Pitfall 11 — detect Container parents and use `size_flags_*`. Pitfall 5 — use `add_theme_*_override()` methods, not Theme resource assignment from GDExtension code. Pitfall 16 — prefer composite tools over individual setter tools to prevent tool count explosion.
+
+**Research flag:** No deeper research needed. Composite tool design requires API judgment during planning, not external research.
+
+### Phase 3: Animation Tools
+
+**Rationale:** Most complex editor-side feature. The animation hierarchy (Player → Library → Animation → Track → Key) is deep with ordering constraints (path before keys, library before animation). Build read-only tools first (`get_animations`, `get_animation_info`), then mutation tools. No running-game dependency.
+
+**Delivers:** `get_animations`, `get_animation_info`, `create_animation`, `add_track`, `insert_keyframe`, `remove_keyframe`; optional `play_animation` / `stop_animation` for in-editor preview
+
+**Addresses:** Animation system table stakes; enables AI to create and edit animations programmatically
+
+**Avoids:** Pitfall 3 — compute NodePaths from AnimationPlayer's `root_node` property, call `track_set_path` before `track_insert_key`, call `clear_caches()` after modification. Pitfall 9 — always use AnimationLibrary layer, check `has_animation_library("")` before creating. Pitfall 12 — wrap multi-step create operations in a single UndoRedo action.
+
+**Research flag:** A short design spike on UndoRedo feasibility for animation operations is warranted before implementation. ARCHITECTURE.md Decision 4 recommends skipping UndoRedo for animation mutations (too complex), but this tradeoff should be explicit in the plan.
+
+### Phase 4: Editor Viewport Screenshots
+
+**Rationale:** Introduces the only new data flow pattern (ImageContent response). Requires the `mcp_protocol.cpp` extension first. Build after all text-response tools are stable. Editor viewport capture (2D and 3D) requires no game running and no cross-process work — it is the simpler half of the screenshot feature.
+
+**Delivers:** `capture_editor_viewport` (2D and 3D modes), `mcp_protocol::create_image_tool_result()`, optional image resize and compression parameters
+
+**Addresses:** Visual feedback for AI; editor layout inspection; closes the gap with all three competitors on screenshot capability
+
+**Avoids:** Pitfall 7 — connect `frame_post_draw` one-shot callback or accept one-frame stale; always validate `img->is_empty()` and `img->get_width() > 0`. Pitfall 10 — decompress before PNG save, resize to max width, prefer JPEG for smaller payload. Pitfall 13 — decide on deferred-response approach for `poll()` before writing the tool.
+
+**Research flag:** Requires one internal architecture decision (deferred-response mechanism) before implementation. No external research needed — the decision is between two known options.
+
+### Phase 5: Running-Game Bridge (Input Injection + Game Screenshots)
+
+**Rationale:** Highest complexity, highest reward. The companion GDScript autoload is shared infrastructure for both input injection and game-side screenshots — build them together. Build game screenshot first (easier to test visually), then layer input injection on top. Requires a running game for all testing, which slows iteration compared to earlier phases.
+
+**Delivers:** Companion autoload (`mcp_runtime_helper.gd`), `capture_game_screenshot`, `inject_key`, `inject_mouse_click`, `inject_mouse_motion`, `inject_action`
+
+**Addresses:** Build-test-fix loop closure; AI playtesting capability; full feature parity with GoPeak and Godot MCP Pro on runtime tools
+
+**Avoids:** Pitfall 1 — companion autoload with file-based or TCP bridge; never attempt direct viewport access from editor. Pitfall 4 — game-side `Input.parse_input_event()` only, not editor-side. Pitfall 8 — always inject press+release pairs, account for viewport scaling in mouse coordinates, use `Input.action_press/release` for action-based input. Pitfall 13 — game-side autoload uses GDScript `await RenderingServer.frame_post_draw`.
+
+**Research flag:** Needs a research spike on the IPC mechanism before implementation. File-based polling vs. TCP connection from autoload vs. EditorDebuggerPlugin each have distinct tradeoffs for latency, reliability, and implementation complexity. Godot MCP Pro and GoPeak (both use autoload + WebSocket/TCP) are the primary architecture references.
+
+### Phase 6: Prompt Templates
+
+**Rationale:** Pure text, no API risk. Depends on all tool definitions being finalized. Low effort, meaningful DX improvement for AI users. No competitor ships curated prompts alongside their tools.
+
+**Delivers:** New MCP prompt templates for UI building (`build_ui_layout`), animation workflows (`setup_animation`), and playtesting (`debug_game`)
+
+**Research flag:** No research needed.
 
 ### Phase Ordering Rationale
 
-- **Risk-first:** Phase 1 tackles the novel bridge architecture, Phase 2 tackles thread marshalling. These are the two unknowns where this project diverges from established patterns. If either fails, better to know immediately.
-- **Dependency-driven:** Tools depend on transport (Phase 1 before 2). CRUD depends on scene queries (Phase 2 before 3). Script/project tools depend on stable CRUD patterns (Phase 3 before 4). Runtime features depend on everything (Phase 5 last).
-- **Value-incremental:** Phase 3 is the first "shippable" milestone -- a user could install this and get value. Each subsequent phase widens the value.
-- **Pitfall-aware:** The most dangerous pitfalls (stdio, threading, constructors, ABI) are all addressed in Phases 1-2 before the project accumulates complexity.
+- Phases 1-3 are editor-only and share no dependencies. Scene Management comes first because it gives the AI the ability to persist all subsequent work immediately.
+- Phase 4 (editor screenshots) must come after Phases 1-3 are stable because it introduces the first new response type in the protocol layer; a bug in `create_image_tool_result()` would affect all subsequent testing.
+- Phase 5 must come last because it requires a running game for all testing (slows iteration), and its IPC design decision must be made carefully with full understanding of the completed editor-side architecture.
+- Phase 6 can only be written once all tool names are final.
 
-### Research Flags
-
-Phases likely needing deeper research during planning:
-- **Phase 1:** The bridge-to-GDExtension TCP relay is novel -- no existing project uses this exact pattern. Needs prototype validation with at least Claude Desktop and Cursor. Port discovery/configuration needs design.
-- **Phase 5:** Run/debug control requires interfacing with Godot's debugger/process launch APIs (`EditorInterface::play_main_scene()`, output capture). Sparse documentation for doing this from GDExtension C++. Screenshot capture (if reconsidered) requires engine viewport internals.
-
-Phases with standard patterns (skip research-phase):
-- **Phase 2:** Thread marshalling with `std::promise`/`std::future` and `_process()` queue draining is well-documented. JSON-RPC 2.0 parsing with nlohmann/json is straightforward.
-- **Phase 3:** Scene tree manipulation via `EditorInterface::get_edited_scene_root()` and standard Node APIs is thoroughly documented in Godot docs.
-- **Phase 4:** EditorPlugin dock UI, UndoRedo system, and script/resource APIs all have official Godot documentation and examples.
+---
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | godot-cpp is official, nlohmann/json is industry standard, SCons is the documented path. All three C++ MCP SDKs evaluated and rejected with clear rationale. |
-| Features | HIGH | 14+ competitors analyzed including commercial offerings. Table stakes and differentiators well-established by market evidence. |
-| Architecture | MEDIUM | Individual components (TCP, threading, GDExtension, MCP protocol) are well-understood. The combined architecture (bridge + GDExtension + TCP relay) is novel -- no existing project uses this exact pattern. |
-| Pitfalls | HIGH | 15 pitfalls identified with official Godot issue references. The critical ones (stdio, threading, constructors, ABI) are thoroughly documented with proven prevention strategies. |
+| Stack | HIGH | All required godot-cpp headers verified present locally. No new dependencies introduced. Build system unchanged. |
+| Features | HIGH | Competitive landscape well-researched across 3 named competitors. Table stakes and deferral decisions are grounded in market evidence and API feasibility. |
+| Architecture | HIGH | New modules follow established patterns exactly. Three file modifications are additive and low-risk. ImageContent response is specified by MCP 2025-06-18 spec. |
+| Pitfalls | HIGH (editor-side) / MEDIUM (game bridge) | Editor-side pitfalls verified via Godot GitHub issues with specific issue numbers. Game-side bridge pitfalls are architectural in nature; the specific IPC mechanism has not been prototyped in this codebase. |
 
-**Overall confidence:** MEDIUM -- The architecture is novel in its combination, even though each piece is well-understood. Phase 1 exists specifically to validate this combination.
+**Overall confidence:** HIGH for Phases 1-4. MEDIUM for Phase 5 (game bridge IPC not yet prototyped).
 
 ### Gaps to Address
 
-- **Port management:** How the bridge discovers which port the GDExtension is listening on. Options: fixed default port (6680), config file written by GDExtension, command-line argument to bridge. Needs design decision in Phase 1.
-- **Multiple editor instances:** If a user has two Godot editor instances open, each with the plugin, they need different ports. No research found on how to handle this gracefully.
-- **Screenshot capture scope decision:** PROJECT.md marks it out of scope, but market research shows it becoming table stakes. The complexity is real (viewport capture in C++ requires engine internals), but competitors are shipping it. Revisit after Phase 4.
-- **Performance at scale:** No data on serializing scene trees with 1000+ nodes. May need depth limits or pagination. Test during Phase 2-3.
-- **macOS code signing:** Distributing native binaries on macOS requires code signing and notarization. Not addressed in research. Relevant for Phase 5+ distribution.
+- **Phase 5 IPC mechanism**: File-based polling, TCP connection from autoload to editor, or EditorDebuggerPlugin? A prototype sprint is needed before committing to the Phase 5 plan. Godot MCP Pro and GoPeak are the primary references.
+- **Animation UndoRedo feasibility**: Can animation track/keyframe mutations be wrapped in `EditorUndoRedoManager` actions cleanly? ARCHITECTURE.md recommends skipping it (too complex), but this tradeoff should be made explicit in the Phase 3 plan so users understand which operations are not undoable.
+- **Viewport screenshot timing**: One-frame-stale (accept previous frame's render) vs. deferred-response (wait for `frame_post_draw`). For editor viewports that render continuously, one-frame-stale is almost always acceptable and is far simpler. This decision should be recorded in the Phase 4 plan.
+- **`open_scene_from_path` signature change** between Godot 4.3 and 4.4 (added `set_inherited` parameter): apply the version-adaptive tool registry pattern from v1.0.
+- **`parse_input_event` + `use_accumulated_input = false` regression in Godot 4.4.1**: reported on forum but no GitHub issue number confirmed — needs validation during Phase 5 planning.
+
+---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [godot-cpp GitHub (v10)](https://github.com/godotengine/godot-cpp) -- independent versioning, api_version, Godot 4.3+ support
-- [Godot 4.4 GDExtension C++ docs](https://docs.godotengine.org/en/4.4/tutorials/scripting/gdextension/gdextension_cpp_example.html) -- official tutorial
-- [MCP Specification 2025-03-26](https://modelcontextprotocol.io/specification/2025-03-26/changelog) -- target protocol version
-- [MCP Transports Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports) -- stdio transport (stable across all versions)
-- [Godot Thread-safe APIs](https://docs.godotengine.org/en/stable/tutorials/performance/thread_safe_apis.html) -- threading constraints
-- [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification) -- protocol foundation
-- [nlohmann/json v3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0) -- JSON library
+
+- Godot 4.3 official docs: EditorInterface, Animation, AnimationPlayer, AnimationMixer, AnimationLibrary, Control, StyleBox, Theme, Container, InputEvent, Image, Marshalls, Viewport — all API signatures verified
+- godot-cpp headers: all 30+ required headers confirmed present locally in `godot-cpp/gen/include/godot_cpp/classes/`
+- Godot engine source (godotengine/godot): `control.cpp`, `animation.cpp`, `box_container.cpp`, `grid_container.cpp`, `editor_interface.h` — implementation details verified
+- MCP spec 2025-06-18: `ImageContent`, `TextContent` response formats
+- Rokojori API Mirror: cross-verification of Godot 4.3 API signatures for EditorInterface, Animation, AnimationMixer, AnimationLibrary, Control, Input, Image, StyleBoxFlat, Theme, Viewport
 
 ### Secondary (MEDIUM confidence)
-- [Godot MCP Pro](https://godot-mcp.abyo.net/) -- 162 tools, most feature-rich competitor, feature landscape reference
-- [cpp-mcp (hkr04)](https://github.com/hkr04/cpp-mcp) -- C++ MCP SDK evaluation (rejected: spec-outdated)
-- [GDExtension threading forum](https://forum.godotengine.org/t/using-thread-in-a-gdextension/73547) -- std::thread works in GDExtension
-- [SCons vs CMake MSVC issue (godot-cpp #1459)](https://github.com/godotengine/godot-cpp/issues/1459) -- build system decision
-- [Godot thread guards (#83900)](https://github.com/godotengine/godot/issues/83900) -- thread safety enforcement
-- [godot-cpp-template](https://github.com/godotengine/godot-cpp-template) -- official project scaffolding
+
+- Godot GitHub issues: #66651, #67161, #85185, #92487 (anchor preset bug), #17313 (animation track paths), #87692, #85931, #96808, #73557 (input injection bugs), #50787, #108535 (image pipeline bugs), #97427 (scene_changed signal bug), #8806 (no close_scene API), #84550 (theme overrides missing for GDExtension)
+- godot-cpp issues: #1332 (ThemeDB slowdown from GDExtension constructor)
+- Competing implementations: GoPeak (95+ tools, input + screenshots), Godot MCP Pro (162 tools, autoload approach), GDAI MCP (~30 tools) — architecture reference for game bridge approach
+- Community sources: ShaggyDev viewport screenshot tutorial (Feb 2025), Godot forum threads on GDExtension async patterns and input injection
+- Godot proposals: #8806 (close_scene), #8777 (GDExtension debugger tooling), #10994 (editor-game communication)
 
 ### Tertiary (LOW confidence)
-- Multiple existing Godot MCP repos (Coding-Solo, ee0pdt, slangwald, tomyud1, bradypp) -- architecture reference, but all use Node.js/Python patterns that do not directly apply
-- [GDExtension hot-reload issue (#66231)](https://github.com/godotengine/godot/issues/66231) -- development workflow impact
+
+- `parse_input_event` + `use_accumulated_input = false` regression in Godot 4.4.1: forum-reported, no GitHub issue confirmed — needs validation at Phase 5
+- EditorDebuggerPlugin GDExtension support limitations (proposal #8777): proposal exists but current state of GDExtension support should be re-verified at Phase 5 planning
 
 ---
-*Research completed: 2026-03-14*
+
+*Research completed: 2026-03-18*
 *Ready for roadmap: yes*
