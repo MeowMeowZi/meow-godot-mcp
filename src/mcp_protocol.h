@@ -55,6 +55,12 @@ nlohmann::json create_prompts_list_response(const nlohmann::json& id);
 nlohmann::json create_prompt_get_response(const nlohmann::json& id, const std::string& description, const nlohmann::json& messages);
 nlohmann::json create_prompt_not_found_error(const nlohmann::json& id, const std::string& prompt_name);
 
+// MCP ImageContent tool result builder (for viewport screenshots)
+nlohmann::json create_image_tool_result(const nlohmann::json& id,
+                                         const std::string& base64_data,
+                                         const std::string& mime_type,
+                                         const nlohmann::json& metadata = nlohmann::json());
+
 } // namespace mcp
 
 #endif // MEOW_GODOT_MCP_MCP_PROTOCOL_H

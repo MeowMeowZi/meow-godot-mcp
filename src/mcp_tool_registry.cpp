@@ -479,6 +479,31 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", {"player_path", "animation_name"}}
             },
             {4, 3, 0}
+        },
+        // --- Phase 9: Viewport Screenshot tools ---
+        {
+            "capture_viewport",
+            "Capture a screenshot of the editor 2D or 3D viewport. Returns the image as base64-encoded PNG via MCP ImageContent. The AI client renders the image natively.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"viewport_type", {
+                        {"type", "string"},
+                        {"enum", {"2d", "3d"}},
+                        {"description", "Which viewport to capture: 2d or 3d (default: 2d)"}
+                    }},
+                    {"width", {
+                        {"type", "integer"},
+                        {"description", "Optional output width in pixels. Scales the image. Omit for original viewport resolution."}
+                    }},
+                    {"height", {
+                        {"type", "integer"},
+                        {"description", "Optional output height in pixels. Scales the image. Omit for original viewport resolution."}
+                    }}
+                }},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
         }
     };
     return tools;

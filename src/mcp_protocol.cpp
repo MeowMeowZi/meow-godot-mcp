@@ -148,4 +148,35 @@ nlohmann::json create_prompt_not_found_error(const nlohmann::json& id, const std
     return create_error_response(id, INVALID_PARAMS, "Prompt not found: " + prompt_name);
 }
 
+nlohmann::json create_image_tool_result(const nlohmann::json& id,
+                                         const std::string& base64_data,
+                                         const std::string& mime_type,
+                                         const nlohmann::json& metadata) {
+    nlohmann::json content_array = nlohmann::json::array();
+
+    // Primary: MCP ImageContent item
+    content_array.push_back({
+        {"type", "image"},
+        {"data", base64_data},
+        {"mimeType", mime_type}
+    });
+
+    // Optional: TextContent with metadata (viewport_type, dimensions, etc.)
+    if (!metadata.is_null() && !metadata.empty()) {
+        content_array.push_back({
+            {"type", "text"},
+            {"text", metadata.dump()}
+        });
+    }
+
+    return {
+        {"jsonrpc", "2.0"},
+        {"id", id},
+        {"result", {
+            {"content", content_array},
+            {"isError", false}
+        }}
+    };
+}
+
 } // namespace mcp
