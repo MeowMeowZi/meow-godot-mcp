@@ -169,6 +169,9 @@ nlohmann::json MeowDebuggerPlugin::inject_input_tool(const nlohmann::json& args)
         return {{"error", "No game running or bridge not connected"}};
     }
 
+    if (!args.contains("type") || !args["type"].is_string()) {
+        return {{"error", "Missing required parameter: type (key, mouse, or action)"}};
+    }
     std::string type = args["type"].get<std::string>();
 
     if (type == "key") {
