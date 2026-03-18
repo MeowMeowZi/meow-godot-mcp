@@ -18,12 +18,12 @@ Requirements for v1.1 release. Each maps to roadmap phases.
 
 ### UI System
 
-- [ ] **UISYS-01**: AI 可设置 Control 节点的 anchor/margin 布局预设
-- [ ] **UISYS-02**: AI 可设置 Control 节点的 theme override（颜色、字体、样式）
-- [ ] **UISYS-03**: AI 可创建和编辑 StyleBox 资源（StyleBoxFlat 的圆角、边框、背景色等）
-- [ ] **UISYS-04**: AI 可查询 Control 节点的 UI 特有属性（size_flags、anchor、minimum_size 等）
-- [ ] **UISYS-05**: AI 可配置 Container 节点的布局参数（separation、alignment 等）
-- [ ] **UISYS-06**: AI 可设置 Control 节点的焦点邻居（focus_neighbor）实现键盘/手柄导航链
+- [x] **UISYS-01**: AI 可设置 Control 节点的 anchor/margin 布局预设
+- [x] **UISYS-02**: AI 可设置 Control 节点的 theme override（颜色、字体、样式）
+- [x] **UISYS-03**: AI 可创建和编辑 StyleBox 资源（StyleBoxFlat 的圆角、边框、背景色等）
+- [x] **UISYS-04**: AI 可查询 Control 节点的 UI 特有属性（size_flags、anchor、minimum_size 等）
+- [x] **UISYS-05**: AI 可配置 Container 节点的布局参数（separation、alignment 等）
+- [x] **UISYS-06**: AI 可设置 Control 节点的焦点邻居（focus_neighbor）实现键盘/手柄导航链
 
 ### Animation System
 
@@ -88,12 +88,12 @@ Deferred to future release.
 | SCNF-04 | Phase 6 | Complete |
 | SCNF-05 | Phase 6 | Complete |
 | SCNF-06 | Phase 6 | Complete |
-| UISYS-01 | Phase 7 | Pending |
-| UISYS-02 | Phase 7 | Pending |
-| UISYS-03 | Phase 7 | Pending |
-| UISYS-04 | Phase 7 | Pending |
-| UISYS-05 | Phase 7 | Pending |
-| UISYS-06 | Phase 7 | Pending |
+| UISYS-01 | Phase 7 | Complete |
+| UISYS-02 | Phase 7 | Complete |
+| UISYS-03 | Phase 7 | Complete |
+| UISYS-04 | Phase 7 | Complete |
+| UISYS-05 | Phase 7 | Complete |
+| UISYS-06 | Phase 7 | Complete |
 | ANIM-01 | Phase 8 | Pending |
 | ANIM-02 | Phase 8 | Pending |
 | ANIM-03 | Phase 8 | Pending |
