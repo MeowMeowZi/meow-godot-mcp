@@ -8,6 +8,7 @@
 #include "runtime_tools.h"
 #include "signal_tools.h"
 #include "scene_file_tools.h"
+#include "ui_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -624,6 +625,104 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: scene_path");
             }
             return mcp::create_tool_result(id, instantiate_scene(scene_path, parent_path, name, undo_redo));
+        }
+
+        // --- Phase 7: UI System tools ---
+
+        if (tool_name == "set_layout_preset") {
+            std::string node_path, preset;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+                if (args.contains("preset") && args["preset"].is_string())
+                    preset = args["preset"].get<std::string>();
+            }
+            if (node_path.empty() || preset.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: node_path, preset");
+            }
+            return mcp::create_tool_result(id, set_layout_preset(node_path, preset, undo_redo));
+        }
+
+        if (tool_name == "set_theme_override") {
+            std::string node_path;
+            nlohmann::json overrides;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+                if (args.contains("overrides") && args["overrides"].is_object())
+                    overrides = args["overrides"];
+            }
+            if (node_path.empty() || overrides.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: node_path, overrides");
+            }
+            return mcp::create_tool_result(id, set_theme_override(node_path, overrides, undo_redo));
+        }
+
+        if (tool_name == "create_stylebox") {
+            std::string node_path, override_name;
+            nlohmann::json properties;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+                if (args.contains("override_name") && args["override_name"].is_string())
+                    override_name = args["override_name"].get<std::string>();
+                // Collect all arguments as properties (function will read what it needs)
+                properties = args;
+            }
+            if (node_path.empty() || override_name.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: node_path, override_name");
+            }
+            return mcp::create_tool_result(id, create_stylebox(node_path, override_name, properties, undo_redo));
+        }
+
+        if (tool_name == "get_ui_properties") {
+            std::string node_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+            }
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: node_path");
+            }
+            return mcp::create_tool_result(id, get_ui_properties(node_path));
+        }
+
+        if (tool_name == "set_container_layout") {
+            std::string node_path;
+            nlohmann::json layout_params;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+                layout_params = args;
+            }
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: node_path");
+            }
+            return mcp::create_tool_result(id, set_container_layout(node_path, layout_params, undo_redo));
+        }
+
+        if (tool_name == "get_theme_overrides") {
+            std::string node_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+            }
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: node_path");
+            }
+            return mcp::create_tool_result(id, get_theme_overrides(node_path));
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
