@@ -7,6 +7,8 @@
 #include <godot_cpp/classes/editor_undo_redo_manager.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 
@@ -73,6 +75,8 @@ void MCPPlugin::_enter_tree() {
         callable_mp(this, &MCPPlugin::_on_toggle_pressed));
     dock->get_restart_button()->connect("pressed",
         callable_mp(this, &MCPPlugin::_on_restart_pressed));
+    dock->get_configure_mcp_button()->connect("pressed",
+        callable_mp(this, &MCPPlugin::_on_configure_mcp_pressed));
 
     // Add dock to editor (right-bottom panel)
     add_control_to_dock(DOCK_SLOT_RIGHT_BL, dock->get_root());
@@ -179,6 +183,52 @@ void MCPPlugin::_on_restart_pressed() {
         bool connected = server->has_client();
         dock->update_status(running, connected, running ? port : 0, version_string, tool_count);
         dock->update_buttons(running);
+    }
+}
+
+void MCPPlugin::_on_configure_mcp_pressed() {
+    auto* ps = ProjectSettings::get_singleton();
+    if (!ps) return;
+
+    // Get absolute path to bridge executable
+    String bridge_res = "res://addons/meow_godot_mcp/bin/godot-mcp-bridge";
+#ifdef _WIN32
+    bridge_res += ".exe";
+#endif
+    String bridge_abs = ps->globalize_path(bridge_res);
+    // Normalize to forward slashes for JSON
+    bridge_abs = bridge_abs.replace("\\", "/");
+
+    // Build .mcp.json content
+    String json_content = String::utf8(
+        "{\n"
+        "  \"mcpServers\": {\n"
+        "    \"godot\": {\n"
+        "      \"type\": \"stdio\",\n"
+        "      \"command\": \"") + bridge_abs + String::utf8("\",\n"
+        "      \"args\": []\n"
+        "    }\n"
+        "  }\n"
+        "}\n");
+
+    // Write to project root
+    String project_root = ps->globalize_path("res://");
+    String mcp_path = project_root + ".mcp.json";
+
+    // Use native file I/O (globalized path)
+    Ref<FileAccess> file = FileAccess::open(
+        String("res://") + ".mcp.json", FileAccess::WRITE);
+    if (!file.is_valid()) {
+        // Try globalized path
+        file = FileAccess::open(mcp_path, FileAccess::WRITE);
+    }
+
+    if (file.is_valid()) {
+        file->store_string(json_content);
+        file->close();
+        UtilityFunctions::print(String::utf8("MCP Meow: Claude Code MCP 配置已写入 "), mcp_path);
+    } else {
+        UtilityFunctions::print(String::utf8("MCP Meow: 写入 .mcp.json 失败: "), mcp_path);
     }
 }
 

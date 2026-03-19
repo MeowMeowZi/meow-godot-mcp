@@ -24,6 +24,7 @@ public:
     // Returns buttons for signal connection (connected to MCPPlugin, not MCPDock)
     godot::Button* get_toggle_button() const;
     godot::Button* get_restart_button() const;
+    godot::Button* get_configure_mcp_button() const;
 
     // Update status display (called from MCPPlugin::_process via timer)
     // Only updates UI labels when state actually changes (dirty check)
@@ -44,6 +45,7 @@ private:
     godot::Label* tools_label = nullptr;
     godot::Button* toggle_button = nullptr;
     godot::Button* restart_button = nullptr;
+    godot::Button* configure_mcp_button = nullptr;
 
     godot::PanelContainer* autoload_warning = nullptr;
 

@@ -30,6 +30,7 @@ private:
     // Button callbacks (signals connect to MCPPlugin since MCPDock is not a Godot Object)
     void _on_toggle_pressed();
     void _on_restart_pressed();
+    void _on_configure_mcp_pressed();
 
     MCPServer* server;
     MCPDock* dock;

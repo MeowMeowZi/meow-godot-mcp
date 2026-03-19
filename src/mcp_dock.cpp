@@ -48,6 +48,16 @@ MCPDock::MCPDock() {
     restart_button->set_disabled(true);
     btn_box->add_child(restart_button);
 
+    // Separator before configure button
+    auto* sep2 = memnew(HSeparator);
+    root->add_child(sep2);
+
+    // Configure Claude Code MCP button
+    configure_mcp_button = memnew(Button);
+    configure_mcp_button->set_text(String::utf8("配置 Claude Code MCP"));
+    configure_mcp_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+    root->add_child(configure_mcp_button);
+
     // Autoload warning banner (hidden by default)
     autoload_warning = memnew(PanelContainer);
     autoload_warning->set_visible(false);
@@ -92,6 +102,10 @@ Button* MCPDock::get_toggle_button() const {
 
 Button* MCPDock::get_restart_button() const {
     return restart_button;
+}
+
+Button* MCPDock::get_configure_mcp_button() const {
+    return configure_mcp_button;
 }
 
 void MCPDock::update_status(bool running, bool client_connected, int port,
