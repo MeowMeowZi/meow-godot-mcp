@@ -93,6 +93,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout (for release notes)
+        uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -100,15 +103,8 @@ jobs:
 
       - name: Debug artifacts
         run: |
-          echo "=== Working directory ==="
-          pwd
-          echo "=== Top-level contents ==="
-          ls -la
-          echo "=== artifacts/ contents ==="
-          ls -laR artifacts/ 2>&1 | head -50
-
-      - name: Checkout (for release notes)
-        uses: actions/checkout@v4
+          echo "=== artifacts/ structure ==="
+          find artifacts/ -type f | head -30
 
       - name: Package release
         run: |
