@@ -137,6 +137,11 @@ void MCPPlugin::_process(double delta) {
         server->poll();
     }
 
+    // Tick feedback auto-hide timer
+    if (dock) {
+        dock->tick_feedback(delta);
+    }
+
     // Status polling timer: update dock every ~1 second
     status_timer += delta;
     if (status_timer >= 1.0 && dock) {

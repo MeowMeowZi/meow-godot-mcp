@@ -183,5 +183,18 @@ void MCPDock::show_configure_feedback(const String& command) {
             + String::utf8("\n\n执行后重启 Claude Code 即可连接。")
         );
         configure_feedback->set_visible(true);
+        feedback_timer = 10.0;  // Auto-hide after 10 seconds
+    }
+}
+
+void MCPDock::tick_feedback(double delta) {
+    if (feedback_timer > 0.0) {
+        feedback_timer -= delta;
+        if (feedback_timer <= 0.0) {
+            feedback_timer = 0.0;
+            if (configure_feedback) {
+                configure_feedback->set_visible(false);
+            }
+        }
     }
 }

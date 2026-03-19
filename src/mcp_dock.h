@@ -37,8 +37,11 @@ public:
     // Show/hide autoload warning banner
     void set_autoload_warning(bool missing);
 
-    // Show configure feedback message in dock panel
+    // Show configure feedback message in dock panel (auto-hides after timeout)
     void show_configure_feedback(const godot::String& command);
+
+    // Called from MCPPlugin::_process to tick feedback timer
+    void tick_feedback(double delta);
 
 private:
     godot::VBoxContainer* root = nullptr;
@@ -53,6 +56,9 @@ private:
     godot::PanelContainer* autoload_warning = nullptr;
     godot::PanelContainer* configure_feedback = nullptr;
     godot::Label* configure_feedback_label = nullptr;
+
+    // Feedback auto-hide timer
+    double feedback_timer = 0.0;
 
     // Cached state for dirty checking
     bool last_running = false;
