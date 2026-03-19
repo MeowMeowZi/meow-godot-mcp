@@ -12,11 +12,11 @@
 
 ## RTST — Runtime State Query
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| RTST-01 | 新增 `get_game_node_property` 工具，读取运行中游戏节点的属性值 | Must |
-| RTST-02 | 新增 `eval_in_game` 工具，在运行中游戏执行 GDScript 表达式并返回结果 | Must |
-| RTST-03 | 新增 `get_game_scene_tree` 工具，获取运行中游戏的场景树结构 | Must |
+| ID | Requirement | Priority | Status |
+|----|-------------|----------|--------|
+| RTST-01 | 新增 `get_game_node_property` 工具，读取运行中游戏节点的属性值 | Must | Done (13-01) |
+| RTST-02 | 新增 `eval_in_game` 工具，在运行中游戏执行 GDScript 表达式并返回结果 | Must | Done (13-01) |
+| RTST-03 | 新增 `get_game_scene_tree` 工具，获取运行中游戏的场景树结构 | Must | Done (13-01) |
 
 **Motivation:** 当前验证游戏状态只能靠截图"看"，无法程序化断言
 

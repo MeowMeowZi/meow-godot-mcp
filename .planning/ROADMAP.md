@@ -44,7 +44,7 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full details.
 **Milestone Goal:** 增强 AI 与运行中游戏的交互能力，实现精确 UI 操控、运行时状态查询、自动化测试验证，从"能控制编辑器"升级为"能测试和调试游戏"。
 
 - [x] **Phase 12: Input Injection Enhancement** - click 自动 press+release，按节点路径点击 UI
-- [ ] **Phase 13: Runtime State Query** - 读取运行中游戏的节点属性和变量值
+- [x] **Phase 13: Runtime State Query** - 读取运行中游戏的节点属性和变量值
 - [ ] **Phase 14: Game Output Enhancement** - 自动化日志捕获，无需手动配置
 - [ ] **Phase 15: Integration Testing Toolkit** - 端到端自动测试工作流
 
@@ -67,10 +67,10 @@ Plans:
 **Goal**: AI 可读取运行中游戏的节点属性、执行 GDScript 表达式、获取运行时场景树
 **Depends on**: Phase 12
 **Requirements**: RTST-01, RTST-02, RTST-03
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 13-01-PLAN.md — Core implementation: get_game_node_property, eval_in_game, get_game_scene_tree (C++ + GDScript + registry + dispatch)
-- [ ] 13-02-PLAN.md — UAT test suite, build verification, and end-to-end human verification
+- [x] 13-01-PLAN.md — Core implementation: get_game_node_property, eval_in_game, get_game_scene_tree (C++ + GDScript + registry + dispatch)
+- [x] 13-02-PLAN.md — UAT test suite, build verification, and end-to-end human verification
 **Success Criteria** (what must be TRUE):
   1. AI 可通过 get_game_node_property 读取运行中游戏任意节点的属性值
   2. AI 可通过 eval_in_game 在运行中游戏执行 GDScript 表达式并返回结果
@@ -110,6 +110,6 @@ Plans:
 | 10. Running Game Bridge | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 11. Prompt Templates | v1.1 | 1/1 | Complete | 2026-03-19 |
 | 12. Input Injection Enhancement | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
-| 13. Runtime State Query | 1/2 | In Progress|  | - |
+| 13. Runtime State Query | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 14. Game Output Enhancement | v1.2 | - | Planned | - |
 | 15. Integration Testing Toolkit | v1.2 | - | Planned | - |
