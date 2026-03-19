@@ -1,10 +1,21 @@
 # Milestones
 
+## v1.2 Runtime Interaction Enhancement (Shipped: 2026-03-19)
+
+**Phases completed:** 4 phases, 8 plans, 0 tasks
+
+**Key accomplishments:**
+
+- (none recorded)
+
+---
+
 ## v1.1 UI & Editor Expansion (Shipped: 2026-03-19)
 
 **Phases completed:** 6 phases, 16 plans, 0 tasks
 
 **Key accomplishments:**
+
 - (none recorded)
 
 ---
@@ -15,6 +26,7 @@
 **C++ LOC:** 3,496 (src/) + 2,418 (tests/) | **Commits:** 81 total (19 feat)
 
 **Key accomplishments:**
+
 - Two-process MCP architecture: stdio bridge (~50KB) + GDExtension TCP relay, zero external dependencies
 - 18 MCP tools across 5 categories: scene CRUD, script management, project queries, runtime control, signal wiring
 - Full MCP spec 2025-03-26 compliance: JSON-RPC 2.0, tools, resources, prompts with 4 workflow templates
@@ -25,4 +37,3 @@
 **31/31 v1 requirements satisfied** across 7 categories (MCP Transport, Scene Ops, Script Mgmt, Runtime & Debug, Project & Resources, Editor Integration, Distribution)
 
 ---
-
