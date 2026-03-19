@@ -974,6 +974,69 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return mcp::create_tool_result(id, result);
         }
 
+        // --- Phase 13: Runtime State Query tools ---
+
+        if (tool_name == "get_game_node_property") {
+            std::string node_path, property;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+                if (args.contains("property") && args["property"].is_string())
+                    property = args["property"].get<std::string>();
+            }
+            if (property.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: property");
+            }
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+            }
+            auto result = game_bridge->get_game_node_property_tool(id, node_path, property);
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;
+            }
+            return mcp::create_tool_result(id, result);
+        }
+
+        if (tool_name == "eval_in_game") {
+            std::string expression;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("expression") && args["expression"].is_string())
+                    expression = args["expression"].get<std::string>();
+            }
+            if (expression.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: expression");
+            }
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+            }
+            auto result = game_bridge->eval_in_game_tool(id, expression);
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;
+            }
+            return mcp::create_tool_result(id, result);
+        }
+
+        if (tool_name == "get_game_scene_tree") {
+            int max_depth = -1;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("max_depth") && args["max_depth"].is_number_integer())
+                    max_depth = args["max_depth"].get<int>();
+            }
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+            }
+            auto result = game_bridge->get_game_scene_tree_tool(id, max_depth);
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;
+            }
+            return mcp::create_tool_result(id, result);
+        }
+
         return mcp::create_tool_not_found_error(id, tool_name);
     }
 

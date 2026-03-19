@@ -626,6 +626,67 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", {"node_path"}}
             },
             {4, 3, 0}
+        },
+        // --- Phase 13: Runtime State Query tools ---
+        {
+            "get_game_node_property",
+            "Read a property value from a node in the running game. Returns the value "
+            "as a string (using Godot var_to_str format) and the property type name. "
+            "Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {
+                        {"type", "string"},
+                        {"description", "Path to the node relative to the scene root "
+                                       "(e.g., 'Player', 'UI/ScoreLabel'). Empty string for scene root."}
+                    }},
+                    {"property", {
+                        {"type", "string"},
+                        {"description", "Property name to read (e.g., 'position', 'text', 'visible', 'health')"}
+                    }}
+                }},
+                {"required", {"node_path", "property"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "eval_in_game",
+            "Execute a GDScript expression in the running game and return the result. "
+            "The expression runs with the current scene root as the base instance, so "
+            "methods like get_children(), get_node() etc. are available. "
+            "Returns the result as a string (using Godot var_to_str format). "
+            "Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"expression", {
+                        {"type", "string"},
+                        {"description", "GDScript expression to evaluate (e.g., 'get_children().size()', "
+                                       "'get_node(\"Player\").position', '2 + 2')"}
+                    }}
+                }},
+                {"required", {"expression"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_game_scene_tree",
+            "Get the complete scene tree structure from the running game. Returns node names, "
+            "types, paths, script paths, visibility, and child hierarchy as JSON. "
+            "Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"max_depth", {
+                        {"type", "integer"},
+                        {"description", "Maximum depth to traverse. Default: -1 (unlimited). "
+                                       "0 = root only, 1 = root + direct children, etc."}
+                    }}
+                }},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
         }
     };
     return tools;
