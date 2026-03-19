@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 Phase: 11 of 11 (Prompt Templates) -- sixth (final) phase of v1.1
 Plan: 1 of 1 (all plans complete)
 Status: complete
-Last activity: 2026-03-19 - Completed quick task 260319-o6n: Executor subagent Godot MCP smoke test (MCP tools not in subagent tool set)
+Last activity: 2026-03-20 - Completed quick task 260319-qli: 搜打撤背包UI测试场景
 
 Progress: [██████████] 100% -- v1.1 MILESTONE COMPLETE
 
@@ -147,6 +147,7 @@ None yet.
 | 260319-mkm | 登录注册UI: 暗色卡片主题 + 表单验证 + 登录/注册模式切换 | 2026-03-19 | adda93a | [260319-mkm-login-ui](./quick/260319-mkm-login-ui/) |
 | 260319-nzt | MCP HelloWorld: 居中Label + 控制台打印 | 2026-03-19 | a843d78 | [260319-nzt-mcp-helloworld](./quick/260319-nzt-mcp-helloworld/) |
 | 260319-o6n | Subagent MCP验证: MCP工具在子agent不可用，回退直接写文件 | 2026-03-19 | 036bad0 | [260319-o6n-executor-subagent-godot-mcp](./quick/260319-o6n-executor-subagent-godot-mcp/) |
+| 260319-qli | 搜打撤背包UI测试场景: 搜索/战斗/撤退 + 背包稀有度 + BBCode日志 + XP/升级 | 2026-03-20 | bcf743d | [260319-qli-ui](./quick/260319-qli-ui/) |
 
 ## Session Continuity
 
