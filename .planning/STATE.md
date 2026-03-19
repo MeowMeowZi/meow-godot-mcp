@@ -5,7 +5,7 @@ milestone_name: UI & Editor Expansion
 status: completed
 stopped_at: v1.1 COMPLETE - All phases finished. Phase 11-01 was the final plan.
 last_updated: "2026-03-19T03:17:27.711Z"
-last_activity: "2026-03-19 - Completed quick task 260319-log: 搜打撤背包UI测试场景"
+last_activity: "2026-03-19 - Completed quick task 260319-mkm: 登录注册UI测试场景"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 Phase: 11 of 11 (Prompt Templates) -- sixth (final) phase of v1.1
 Plan: 1 of 1 (all plans complete)
 Status: complete
-Last activity: 2026-03-19 - Completed quick task 260319-log: 搜打撤背包UI测试场景(BBCode日志+XP升级+稀有度+交互)
+Last activity: 2026-03-19 - Completed quick task 260319-mkm: 登录注册UI测试场景(暗色主题+表单验证+登录注册切换)
 
 Progress: [██████████] 100% -- v1.1 MILESTONE COMPLETE
 
@@ -144,9 +144,10 @@ None yet.
 | 260318-nff | 构建 macOS/Linux 动态库，修复跨平台异常兼容性，上传全平台 Release | 2026-03-18 | 7cd0884 | [260318-nff-mac-release](./quick/260318-nff-mac-release/) |
 | 260319-kcw | 搜打撤背包 UI 游戏原型: 搜索/战斗/撤退循环 + 背包管理 | 2026-03-19 | aa78e61 | [260319-kcw-ui](./quick/260319-kcw-ui/) |
 | 260319-log | 搜打撤 Plus: BBCode彩色日志 + XP/升级 + 稀有度系统 + 出售/使用药草 | 2026-03-19 | 95604dc | [260319-log-ui](./quick/260319-log-ui/) |
+| 260319-mkm | 登录注册UI: 暗色卡片主题 + 表单验证 + 登录/注册模式切换 | 2026-03-19 | adda93a | [260319-mkm-login-ui](./quick/260319-mkm-login-ui/) |
 
 ## Session Continuity
 
-Last session: 2026-03-19T07:42:23Z
-Stopped at: Completed quick task 260319-log (搜打撤 Plus enhanced UI)
+Last session: 2026-03-19T08:18:03Z
+Stopped at: Completed quick task 260319-mkm (登录注册UI测试场景)
 Resume file: None
