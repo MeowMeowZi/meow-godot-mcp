@@ -93,7 +93,7 @@ Plans:
 **Goal**: 综合输入注入、状态查询、日志捕获能力，提供完整的 AI 自动测试闭环
 **Depends on**: Phase 13, Phase 14
 **Requirements**: TEST-01, TEST-02, TEST-03
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 15-01-PLAN.md — Core implementation: run_test_sequence tool (async state machine) + test_game_ui prompt template
 - [ ] 15-02-PLAN.md — UAT test suite (15 tests) and end-to-end human verification
@@ -120,4 +120,4 @@ Plans:
 | 12. Input Injection Enhancement | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
 | 13. Runtime State Query | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
 | 14. Game Output Enhancement | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
-| 15. Integration Testing Toolkit | v1.2 | 0/2 | Planning | - |
+| 15. Integration Testing Toolkit | 1/2 | In Progress|  | - |
