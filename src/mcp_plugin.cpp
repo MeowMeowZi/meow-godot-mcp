@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
+#include <godot_cpp/classes/display_server.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 
@@ -196,49 +197,18 @@ void MCPPlugin::_on_configure_mcp_pressed() {
     bridge_res += ".exe";
 #endif
     String bridge_abs = ps->globalize_path(bridge_res);
-    // Normalize to forward slashes for JSON
+    // Normalize to forward slashes
     bridge_abs = bridge_abs.replace("\\", "/");
 
-    // Build .mcp.json content
-    String json_content = String::utf8(
-        "{\n"
-        "  \"mcpServers\": {\n"
-        "    \"godot\": {\n"
-        "      \"type\": \"stdio\",\n"
-        "      \"command\": \"") + bridge_abs + String::utf8("\",\n"
-        "      \"args\": []\n"
-        "    }\n"
-        "  }\n"
-        "}\n");
+    // Build the claude mcp add command
+    String command = String("claude mcp add --transport stdio --scope project godot -- \"")
+        + bridge_abs + String("\"");
 
-    // Write .mcp.json to BOTH project root and parent directory
-    // Claude Code may run from either location
-    String project_root = ps->globalize_path("res://");
-    // Normalize path separators
-    project_root = project_root.replace("\\", "/");
-    // Ensure trailing slash
-    if (!project_root.ends_with("/")) project_root += "/";
+    // Copy to clipboard
+    DisplayServer::get_singleton()->clipboard_set(command);
 
-    // Parent directory (repo root, where Claude Code typically runs)
-    String parent_dir = project_root.substr(0, project_root.length() - 1);
-    int last_slash = parent_dir.rfind("/");
-    if (last_slash >= 0) {
-        parent_dir = parent_dir.substr(0, last_slash + 1);
-    }
-
-    // Write to both locations
-    String paths[] = { project_root + ".mcp.json", parent_dir + ".mcp.json" };
-    for (int i = 0; i < 2; i++) {
-        // Convert back to OS path for FileAccess
-        String os_path = paths[i].replace("/", "\\");
-        Ref<FileAccess> file = FileAccess::open(paths[i], FileAccess::WRITE);
-        if (file.is_valid()) {
-            file->store_string(json_content);
-            file->close();
-            UtilityFunctions::print(String::utf8("MCP Meow: 已写入 "), paths[i]);
-        }
-    }
-    UtilityFunctions::print(String::utf8("MCP Meow: Claude Code MCP 配置完成，重启 Claude Code 生效"));
+    UtilityFunctions::print(String::utf8("MCP Meow: 配置命令已复制到剪贴板："), command);
+    UtilityFunctions::print(String::utf8("MCP Meow: 请在 Claude Code 终端中粘贴执行，然后重启 Claude Code"));
 }
 
 void MCPPlugin::_bind_methods() {
