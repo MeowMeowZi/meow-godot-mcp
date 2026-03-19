@@ -534,11 +534,25 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "get_game_output") {
             bool clear_after_read = true;
+            std::string level;
+            int64_t since = 0;
+            std::string keyword;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
                 if (args.contains("clear_after_read") && args["clear_after_read"].is_boolean())
                     clear_after_read = args["clear_after_read"].get<bool>();
+                if (args.contains("level") && args["level"].is_string())
+                    level = args["level"].get<std::string>();
+                if (args.contains("since") && args["since"].is_number_integer())
+                    since = args["since"].get<int64_t>();
+                if (args.contains("keyword") && args["keyword"].is_string())
+                    keyword = args["keyword"].get<std::string>();
             }
+            // Use debugger-channel buffer when bridge is available (preferred)
+            if (game_bridge) {
+                return mcp::create_tool_result(id, game_bridge->get_buffered_game_output(clear_after_read, level, since, keyword));
+            }
+            // Fallback to file-based reading (legacy, no filtering support)
             return mcp::create_tool_result(id, get_game_output(clear_after_read));
         }
 

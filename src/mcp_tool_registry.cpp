@@ -193,12 +193,21 @@ const std::vector<ToolDef>& get_all_tools() {
         },
         {
             "get_game_output",
-            "Get accumulated stdout/stderr log output from the running (or last-run) game. Returns lines written since last call by default. Use clear_after_read=false to keep reading from the same position.",
+            "Get accumulated stdout/stderr output from the running game. Captures print(), push_error(), "
+            "and push_warning() output automatically via the debugger channel -- no project settings needed. "
+            "Returns lines since last call by default. Supports filtering by level, time, and keyword.",
             {
                 {"type", "object"},
                 {"properties", {
                     {"clear_after_read", {{"type", "boolean"},
-                                         {"description", "If true (default), advance read position so next call returns only new lines. If false, re-read from same position."}}}
+                                         {"description", "If true (default), advance read position so next call returns only new lines. If false, re-read from same position."}}},
+                    {"level", {{"type", "string"},
+                              {"enum", {"info", "warning", "error"}},
+                              {"description", "Filter by log level. Omit to return all levels."}}},
+                    {"since", {{"type", "integer"},
+                              {"description", "Return only entries with timestamp >= this value (milliseconds). Useful for time-windowed queries."}}},
+                    {"keyword", {{"type", "string"},
+                                {"description", "Filter lines containing this substring (case-sensitive). Omit to return all lines."}}}
                 }},
                 {"required", nlohmann::json::array()}
             },
