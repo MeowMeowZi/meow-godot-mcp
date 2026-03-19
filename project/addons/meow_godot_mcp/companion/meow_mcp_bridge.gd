@@ -33,6 +33,12 @@ func _on_message(message: String, data: Array) -> bool:
 			return true
 		"get_node_rect":
 			return _handle_get_node_rect(data)
+		"get_node_property":
+			return _handle_get_node_property(data)
+		"eval_in_game":
+			return _handle_eval_in_game(data)
+		"get_game_scene_tree":
+			return _handle_get_game_scene_tree(data)
 	return false
 
 func _inject_key(data: Array) -> bool:
@@ -215,3 +221,98 @@ func _capture_viewport() -> bool:
 	EngineDebugger.send_message("meow_mcp:viewport_data",
 		[base64_str, image.get_width(), image.get_height()])
 	return true
+
+# --- Phase 13: Runtime State Query handlers ---
+
+func _handle_get_node_property(data: Array) -> bool:
+	var node_path: String = data[0]
+	var property_name: String = data[1]
+	var node = _resolve_node(node_path)
+
+	if node == null:
+		EngineDebugger.send_message("meow_mcp:node_property_result",
+			[false, "Node not found: " + node_path, "", ""])
+		return true
+
+	var prop_list = node.get_property_list()
+	var found = false
+	for prop in prop_list:
+		if prop["name"] == property_name:
+			found = true
+			break
+
+	if not found:
+		EngineDebugger.send_message("meow_mcp:node_property_result",
+			[false, "Property not found: " + property_name + " on node: " + node_path, "", ""])
+		return true
+
+	var value = node.get(property_name)
+	var type_name = type_string(typeof(value))
+	var value_str = var_to_str(value) if value != null else "null"
+
+	EngineDebugger.send_message("meow_mcp:node_property_result",
+		[true, "", value_str, type_name])
+	return true
+
+func _handle_eval_in_game(data: Array) -> bool:
+	var expression_str: String = data[0]
+	var expr = Expression.new()
+	var error = expr.parse(expression_str)
+
+	if error != OK:
+		EngineDebugger.send_message("meow_mcp:eval_result",
+			[false, "Parse error: " + expr.get_error_text(), ""])
+		return true
+
+	var result = expr.execute([], get_tree().current_scene)
+
+	if expr.has_execute_error():
+		EngineDebugger.send_message("meow_mcp:eval_result",
+			[false, "Execute error: " + expr.get_error_text(), ""])
+		return true
+
+	var result_str = var_to_str(result) if result != null else "null"
+	EngineDebugger.send_message("meow_mcp:eval_result",
+		[true, "", result_str])
+	return true
+
+func _handle_get_game_scene_tree(data: Array) -> bool:
+	var max_depth: int = data[0]
+	var scene_root = get_tree().current_scene
+
+	if scene_root == null:
+		EngineDebugger.send_message("meow_mcp:game_scene_tree_result",
+			[false, "No current scene", ""])
+		return true
+
+	var tree_data = _serialize_node(scene_root, 0, max_depth)
+	var json_str = JSON.stringify(tree_data)
+	EngineDebugger.send_message("meow_mcp:game_scene_tree_result",
+		[true, "", json_str])
+	return true
+
+func _serialize_node(node: Node, depth: int, max_depth: int) -> Dictionary:
+	var result = {
+		"name": node.name,
+		"type": node.get_class(),
+		"path": str(node.get_path()),
+	}
+
+	if node.get_script() != null:
+		result["script"] = node.get_script().resource_path
+
+	if node is Control:
+		result["visible"] = node.is_visible_in_tree()
+	elif node is CanvasItem:
+		result["visible"] = node.is_visible_in_tree()
+	elif node is Node3D:
+		result["visible"] = node.is_visible_in_tree()
+
+	if max_depth < 0 or depth < max_depth:
+		var children_arr = []
+		for child in node.get_children():
+			children_arr.append(_serialize_node(child, depth + 1, max_depth))
+		if children_arr.size() > 0:
+			result["children"] = children_arr
+
+	return result
