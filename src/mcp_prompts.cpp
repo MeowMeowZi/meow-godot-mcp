@@ -700,6 +700,190 @@ static const std::vector<PromptDef>& get_prompt_defs() {
                     {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
                 });
             }
+        },
+
+        // 7. test_game_ui (TEST-03)
+        {
+            "test_game_ui",
+            "Step-by-step workflow for automated UI testing in a running Godot game using MCP tools",
+            nlohmann::json::array({
+                {{"name", "test_type"}, {"description", "Test scenario: button_click, form_validation, navigation, state_verification (default: button_click)"}, {"required", false}}
+            }),
+            [](const nlohmann::json& args) -> nlohmann::json {
+                std::string test_type = "button_click";
+                if (args.contains("test_type") && args["test_type"].is_string()) {
+                    test_type = args["test_type"].get<std::string>();
+                }
+
+                std::string text;
+                if (test_type == "button_click") {
+                    text = "Automated UI Button Click Test workflow using MCP tools:\n\n"
+                           "Step 1: Start the game\n"
+                           "  Tool: run_game\n"
+                           "  Parameters: { \"mode\": \"current\" }  (or \"main\" / \"custom\" with scene_path)\n"
+                           "  Wait for bridge connection with get_game_bridge_status\n\n"
+                           "Step 2: Get the game scene tree to find UI nodes\n"
+                           "  Tool: get_game_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 3 }\n"
+                           "  Result: Identify Control node paths for buttons to test\n\n"
+                           "Step 3: Verify initial UI state before clicking\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Parameters: { \"node_path\": \"ButtonName\", \"property\": \"text\" }\n"
+                           "  Result: Confirm the button text/label is as expected\n\n"
+                           "Step 4: Click the button\n"
+                           "  Tool: click_node\n"
+                           "  Parameters: { \"node_path\": \"ButtonName\" }\n"
+                           "  Result: Button receives press+release click at its center\n\n"
+                           "Step 5: Verify state change after click\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Parameters: { \"node_path\": \"ResultLabel\", \"property\": \"text\" }\n"
+                           "  Result: Verify the label updated to reflect the button action\n\n"
+                           "Step 6: Check game output for expected logs\n"
+                           "  Tool: get_game_output\n"
+                           "  Parameters: { \"keyword\": \"button_pressed\" }\n"
+                           "  Result: Verify the button handler printed expected output\n\n"
+                           "Step 7: Batch test with run_test_sequence (optional)\n"
+                           "  Tool: run_test_sequence\n"
+                           "  Parameters: { \"steps\": [\n"
+                           "    { \"action\": \"click_node\", \"args\": { \"node_path\": \"Button1\" }, \"description\": \"Click first button\" },\n"
+                           "    { \"action\": \"get_game_node_property\", \"args\": { \"node_path\": \"Label\", \"property\": \"text\" },\n"
+                           "      \"assert\": { \"property\": \"value\", \"contains\": \"clicked\" }, \"description\": \"Verify label updated\" }\n"
+                           "  ]}\n"
+                           "  Result: Structured pass/fail report for the entire sequence\n\n"
+                           "Step 8: Stop the game\n"
+                           "  Tool: stop_game\n"
+                           "  Result: Game process terminated cleanly";
+                } else if (test_type == "form_validation") {
+                    text = "Automated UI Form Validation Test workflow using MCP tools:\n\n"
+                           "Step 1: Start the game scene containing the form\n"
+                           "  Tool: run_game\n"
+                           "  Parameters: { \"mode\": \"custom\", \"scene_path\": \"res://scenes/form.tscn\" }\n"
+                           "  Wait for bridge connection with get_game_bridge_status\n\n"
+                           "Step 2: Inspect the form structure\n"
+                           "  Tool: get_game_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 4 }\n"
+                           "  Result: Identify LineEdit, TextEdit, and Button node paths\n\n"
+                           "Step 3: Check initial form state\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Parameters: { \"node_path\": \"Form/SubmitButton\", \"property\": \"disabled\" }\n"
+                           "  Result: Verify submit button is disabled when form is empty\n\n"
+                           "Step 4: Simulate text input via eval_in_game\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Form/EmailInput').text = 'test@example.com'\" }\n"
+                           "  Result: Form field populated programmatically\n\n"
+                           "Step 5: Click submit button\n"
+                           "  Tool: click_node\n"
+                           "  Parameters: { \"node_path\": \"Form/SubmitButton\" }\n"
+                           "  Result: Form submission triggered\n\n"
+                           "Step 6: Verify validation result\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Parameters: { \"node_path\": \"Form/ErrorLabel\", \"property\": \"text\" }\n"
+                           "  Result: Check for validation error or success message\n\n"
+                           "Step 7: Check game output for validation logs\n"
+                           "  Tool: get_game_output\n"
+                           "  Parameters: { \"keyword\": \"validation\" }\n"
+                           "  Result: Verify validation logic ran and logged results\n\n"
+                           "Step 8: Stop the game\n"
+                           "  Tool: stop_game";
+                } else if (test_type == "navigation") {
+                    text = "Automated UI Navigation Test workflow using MCP tools:\n\n"
+                           "Step 1: Start the game at the main menu\n"
+                           "  Tool: run_game\n"
+                           "  Parameters: { \"mode\": \"main\" }\n"
+                           "  Wait for bridge connection with get_game_bridge_status\n\n"
+                           "Step 2: Verify we're on the main menu\n"
+                           "  Tool: get_game_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 2 }\n"
+                           "  Result: Confirm MainMenu or equivalent root node is present\n\n"
+                           "Step 3: Click 'Play' button to navigate\n"
+                           "  Tool: click_node\n"
+                           "  Parameters: { \"node_path\": \"MainMenu/PlayButton\" }\n"
+                           "  Result: Scene transition triggered\n\n"
+                           "Step 4: Wait for scene transition\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_tree().current_scene.name\" }\n"
+                           "  Result: Verify we navigated to the game scene (not still on menu)\n\n"
+                           "Step 5: Navigate back (press Escape or Back button)\n"
+                           "  Tool: inject_input\n"
+                           "  Parameters: { \"type\": \"key\", \"keycode\": \"escape\" }\n"
+                           "  Result: Trigger pause/back navigation\n\n"
+                           "Step 6: Verify pause menu appeared\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Parameters: { \"node_path\": \"PauseMenu\", \"property\": \"visible\" }\n"
+                           "  Result: Pause menu is now visible\n\n"
+                           "Step 7: Batch test entire flow with run_test_sequence\n"
+                           "  Tool: run_test_sequence\n"
+                           "  Use steps array to automate the full navigation flow with assertions\n\n"
+                           "Step 8: Stop the game\n"
+                           "  Tool: stop_game";
+                } else if (test_type == "state_verification") {
+                    text = "Automated Game State Verification Test workflow using MCP tools:\n\n"
+                           "Step 1: Start the game\n"
+                           "  Tool: run_game\n"
+                           "  Parameters: { \"mode\": \"current\" }\n"
+                           "  Wait for bridge connection with get_game_bridge_status\n\n"
+                           "Step 2: Query initial game state\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Player').health\" }\n"
+                           "  Result: Read initial player health value\n\n"
+                           "Step 3: Trigger a game action\n"
+                           "  Tool: click_node\n"
+                           "  Parameters: { \"node_path\": \"HealButton\" }\n"
+                           "  Result: Player heals\n\n"
+                           "Step 4: Verify state changed\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Player').health\" }\n"
+                           "  Result: Health should have increased\n\n"
+                           "Step 5: Check game output for state change logs\n"
+                           "  Tool: get_game_output\n"
+                           "  Parameters: { \"keyword\": \"heal\" }\n"
+                           "  Result: Verify heal action was logged\n\n"
+                           "Step 6: Capture game viewport for visual verification\n"
+                           "  Tool: capture_game_viewport\n"
+                           "  Parameters: { \"width\": 800 }\n"
+                           "  Result: Screenshot of current game state\n\n"
+                           "Step 7: Run batch assertions with run_test_sequence\n"
+                           "  Tool: run_test_sequence\n"
+                           "  Parameters: { \"steps\": [\n"
+                           "    { \"action\": \"eval_in_game\", \"args\": { \"expression\": \"get_node('Player').health\" },\n"
+                           "      \"assert\": { \"property\": \"result\", \"not_empty\": true }, \"description\": \"Player health exists\" },\n"
+                           "    { \"action\": \"get_game_node_property\", \"args\": { \"node_path\": \"Player\", \"property\": \"visible\" },\n"
+                           "      \"assert\": { \"property\": \"value\", \"equals\": \"true\" }, \"description\": \"Player is visible\" }\n"
+                           "  ]}\n"
+                           "  Result: Structured pass/fail report\n\n"
+                           "Step 8: Stop the game\n"
+                           "  Tool: stop_game";
+                } else {
+                    text = "Automated " + test_type + " UI Test workflow using MCP tools:\n\n"
+                           "Step 1: Start the game\n"
+                           "  Tool: run_game\n"
+                           "  Launch the appropriate scene for testing\n\n"
+                           "Step 2: Explore the scene tree\n"
+                           "  Tool: get_game_scene_tree\n"
+                           "  Identify the UI nodes and their paths\n\n"
+                           "Step 3: Verify initial state\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Check initial property values on target nodes\n\n"
+                           "Step 4: Interact with UI\n"
+                           "  Tool: click_node / inject_input\n"
+                           "  Trigger UI actions by clicking buttons or injecting input\n\n"
+                           "Step 5: Verify state changes\n"
+                           "  Tool: get_game_node_property / eval_in_game\n"
+                           "  Assert that UI state changed as expected\n\n"
+                           "Step 6: Check logs\n"
+                           "  Tool: get_game_output\n"
+                           "  Verify expected output was logged\n\n"
+                           "Step 7: Batch test with run_test_sequence\n"
+                           "  Tool: run_test_sequence\n"
+                           "  Combine steps into automated sequence with assertions\n\n"
+                           "Step 8: Stop the game\n"
+                           "  Tool: stop_game";
+                }
+
+                return nlohmann::json::array({
+                    {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
+                });
+            }
         }
     };
     return defs;
