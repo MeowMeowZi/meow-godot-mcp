@@ -587,6 +587,45 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", nlohmann::json::array()}
             },
             {4, 3, 0}
+        },
+        // --- Phase 12: Input Injection Enhancement tools ---
+        {
+            "click_node",
+            "Click a UI Control node in the running game by its scene tree path. "
+            "Resolves the node, computes its center position, and injects a complete "
+            "press+release mouse click with 50ms delay. Returns the actual clicked coordinates. "
+            "Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {
+                        {"type", "string"},
+                        {"description", "Path to the Control node relative to the scene root "
+                                       "(e.g., 'BackpackUI/BtnSearch'). Must be a Control node."}
+                    }}
+                }},
+                {"required", {"node_path"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_node_rect",
+            "Get the screen rectangle (position and size) of a Control node in the "
+            "running game. Returns viewport coordinates compatible with inject_input position. "
+            "Also returns center point for easy click targeting. "
+            "Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {
+                        {"type", "string"},
+                        {"description", "Path to the Control node relative to the scene root "
+                                       "(e.g., 'BackpackUI/BtnSearch'). Must be a Control node."}
+                    }}
+                }},
+                {"required", {"node_path"}}
+            },
+            {4, 3, 0}
         }
     };
     return tools;

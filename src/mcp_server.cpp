@@ -112,14 +112,15 @@ void MCPServer::io_thread_func() {
         // Accept new connections
         if (tcp_server.is_valid() && tcp_server->is_connection_available()) {
             if (client_peer.is_valid()) {
-                client_peer->disconnect_from_host();
-                client_peer.unref();
-                read_buffer.clear();
+                // Already have a client -- silently reject new connection
+                auto rejected = tcp_server->take_connection();
+                rejected->disconnect_from_host();
+            } else {
+                client_peer = tcp_server->take_connection();
+                client_connected.store(true);
+                initialized = false;
+                UtilityFunctions::print(String::utf8("MCP Meow: 客户端已连接"));
             }
-            client_peer = tcp_server->take_connection();
-            client_connected.store(true);
-            initialized = false;
-            UtilityFunctions::print(String::utf8("MCP Meow: 客户端已连接"));
         }
 
         if (!client_peer.is_valid()) {
@@ -927,6 +928,50 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_tool_result(id, {{"connected", false}, {"error", "Game bridge not initialized"}});
             }
             return mcp::create_tool_result(id, game_bridge->get_bridge_status_tool());
+        }
+
+        // --- Phase 12: Input Injection Enhancement tools ---
+
+        if (tool_name == "click_node") {
+            std::string node_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+            }
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: node_path");
+            }
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+            }
+            auto result = game_bridge->click_node_tool(id, node_path);
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;
+            }
+            return mcp::create_tool_result(id, result);
+        }
+
+        if (tool_name == "get_node_rect") {
+            std::string node_path;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string())
+                    node_path = args["node_path"].get<std::string>();
+            }
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: node_path");
+            }
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+            }
+            auto result = game_bridge->get_node_rect_tool(id, node_path);
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;
+            }
+            return mcp::create_tool_result(id, result);
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);
