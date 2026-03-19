@@ -17,7 +17,7 @@ struct LogEntry {
     int64_t timestamp_ms; // milliseconds since epoch (steady_clock)
 };
 
-enum class PendingType { NONE, VIEWPORT_CAPTURE, CLICK_NODE, GET_NODE_RECT, GET_NODE_PROPERTY, EVAL_IN_GAME, GET_GAME_SCENE_TREE };
+enum class PendingType { NONE, VIEWPORT_CAPTURE, CLICK_NODE, GET_NODE_RECT, GET_NODE_PROPERTY, EVAL_IN_GAME, GET_GAME_SCENE_TREE, RUN_TEST_SEQUENCE };
 
 class MeowDebuggerPlugin : public godot::EditorDebuggerPlugin {
     GDCLASS(MeowDebuggerPlugin, godot::EditorDebuggerPlugin);
@@ -43,6 +43,9 @@ public:
     // Deferred capture: initiates request, returns special marker
     // When response arrives via _capture, calls the deferred_callback
     nlohmann::json request_game_viewport_capture(const nlohmann::json& id, int width, int height);
+
+    // Phase 15: Integration Testing Toolkit
+    nlohmann::json run_test_sequence_tool(const nlohmann::json& id, const nlohmann::json& steps);
 
     // Phase 14: Log buffer methods
     nlohmann::json get_buffered_game_output(bool clear_after_read, const std::string& level_filter,
@@ -80,6 +83,16 @@ private:
     int pending_capture_height = 0;     // For viewport capture resize
 
     DeferredCallback deferred_callback;
+
+    // Phase 15: Test sequence state machine
+    void _execute_test_step(size_t index);
+    void _advance_test_sequence(const nlohmann::json& step_result);
+    nlohmann::json _evaluate_assertion(const nlohmann::json& assert_def, const nlohmann::json& result);
+
+    std::vector<nlohmann::json> test_steps;
+    size_t test_step_index = 0;
+    nlohmann::json test_results;
+    nlohmann::json test_sequence_id;
 };
 
 #endif // MEOW_GODOT_MCP_GAME_BRIDGE_H

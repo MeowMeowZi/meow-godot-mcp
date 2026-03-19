@@ -1051,6 +1051,29 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return mcp::create_tool_result(id, result);
         }
 
+        // --- Phase 15: Integration Testing Toolkit ---
+
+        if (tool_name == "run_test_sequence") {
+            nlohmann::json steps;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("steps") && args["steps"].is_array())
+                    steps = args["steps"];
+            }
+            if (steps.empty() || !steps.is_array()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: steps (must be a non-empty array)");
+            }
+            if (!game_bridge) {
+                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+            }
+            auto result = game_bridge->run_test_sequence_tool(id, steps);
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;
+            }
+            return mcp::create_tool_result(id, result);
+        }
+
         return mcp::create_tool_not_found_error(id, tool_name);
     }
 

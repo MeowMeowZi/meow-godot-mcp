@@ -696,6 +696,40 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"required", nlohmann::json::array()}
             },
             {4, 3, 0}
+        },
+        // --- Phase 15: Integration Testing Toolkit ---
+        {
+            "run_test_sequence",
+            "Execute a sequence of test steps against the running game. Each step can "
+            "invoke tools (click_node, get_game_node_property, inject_input, eval_in_game, "
+            "get_game_output, get_node_rect, get_game_scene_tree, wait) with optional assertions. "
+            "Returns a structured pass/fail report. Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"steps", {
+                        {"type", "array"},
+                        {"description", "Array of test steps to execute sequentially"},
+                        {"items", {
+                            {"type", "object"},
+                            {"properties", {
+                                {"action", {{"type", "string"}, {"enum", {"click_node", "get_game_node_property", "inject_input", "eval_in_game", "get_game_output", "get_node_rect", "get_game_scene_tree", "wait"}}, {"description", "Tool to invoke for this step"}}},
+                                {"args", {{"type", "object"}, {"description", "Arguments to pass to the tool"}}},
+                                {"assert", {{"type", "object"}, {"description", "Optional assertion on step result. Keys: property (result field to check), equals/contains/not_empty (operator and expected value)"}, {"properties", {
+                                    {"property", {{"type", "string"}, {"description", "Result field to assert on (e.g., 'value', 'success', 'result')"}}},
+                                    {"equals", {{"type", "string"}, {"description", "Expected exact value (string comparison)"}}},
+                                    {"contains", {{"type", "string"}, {"description", "Expected substring"}}},
+                                    {"not_empty", {{"type", "boolean"}, {"description", "Assert the field is not empty"}}}
+                                }}}},
+                                {"description", {{"type", "string"}, {"description", "Human-readable description of this test step"}}}
+                            }},
+                            {"required", {"action"}}
+                        }}
+                    }}
+                }},
+                {"required", {"steps"}}
+            },
+            {4, 3, 0}
         }
     };
     return tools;

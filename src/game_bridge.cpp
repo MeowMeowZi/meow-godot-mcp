@@ -4,6 +4,7 @@
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 #include <godot_cpp/classes/marshalls.hpp>
 #include <godot_cpp/classes/image.hpp>
+#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
 #include <chrono>
 
@@ -58,6 +59,9 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
                     break;
                 case PendingType::GET_GAME_SCENE_TREE:
                     error_msg = "Game disconnected during get_game_scene_tree";
+                    break;
+                case PendingType::RUN_TEST_SEQUENCE:
+                    error_msg = "Game disconnected during test sequence";
                     break;
                 default:
                     error_msg = "Game disconnected during pending operation";
@@ -202,19 +206,21 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
     }
 
     if (action == "click_node_result") {
-        if (pending_type == PendingType::CLICK_NODE && deferred_callback) {
-            bool success = p_data[0];
-            String error_msg = p_data[1];
-            double cx = p_data[2];
-            double cy = p_data[3];
+        bool success = p_data[0];
+        String error_msg = p_data[1];
+        double cx = p_data[2];
+        double cy = p_data[3];
 
-            nlohmann::json result;
-            if (success) {
-                result = {{"success", true}, {"clicked_position", {{"x", cx}, {"y", cy}}}};
-            } else {
-                result = {{"error", std::string(error_msg.utf8().get_data())}};
-            }
+        nlohmann::json result;
+        if (success) {
+            result = {{"success", true}, {"clicked_position", {{"x", cx}, {"y", cy}}}};
+        } else {
+            result = {{"error", std::string(error_msg.utf8().get_data())}};
+        }
 
+        if (pending_type == PendingType::RUN_TEST_SEQUENCE) {
+            _advance_test_sequence(result);
+        } else if (pending_type == PendingType::CLICK_NODE && deferred_callback) {
             auto response = mcp::create_tool_result(pending_id, result);
             deferred_callback(response);
             pending_type = PendingType::NONE;
@@ -223,29 +229,31 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
     }
 
     if (action == "node_rect_result") {
-        if (pending_type == PendingType::GET_NODE_RECT && deferred_callback) {
-            bool success = p_data[0];
-            String error_msg = p_data[1];
+        bool success = p_data[0];
+        String error_msg = p_data[1];
 
-            nlohmann::json result;
-            if (success) {
-                double px = p_data[2];
-                double py = p_data[3];
-                double sx = p_data[4];
-                double sy = p_data[5];
-                double gx = p_data[6];
-                double gy = p_data[7];
-                result = {
-                    {"position", {{"x", px}, {"y", py}}},
-                    {"size", {{"width", sx}, {"height", sy}}},
-                    {"global_position", {{"x", gx}, {"y", gy}}},
-                    {"center", {{"x", px + sx / 2.0}, {"y", py + sy / 2.0}}},
-                    {"visible", true}
-                };
-            } else {
-                result = {{"error", std::string(error_msg.utf8().get_data())}};
-            }
+        nlohmann::json result;
+        if (success) {
+            double px = p_data[2];
+            double py = p_data[3];
+            double sx = p_data[4];
+            double sy = p_data[5];
+            double gx = p_data[6];
+            double gy = p_data[7];
+            result = {
+                {"position", {{"x", px}, {"y", py}}},
+                {"size", {{"width", sx}, {"height", sy}}},
+                {"global_position", {{"x", gx}, {"y", gy}}},
+                {"center", {{"x", px + sx / 2.0}, {"y", py + sy / 2.0}}},
+                {"visible", true}
+            };
+        } else {
+            result = {{"error", std::string(error_msg.utf8().get_data())}};
+        }
 
+        if (pending_type == PendingType::RUN_TEST_SEQUENCE) {
+            _advance_test_sequence(result);
+        } else if (pending_type == PendingType::GET_NODE_RECT && deferred_callback) {
             auto response = mcp::create_tool_result(pending_id, result);
             deferred_callback(response);
             pending_type = PendingType::NONE;
@@ -256,22 +264,24 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
     // --- Phase 13: Runtime State Query result handlers ---
 
     if (action == "node_property_result") {
-        if (pending_type == PendingType::GET_NODE_PROPERTY && deferred_callback) {
-            bool success = p_data[0];
-            String message = p_data[1];
-            String value_str = p_data[2];
-            String type_str = p_data[3];
+        bool success = p_data[0];
+        String message = p_data[1];
+        String value_str = p_data[2];
+        String type_str = p_data[3];
 
-            nlohmann::json result;
-            if (success) {
-                result = {
-                    {"value", std::string(value_str.utf8().get_data())},
-                    {"type", std::string(type_str.utf8().get_data())}
-                };
-            } else {
-                result = {{"error", std::string(message.utf8().get_data())}};
-            }
+        nlohmann::json result;
+        if (success) {
+            result = {
+                {"value", std::string(value_str.utf8().get_data())},
+                {"type", std::string(type_str.utf8().get_data())}
+            };
+        } else {
+            result = {{"error", std::string(message.utf8().get_data())}};
+        }
 
+        if (pending_type == PendingType::RUN_TEST_SEQUENCE) {
+            _advance_test_sequence(result);
+        } else if (pending_type == PendingType::GET_NODE_PROPERTY && deferred_callback) {
             auto response = mcp::create_tool_result(pending_id, result);
             deferred_callback(response);
             pending_type = PendingType::NONE;
@@ -280,18 +290,20 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
     }
 
     if (action == "eval_result") {
-        if (pending_type == PendingType::EVAL_IN_GAME && deferred_callback) {
-            bool success = p_data[0];
-            String message = p_data[1];
-            String value_str = p_data[2];
+        bool success = p_data[0];
+        String message = p_data[1];
+        String value_str = p_data[2];
 
-            nlohmann::json result;
-            if (success) {
-                result = {{"result", std::string(value_str.utf8().get_data())}};
-            } else {
-                result = {{"error", std::string(message.utf8().get_data())}};
-            }
+        nlohmann::json result;
+        if (success) {
+            result = {{"result", std::string(value_str.utf8().get_data())}};
+        } else {
+            result = {{"error", std::string(message.utf8().get_data())}};
+        }
 
+        if (pending_type == PendingType::RUN_TEST_SEQUENCE) {
+            _advance_test_sequence(result);
+        } else if (pending_type == PendingType::EVAL_IN_GAME && deferred_callback) {
             auto response = mcp::create_tool_result(pending_id, result);
             deferred_callback(response);
             pending_type = PendingType::NONE;
@@ -300,22 +312,24 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
     }
 
     if (action == "game_scene_tree_result") {
-        if (pending_type == PendingType::GET_GAME_SCENE_TREE && deferred_callback) {
-            bool success = p_data[0];
-            String message = p_data[1];
-            String json_str = p_data[2];
+        bool success = p_data[0];
+        String message = p_data[1];
+        String json_str = p_data[2];
 
-            nlohmann::json result;
-            if (success) {
-                try {
-                    result = nlohmann::json::parse(std::string(json_str.utf8().get_data()));
-                } catch (...) {
-                    result = {{"error", "Failed to parse scene tree JSON from game"}};
-                }
-            } else {
-                result = {{"error", std::string(message.utf8().get_data())}};
+        nlohmann::json result;
+        if (success) {
+            try {
+                result = nlohmann::json::parse(std::string(json_str.utf8().get_data()));
+            } catch (...) {
+                result = {{"error", "Failed to parse scene tree JSON from game"}};
             }
+        } else {
+            result = {{"error", std::string(message.utf8().get_data())}};
+        }
 
+        if (pending_type == PendingType::RUN_TEST_SEQUENCE) {
+            _advance_test_sequence(result);
+        } else if (pending_type == PendingType::GET_GAME_SCENE_TREE && deferred_callback) {
             auto response = mcp::create_tool_result(pending_id, result);
             deferred_callback(response);
             pending_type = PendingType::NONE;
@@ -655,4 +669,232 @@ nlohmann::json MeowDebuggerPlugin::get_game_scene_tree_tool(
     send_to_game("meow_mcp:get_game_scene_tree", data);
 
     return {{"__deferred", true}};
+}
+
+// --- Phase 15: Integration Testing Toolkit ---
+
+nlohmann::json MeowDebuggerPlugin::run_test_sequence_tool(
+    const nlohmann::json& id, const nlohmann::json& steps) {
+    if (!is_game_connected()) {
+        return {{"error", "No game running or bridge not connected"}};
+    }
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending"}};
+    }
+    if (!steps.is_array() || steps.empty()) {
+        return {{"error", "steps must be a non-empty array"}};
+    }
+
+    // Initialize test sequence state
+    test_steps.clear();
+    for (const auto& step : steps) {
+        test_steps.push_back(step);
+    }
+    test_step_index = 0;
+    test_results = nlohmann::json::array();
+    test_sequence_id = id;
+    pending_type = PendingType::RUN_TEST_SEQUENCE;
+
+    // Start executing the first step
+    _execute_test_step(0);
+
+    return {{"__deferred", true}};
+}
+
+void MeowDebuggerPlugin::_execute_test_step(size_t index) {
+    if (index >= test_steps.size()) {
+        // Should not happen -- _advance_test_sequence handles completion
+        _advance_test_sequence({{"error", "Step index out of range"}});
+        return;
+    }
+
+    auto& step = test_steps[index];
+    std::string action = step.value("action", "");
+    nlohmann::json args = step.value("args", nlohmann::json::object());
+
+    // --- Deferred actions (send message to game, wait for _capture response) ---
+
+    if (action == "click_node") {
+        std::string node_path = args.value("node_path", "");
+        if (node_path.empty()) {
+            _advance_test_sequence({{"error", "click_node requires node_path"}});
+            return;
+        }
+        Array data;
+        data.push_back(String(node_path.c_str()));
+        send_to_game("meow_mcp:click_node", data);
+        return; // Wait for click_node_result in _capture
+    }
+
+    if (action == "get_game_node_property") {
+        std::string node_path = args.value("node_path", "");
+        std::string property = args.value("property", "");
+        if (property.empty()) {
+            _advance_test_sequence({{"error", "get_game_node_property requires property"}});
+            return;
+        }
+        Array data;
+        data.push_back(String(node_path.c_str()));
+        data.push_back(String(property.c_str()));
+        send_to_game("meow_mcp:get_node_property", data);
+        return; // Wait for node_property_result in _capture
+    }
+
+    if (action == "eval_in_game") {
+        std::string expression = args.value("expression", "");
+        if (expression.empty()) {
+            _advance_test_sequence({{"error", "eval_in_game requires expression"}});
+            return;
+        }
+        Array data;
+        data.push_back(String(expression.c_str()));
+        send_to_game("meow_mcp:eval_in_game", data);
+        return; // Wait for eval_result in _capture
+    }
+
+    if (action == "get_game_scene_tree") {
+        int max_depth = args.value("max_depth", -1);
+        Array data;
+        data.push_back(max_depth);
+        send_to_game("meow_mcp:get_game_scene_tree", data);
+        return; // Wait for game_scene_tree_result in _capture
+    }
+
+    if (action == "get_node_rect") {
+        std::string node_path = args.value("node_path", "");
+        if (node_path.empty()) {
+            _advance_test_sequence({{"error", "get_node_rect requires node_path"}});
+            return;
+        }
+        Array data;
+        data.push_back(String(node_path.c_str()));
+        send_to_game("meow_mcp:get_node_rect", data);
+        return; // Wait for node_rect_result in _capture
+    }
+
+    // --- Synchronous actions (no deferred wait needed) ---
+
+    if (action == "inject_input") {
+        auto result = inject_input_tool(args);
+        _advance_test_sequence(result);
+        return;
+    }
+
+    if (action == "get_game_output") {
+        bool clear = args.value("clear_after_read", true);
+        std::string level = args.value("level", "");
+        int64_t since = args.value("since", 0);
+        std::string keyword = args.value("keyword", "");
+        auto result = get_buffered_game_output(clear, level, since, keyword);
+        _advance_test_sequence(result);
+        return;
+    }
+
+    if (action == "wait") {
+        int ms = args.value("duration_ms", 500);
+        // Block main thread briefly (acceptable for test tool, typical 100-500ms)
+        OS::get_singleton()->delay_usec(ms * 1000);
+        _advance_test_sequence({{"waited_ms", ms}});
+        return;
+    }
+
+    _advance_test_sequence({{"error", "Unknown action: " + action}});
+}
+
+void MeowDebuggerPlugin::_advance_test_sequence(const nlohmann::json& step_result) {
+    // Record result for current step
+    auto& step = test_steps[test_step_index];
+    nlohmann::json step_report;
+    step_report["step"] = test_step_index;
+    step_report["action"] = step.value("action", "unknown");
+    step_report["description"] = step.value("description", "");
+    step_report["result"] = step_result;
+
+    // Evaluate assertion if present
+    if (step.contains("assert") && step["assert"].is_object()) {
+        auto assertion_result = _evaluate_assertion(step["assert"], step_result);
+        step_report["assertion"] = assertion_result;
+        step_report["passed"] = assertion_result.value("passed", false);
+    } else {
+        // No assertion -- pass if no error
+        step_report["passed"] = !step_result.contains("error");
+    }
+
+    test_results.push_back(step_report);
+    test_step_index++;
+
+    // Execute next step or finish
+    if (test_step_index < test_steps.size()) {
+        _execute_test_step(test_step_index);
+    } else {
+        // All steps done -- build final report
+        int total = static_cast<int>(test_results.size());
+        int passed = 0;
+        for (auto& r : test_results) {
+            if (r.value("passed", false)) passed++;
+        }
+        nlohmann::json final_report = {
+            {"success", true},
+            {"total_steps", total},
+            {"passed", passed},
+            {"failed", total - passed},
+            {"all_passed", passed == total},
+            {"steps", test_results}
+        };
+
+        auto response = mcp::create_tool_result(test_sequence_id, final_report);
+        if (deferred_callback) {
+            deferred_callback(response);
+        }
+        pending_type = PendingType::NONE;
+        test_steps.clear();
+        test_results = nlohmann::json::array();
+    }
+}
+
+nlohmann::json MeowDebuggerPlugin::_evaluate_assertion(
+    const nlohmann::json& assert_def, const nlohmann::json& result) {
+
+    std::string property = assert_def.value("property", "");
+    nlohmann::json assertion_result = {{"passed", false}};
+
+    // Get the value to check
+    std::string actual_value;
+    bool has_property = false;
+    if (property.empty()) {
+        // Check the entire result as string
+        actual_value = result.dump();
+        has_property = true;
+    } else if (result.contains(property)) {
+        has_property = true;
+        if (result[property].is_string()) {
+            actual_value = result[property].get<std::string>();
+        } else {
+            actual_value = result[property].dump();
+        }
+    }
+
+    assertion_result["actual"] = actual_value;
+    assertion_result["has_property"] = has_property;
+
+    if (assert_def.contains("equals")) {
+        std::string expected = assert_def["equals"].get<std::string>();
+        assertion_result["operator"] = "equals";
+        assertion_result["expected"] = expected;
+        assertion_result["passed"] = (actual_value == expected);
+    } else if (assert_def.contains("contains")) {
+        std::string expected = assert_def["contains"].get<std::string>();
+        assertion_result["operator"] = "contains";
+        assertion_result["expected"] = expected;
+        assertion_result["passed"] = (actual_value.find(expected) != std::string::npos);
+    } else if (assert_def.contains("not_empty")) {
+        assertion_result["operator"] = "not_empty";
+        assertion_result["passed"] = has_property && !actual_value.empty();
+    } else {
+        // No operator specified -- just check property exists
+        assertion_result["operator"] = "exists";
+        assertion_result["passed"] = has_property;
+    }
+
+    return assertion_result;
 }
