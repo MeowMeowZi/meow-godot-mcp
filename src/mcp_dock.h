@@ -37,6 +37,9 @@ public:
     // Show/hide autoload warning banner
     void set_autoload_warning(bool missing);
 
+    // Show configure feedback message in dock panel
+    void show_configure_feedback(const godot::String& command);
+
 private:
     godot::VBoxContainer* root = nullptr;
     godot::Label* status_label = nullptr;
@@ -48,6 +51,8 @@ private:
     godot::Button* configure_mcp_button = nullptr;
 
     godot::PanelContainer* autoload_warning = nullptr;
+    godot::PanelContainer* configure_feedback = nullptr;
+    godot::Label* configure_feedback_label = nullptr;
 
     // Cached state for dirty checking
     bool last_running = false;

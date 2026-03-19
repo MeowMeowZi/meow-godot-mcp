@@ -207,8 +207,12 @@ void MCPPlugin::_on_configure_mcp_pressed() {
     // Copy to clipboard
     DisplayServer::get_singleton()->clipboard_set(command);
 
-    UtilityFunctions::print(String::utf8("MCP Meow: 配置命令已复制到剪贴板："), command);
-    UtilityFunctions::print(String::utf8("MCP Meow: 请在 Claude Code 终端中粘贴执行，然后重启 Claude Code"));
+    // Show feedback in dock panel
+    if (dock) {
+        dock->show_configure_feedback(command);
+    }
+
+    UtilityFunctions::print(String::utf8("MCP Meow: 配置命令已复制到剪贴板"));
 }
 
 void MCPPlugin::_bind_methods() {

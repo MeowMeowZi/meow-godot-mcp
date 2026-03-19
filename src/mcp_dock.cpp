@@ -58,6 +58,24 @@ MCPDock::MCPDock() {
     configure_mcp_button->set_h_size_flags(Control::SIZE_EXPAND_FILL);
     root->add_child(configure_mcp_button);
 
+    // Configure feedback panel (hidden by default, shown after button click)
+    configure_feedback = memnew(PanelContainer);
+    configure_feedback->set_visible(false);
+
+    Ref<StyleBoxFlat> fb_style;
+    fb_style.instantiate();
+    fb_style->set_bg_color(Color(0.1, 0.4, 0.2, 0.3));
+    fb_style->set_border_color(Color(0.2, 0.8, 0.4, 0.8));
+    fb_style->set_border_width_all(1);
+    fb_style->set_corner_radius_all(4);
+    fb_style->set_content_margin_all(8);
+    configure_feedback->add_theme_stylebox_override("panel", fb_style);
+
+    configure_feedback_label = memnew(Label);
+    configure_feedback_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
+    configure_feedback->add_child(configure_feedback_label);
+    root->add_child(configure_feedback);
+
     // Autoload warning banner (hidden by default)
     autoload_warning = memnew(PanelContainer);
     autoload_warning->set_visible(false);
@@ -154,5 +172,16 @@ void MCPDock::update_buttons(bool running) {
 void MCPDock::set_autoload_warning(bool missing) {
     if (autoload_warning) {
         autoload_warning->set_visible(missing);
+    }
+}
+
+void MCPDock::show_configure_feedback(const String& command) {
+    if (configure_feedback && configure_feedback_label) {
+        configure_feedback_label->set_text(
+            String::utf8("已复制到剪贴板！请在 Claude Code 终端粘贴执行：\n\n")
+            + command
+            + String::utf8("\n\n执行后重启 Claude Code 即可连接。")
+        );
+        configure_feedback->set_visible(true);
     }
 }
