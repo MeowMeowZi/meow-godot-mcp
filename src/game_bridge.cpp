@@ -45,6 +45,15 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
                 case PendingType::GET_NODE_RECT:
                     error_msg = "Game disconnected during get_node_rect";
                     break;
+                case PendingType::GET_NODE_PROPERTY:
+                    error_msg = "Game disconnected during get_game_node_property";
+                    break;
+                case PendingType::EVAL_IN_GAME:
+                    error_msg = "Game disconnected during eval_in_game";
+                    break;
+                case PendingType::GET_GAME_SCENE_TREE:
+                    error_msg = "Game disconnected during get_game_scene_tree";
+                    break;
                 default:
                     error_msg = "Game disconnected during pending operation";
                     break;
@@ -188,6 +197,76 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
                 };
             } else {
                 result = {{"error", std::string(error_msg.utf8().get_data())}};
+            }
+
+            auto response = mcp::create_tool_result(pending_id, result);
+            deferred_callback(response);
+            pending_type = PendingType::NONE;
+        }
+        return true;
+    }
+
+    // --- Phase 13: Runtime State Query result handlers ---
+
+    if (action == "node_property_result") {
+        if (pending_type == PendingType::GET_NODE_PROPERTY && deferred_callback) {
+            bool success = p_data[0];
+            String message = p_data[1];
+            String value_str = p_data[2];
+            String type_str = p_data[3];
+
+            nlohmann::json result;
+            if (success) {
+                result = {
+                    {"value", std::string(value_str.utf8().get_data())},
+                    {"type", std::string(type_str.utf8().get_data())}
+                };
+            } else {
+                result = {{"error", std::string(message.utf8().get_data())}};
+            }
+
+            auto response = mcp::create_tool_result(pending_id, result);
+            deferred_callback(response);
+            pending_type = PendingType::NONE;
+        }
+        return true;
+    }
+
+    if (action == "eval_result") {
+        if (pending_type == PendingType::EVAL_IN_GAME && deferred_callback) {
+            bool success = p_data[0];
+            String message = p_data[1];
+            String value_str = p_data[2];
+
+            nlohmann::json result;
+            if (success) {
+                result = {{"result", std::string(value_str.utf8().get_data())}};
+            } else {
+                result = {{"error", std::string(message.utf8().get_data())}};
+            }
+
+            auto response = mcp::create_tool_result(pending_id, result);
+            deferred_callback(response);
+            pending_type = PendingType::NONE;
+        }
+        return true;
+    }
+
+    if (action == "game_scene_tree_result") {
+        if (pending_type == PendingType::GET_GAME_SCENE_TREE && deferred_callback) {
+            bool success = p_data[0];
+            String message = p_data[1];
+            String json_str = p_data[2];
+
+            nlohmann::json result;
+            if (success) {
+                try {
+                    result = nlohmann::json::parse(std::string(json_str.utf8().get_data()));
+                } catch (...) {
+                    result = {{"error", "Failed to parse scene tree JSON from game"}};
+                }
+            } else {
+                result = {{"error", std::string(message.utf8().get_data())}};
             }
 
             auto response = mcp::create_tool_result(pending_id, result);
@@ -421,6 +500,66 @@ nlohmann::json MeowDebuggerPlugin::get_node_rect_tool(const nlohmann::json& id, 
     Array data;
     data.push_back(String(node_path.c_str()));
     send_to_game("meow_mcp:get_node_rect", data);
+
+    return {{"__deferred", true}};
+}
+
+// --- Phase 13: Runtime State Query tools ---
+
+nlohmann::json MeowDebuggerPlugin::get_game_node_property_tool(
+    const nlohmann::json& id, const std::string& node_path, const std::string& property) {
+    if (!is_game_connected()) {
+        return {{"error", "No game running or bridge not connected"}};
+    }
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending"}};
+    }
+
+    pending_type = PendingType::GET_NODE_PROPERTY;
+    pending_id = id;
+
+    Array data;
+    data.push_back(String(node_path.c_str()));
+    data.push_back(String(property.c_str()));
+    send_to_game("meow_mcp:get_node_property", data);
+
+    return {{"__deferred", true}};
+}
+
+nlohmann::json MeowDebuggerPlugin::eval_in_game_tool(
+    const nlohmann::json& id, const std::string& expression) {
+    if (!is_game_connected()) {
+        return {{"error", "No game running or bridge not connected"}};
+    }
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending"}};
+    }
+
+    pending_type = PendingType::EVAL_IN_GAME;
+    pending_id = id;
+
+    Array data;
+    data.push_back(String(expression.c_str()));
+    send_to_game("meow_mcp:eval_in_game", data);
+
+    return {{"__deferred", true}};
+}
+
+nlohmann::json MeowDebuggerPlugin::get_game_scene_tree_tool(
+    const nlohmann::json& id, int max_depth) {
+    if (!is_game_connected()) {
+        return {{"error", "No game running or bridge not connected"}};
+    }
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending"}};
+    }
+
+    pending_type = PendingType::GET_GAME_SCENE_TREE;
+    pending_id = id;
+
+    Array data;
+    data.push_back(max_depth);
+    send_to_game("meow_mcp:get_game_scene_tree", data);
 
     return {{"__deferred", true}};
 }

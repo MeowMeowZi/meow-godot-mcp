@@ -9,7 +9,7 @@
 #include <string>
 #include <functional>
 
-enum class PendingType { NONE, VIEWPORT_CAPTURE, CLICK_NODE, GET_NODE_RECT };
+enum class PendingType { NONE, VIEWPORT_CAPTURE, CLICK_NODE, GET_NODE_RECT, GET_NODE_PROPERTY, EVAL_IN_GAME, GET_GAME_SCENE_TREE };
 
 class MeowDebuggerPlugin : public godot::EditorDebuggerPlugin {
     GDCLASS(MeowDebuggerPlugin, godot::EditorDebuggerPlugin);
@@ -26,6 +26,11 @@ public:
     nlohmann::json get_bridge_status_tool();
     nlohmann::json click_node_tool(const nlohmann::json& id, const std::string& node_path);
     nlohmann::json get_node_rect_tool(const nlohmann::json& id, const std::string& node_path);
+
+    // Phase 13: Runtime State Query tools
+    nlohmann::json get_game_node_property_tool(const nlohmann::json& id, const std::string& node_path, const std::string& property);
+    nlohmann::json eval_in_game_tool(const nlohmann::json& id, const std::string& expression);
+    nlohmann::json get_game_scene_tree_tool(const nlohmann::json& id, int max_depth);
 
     // Deferred capture: initiates request, returns special marker
     // When response arrives via _capture, calls the deferred_callback
