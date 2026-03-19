@@ -1,17 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: UI & Editor Expansion
-status: completed
-stopped_at: v1.1 COMPLETE - All phases finished. Phase 11-01 was the final plan.
-last_updated: "2026-03-19T09:19:52Z"
-last_activity: "2026-03-19 - Completed quick task 260319-o6n: Executor subagent Godot MCP access smoke test"
+milestone: v1.2
+milestone_name: Runtime Interaction Enhancement
+status: unknown
+stopped_at: Completed quick task 260319-o6n (Executor subagent Godot MCP access smoke test)
+last_updated: "2026-03-19T19:40:00.665Z"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -21,20 +19,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** v1.1 COMPLETE -- All phases finished
+**Current focus:** Phase 12 — Input Injection Enhancement
 
 ## Current Position
 
-Phase: 11 of 11 (Prompt Templates) -- sixth (final) phase of v1.1
-Plan: 1 of 1 (all plans complete)
-Status: complete
-Last activity: 2026-03-20 - Completed quick task 260319-qli: 搜打撤背包UI测试场景
-
-Progress: [██████████] 100% -- v1.1 MILESTONE COMPLETE
+Phase: 12 (Input Injection Enhancement) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
 **Velocity (from v1.0):**
+
 - Total plans completed: 15
 - Average duration: 8 min
 - Total execution time: 2.1 hours
@@ -50,8 +45,10 @@ Progress: [██████████] 100% -- v1.1 MILESTONE COMPLETE
 | 5 - Runtime/Signals/Dist | 3/3 | 22 min | 7 min |
 
 **Recent Trend:**
+
 - Last 5 plans: 11-01 (4 min), 10-03 (4 min), 10-02 (6 min), 10-01 (3 min), 09-03 (2 min)
 - Trend: Stable
+
 | Phase 07 P01 | 3min | 2 tasks | 2 files |
 | Phase 07 P02 | 6min | 2 tasks | 3 files |
 | Phase 07 P03 | 2min | 1 tasks | 1 files |
@@ -65,6 +62,7 @@ Progress: [██████████] 100% -- v1.1 MILESTONE COMPLETE
 | Phase 10 P02 | 6min | 2 tasks | 8 files |
 | Phase 10 P03 | 4min | 1 tasks | 1 files |
 | Phase 11 P01 | 4min | 2 tasks | 3 files |
+| Phase 12 P01 | 5min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -125,6 +123,10 @@ Recent decisions affecting v1.1:
 - [11-01]: Each prompt variant generates complete step-by-step workflow text referencing real MCP tool names
 - [11-01]: build_ui_layout defaults to main_menu, setup_animation defaults to ui_transition
 - [11-01]: Generic fallback variants for unrecognized types still reference all required tool names
+- [12-01]: PendingType enum replaces has_pending_capture boolean for extensible deferred request handling
+- [12-01]: Auto-cycle click uses 50ms delay between press and release for reliable UI interaction
+- [12-01]: click_node resolves paths relative to current_scene root, consistent with editor tool paths
+- [12-01]: _handle_click_node is async coroutine; _handle_get_node_rect is synchronous
 
 ### Pending Todos
 
@@ -151,6 +153,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T09:28:33Z
-Stopped at: Completed quick task 260319-o6n (Executor subagent Godot MCP access smoke test)
+Last session: 2026-03-19T19:39:11Z
+Stopped at: Completed 12-01-PLAN.md (Input Injection Enhancement implementation)
 Resume file: None

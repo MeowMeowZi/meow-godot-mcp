@@ -2,11 +2,11 @@
 
 ## INPT — Input Injection Enhancement
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| INPT-01 | click 动作自动包含 press+release 完整周期，单次调用完成点击 | Must |
-| INPT-02 | 新增 `click_node` 工具，按节点路径点击运行中游戏的 UI 节点 | Must |
-| INPT-03 | 新增 `get_node_rect` 工具，获取运行中节点的屏幕坐标和尺寸 | Must |
+| ID | Requirement | Priority | Status |
+|----|-------------|----------|--------|
+| INPT-01 | click 动作自动包含 press+release 完整周期，单次调用完成点击 | Must | Done (12-01) |
+| INPT-02 | 新增 `click_node` 工具，按节点路径点击运行中游戏的 UI 节点 | Must | Done (12-01) |
+| INPT-03 | 新增 `get_node_rect` 工具，获取运行中节点的屏幕坐标和尺寸 | Must | Done (12-01) |
 
 **Motivation:** 当前 click 需要两次调用（press/release），且只能靠截图猜坐标点击
 
