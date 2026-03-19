@@ -137,9 +137,10 @@ void MCPPlugin::_process(double delta) {
         server->poll();
     }
 
-    // Tick feedback auto-hide timer
+    // Tick feedback auto-hide timer (hides on timeout or MCP client connect)
     if (dock) {
-        dock->tick_feedback(delta);
+        bool connected = server && server->has_client();
+        dock->tick_feedback(delta, connected);
     }
 
     // Status polling timer: update dock every ~1 second

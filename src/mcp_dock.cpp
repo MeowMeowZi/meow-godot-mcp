@@ -187,10 +187,11 @@ void MCPDock::show_configure_feedback(const String& command) {
     }
 }
 
-void MCPDock::tick_feedback(double delta) {
+void MCPDock::tick_feedback(double delta, bool client_connected) {
     if (feedback_timer > 0.0) {
+        // Hide on timeout OR when MCP client connects
         feedback_timer -= delta;
-        if (feedback_timer <= 0.0) {
+        if (feedback_timer <= 0.0 || client_connected) {
             feedback_timer = 0.0;
             if (configure_feedback) {
                 configure_feedback->set_visible(false);

@@ -41,7 +41,7 @@ public:
     void show_configure_feedback(const godot::String& command);
 
     // Called from MCPPlugin::_process to tick feedback timer
-    void tick_feedback(double delta);
+    void tick_feedback(double delta, bool client_connected);
 
 private:
     godot::VBoxContainer* root = nullptr;
