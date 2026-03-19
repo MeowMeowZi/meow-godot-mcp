@@ -98,6 +98,15 @@ jobs:
         with:
           path: artifacts/
 
+      - name: Debug artifacts
+        run: |
+          echo "=== Working directory ==="
+          pwd
+          echo "=== Top-level contents ==="
+          ls -la
+          echo "=== artifacts/ contents ==="
+          ls -laR artifacts/ 2>&1 | head -50
+
       - name: Checkout (for release notes)
         uses: actions/checkout@v4
 
