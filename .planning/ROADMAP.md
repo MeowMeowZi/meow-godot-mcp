@@ -54,6 +54,10 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full details.
 **Goal**: inject_input click 自动完成按下+释放完整周期；新增按节点路径点击和获取节点坐标工具
 **Depends on**: Phase 10 (Running Game Bridge)
 **Requirements**: INPT-01, INPT-02, INPT-03
+**Plans:** 2 plans
+Plans:
+- [ ] 12-01-PLAN.md — Core implementation: auto-cycle click, click_node tool, get_node_rect tool (C++ + GDScript)
+- [ ] 12-02-PLAN.md — UAT test suite and end-to-end verification
 **Success Criteria** (what must be TRUE):
   1. inject_input 的 click 动作自动包含 press+release 完整周期，单次调用完成点击
   2. AI 可通过 click_node 工具按节点路径点击运行中游戏的 UI 节点
@@ -101,7 +105,7 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full details.
 | 9. Editor Viewport Screenshots | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 10. Running Game Bridge | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 11. Prompt Templates | v1.1 | 1/1 | Complete | 2026-03-19 |
-| 12. Input Injection Enhancement | v1.2 | - | Planned | - |
+| 12. Input Injection Enhancement | v1.2 | 0/2 | Planned | - |
 | 13. Runtime State Query | v1.2 | - | Planned | - |
 | 14. Game Output Enhancement | v1.2 | - | Planned | - |
 | 15. Integration Testing Toolkit | v1.2 | - | Planned | - |
