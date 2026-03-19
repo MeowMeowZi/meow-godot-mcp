@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/marshalls.hpp>
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
+#include <chrono>
 
 using namespace godot;
 
@@ -24,6 +25,8 @@ void MeowDebuggerPlugin::_setup_session(int32_t p_session_id) {
 
 void MeowDebuggerPlugin::_on_session_started(int32_t p_session_id) {
     active_session_id = p_session_id;
+    log_buffer.clear();
+    log_buffer_read_pos = 0;
     UtilityFunctions::print(String::utf8("MCP Meow: 游戏调试会话已启动 (会话 "), p_session_id, ")");
 }
 
@@ -31,6 +34,8 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
     if (p_session_id == active_session_id) {
         active_session_id = -1;
         game_connected = false;
+        log_buffer.clear();
+        log_buffer_read_pos = 0;
 
         // If there's a pending deferred request, deliver error via deferred callback
         if (pending_type != PendingType::NONE && deferred_callback) {
@@ -68,11 +73,53 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
 }
 
 bool MeowDebuggerPlugin::_has_capture(const String &p_capture) const {
-    return p_capture == "meow_mcp";
+    return p_capture == "meow_mcp" || p_capture == "output";
 }
 
 bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
                                     int32_t p_session_id) {
+    // Phase 14: Capture output messages from the running game (print, push_error, push_warning)
+    // Godot routes "output" prefix messages to plugins that return true for _has_capture("output")
+    if (p_message.begins_with("output")) {
+        if (p_data.size() >= 2) {
+            auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            if (p_data[0].get_type() == godot::Variant::STRING) {
+                // Single text+type pair: data[0]=text, data[1]=type_int
+                String text = p_data[0];
+                int type_val = p_data[1];
+                std::string level = "info";
+                if (type_val == 1) level = "error";
+                else if (type_val == 2) level = "warning";
+
+                std::string msg(text.utf8().get_data());
+                if (!msg.empty() && msg.back() == '\n') msg.pop_back();
+                if (!msg.empty()) {
+                    log_buffer.push_back({msg, level, now_ms});
+                }
+            } else if (p_data[0].get_type() == godot::Variant::PACKED_STRING_ARRAY ||
+                       p_data[0].get_type() == godot::Variant::ARRAY) {
+                // Array format: data[0]=Array<String>, data[1]=Array<int>
+                Array texts = p_data[0];
+                Array types = p_data[1];
+                for (int i = 0; i < texts.size(); i++) {
+                    String text = texts[i];
+                    int type_val = (i < types.size()) ? (int)types[i] : 0;
+                    std::string level = "info";
+                    if (type_val == 1) level = "error";
+                    else if (type_val == 2) level = "warning";
+                    std::string msg(text.utf8().get_data());
+                    if (!msg.empty() && msg.back() == '\n') msg.pop_back();
+                    if (!msg.empty()) {
+                        log_buffer.push_back({msg, level, now_ms});
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     // p_message is full string like "meow_mcp:ready"
     // Extract action after the colon
     int colon_pos = p_message.find(":");
@@ -307,6 +354,52 @@ bool MeowDebuggerPlugin::is_game_connected() const {
 
 void MeowDebuggerPlugin::set_deferred_response_callback(DeferredCallback cb) {
     deferred_callback = cb;
+}
+
+// --- Phase 14: Log buffer methods ---
+
+nlohmann::json MeowDebuggerPlugin::get_buffered_game_output(
+    bool clear_after_read, const std::string& level_filter,
+    int64_t since_ms, const std::string& keyword) {
+
+    nlohmann::json lines = nlohmann::json::array();
+    size_t start = static_cast<size_t>(log_buffer_read_pos);
+
+    for (size_t i = start; i < log_buffer.size(); i++) {
+        const auto& entry = log_buffer[i];
+
+        // Filter by level
+        if (!level_filter.empty() && entry.level != level_filter) continue;
+
+        // Filter by time
+        if (since_ms > 0 && entry.timestamp_ms < since_ms) continue;
+
+        // Filter by keyword
+        if (!keyword.empty() && entry.message.find(keyword) == std::string::npos) continue;
+
+        lines.push_back({
+            {"text", entry.message},
+            {"level", entry.level},
+            {"timestamp_ms", entry.timestamp_ms}
+        });
+    }
+
+    if (clear_after_read) {
+        log_buffer_read_pos = static_cast<int64_t>(log_buffer.size());
+    }
+
+    return {
+        {"success", true},
+        {"lines", lines},
+        {"count", lines.size()},
+        {"total_buffered", log_buffer.size()},
+        {"game_running", game_connected}
+    };
+}
+
+void MeowDebuggerPlugin::clear_log_buffer() {
+    log_buffer.clear();
+    log_buffer_read_pos = 0;
 }
 
 nlohmann::json MeowDebuggerPlugin::inject_input_tool(const nlohmann::json& args) {

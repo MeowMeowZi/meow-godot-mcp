@@ -50,14 +50,7 @@ nlohmann::json run_game(const std::string& mode, const std::string& scene_path) 
         return {{"success", false}, {"error", "scene_path is required when mode is 'custom'"}};
     }
 
-    // Check if file logging is enabled and warn if not
-    auto* ps = godot::ProjectSettings::get_singleton();
-    bool file_logging_enabled = false;
-    if (ps && ps->has_setting("debug/file_logging/enable_file_logging")) {
-        file_logging_enabled = (bool)ps->get_setting("debug/file_logging/enable_file_logging");
-    }
-
-    // Reset log position to end of file before launching
+    // Reset log position to end of file before launching (legacy fallback)
     reset_log_position();
 
     // Launch game
@@ -77,10 +70,6 @@ nlohmann::json run_game(const std::string& mode, const std::string& scene_path) 
 
     if (mode == "custom") {
         result["scene_path"] = scene_path;
-    }
-
-    if (!file_logging_enabled) {
-        result["warning"] = "File logging is disabled. Enable 'debug/file_logging/enable_file_logging' in Project Settings for get_game_output to work.";
     }
 
     return result;

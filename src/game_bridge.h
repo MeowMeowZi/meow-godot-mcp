@@ -7,7 +7,15 @@
 
 #include <nlohmann/json.hpp>
 #include <string>
+#include <vector>
+#include <cstdint>
 #include <functional>
+
+struct LogEntry {
+    std::string message;
+    std::string level;    // "info", "warning", "error"
+    int64_t timestamp_ms; // milliseconds since epoch (steady_clock)
+};
 
 enum class PendingType { NONE, VIEWPORT_CAPTURE, CLICK_NODE, GET_NODE_RECT, GET_NODE_PROPERTY, EVAL_IN_GAME, GET_GAME_SCENE_TREE };
 
@@ -36,6 +44,11 @@ public:
     // When response arrives via _capture, calls the deferred_callback
     nlohmann::json request_game_viewport_capture(const nlohmann::json& id, int width, int height);
 
+    // Phase 14: Log buffer methods
+    nlohmann::json get_buffered_game_output(bool clear_after_read, const std::string& level_filter,
+                                             int64_t since_ms, const std::string& keyword);
+    void clear_log_buffer();
+
     // State queries
     bool is_game_connected() const;
 
@@ -55,6 +68,10 @@ private:
 
     int active_session_id = -1;
     bool game_connected = false;
+
+    // Phase 14: Log buffer for captured game output
+    std::vector<LogEntry> log_buffer;
+    int64_t log_buffer_read_pos = 0;
 
     // Pending deferred request (viewport capture, click_node, get_node_rect)
     PendingType pending_type = PendingType::NONE;
