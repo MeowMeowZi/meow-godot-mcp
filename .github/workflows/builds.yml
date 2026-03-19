@@ -58,7 +58,9 @@ jobs:
           name: meow-godot-mcp-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
             project/addons/meow_godot_mcp/bin/*
+            project/addons/meow_godot_mcp/companion/*
             project/addons/meow_godot_mcp/*.cfg
+            project/addons/meow_godot_mcp/*.gd
             project/addons/meow_godot_mcp/*.gdextension
 
   # Run unit tests on the build host (Linux only since GoogleTest CI is simplest there)
@@ -96,13 +98,30 @@ jobs:
         with:
           path: artifacts/
 
+      - name: Checkout (for release notes)
+        uses: actions/checkout@v4
+
       - name: Package release
         run: |
           mkdir -p release/addons/meow_godot_mcp/bin
-          # Copy all platform binaries into single addons directory
+          mkdir -p release/addons/meow_godot_mcp/companion
+          # Merge all platform artifacts into single addons directory
           for dir in artifacts/meow-godot-mcp-*/; do
-            cp -r "$dir"/* release/addons/meow_godot_mcp/ 2>/dev/null || true
+            # Copy bin/ contents (binaries from each platform)
+            cp -f "$dir"/project/addons/meow_godot_mcp/bin/* release/addons/meow_godot_mcp/bin/ 2>/dev/null || true
+            # Copy companion/ (same across platforms, just need one)
+            cp -f "$dir"/project/addons/meow_godot_mcp/companion/* release/addons/meow_godot_mcp/companion/ 2>/dev/null || true
+            # Copy metadata files (same across platforms)
+            cp -f "$dir"/project/addons/meow_godot_mcp/*.cfg release/addons/meow_godot_mcp/ 2>/dev/null || true
+            cp -f "$dir"/project/addons/meow_godot_mcp/*.gd release/addons/meow_godot_mcp/ 2>/dev/null || true
+            cp -f "$dir"/project/addons/meow_godot_mcp/*.gdextension release/addons/meow_godot_mcp/ 2>/dev/null || true
           done
+          # Remove .exp and .lib files (not needed for distribution)
+          rm -f release/addons/meow_godot_mcp/bin/*.exp release/addons/meow_godot_mcp/bin/*.lib
+          # List package contents
+          echo "=== Package contents ==="
+          find release/ -type f | sort
+          # Create zip
           cd release
           zip -r ../meow-godot-mcp-${GITHUB_REF_NAME}.zip addons/
 
@@ -110,4 +129,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: meow-godot-mcp-*.zip
-          generate_release_notes: true
+          body_path: .github/RELEASE_NOTES.md
+          make_latest: true
