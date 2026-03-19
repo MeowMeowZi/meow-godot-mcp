@@ -392,7 +392,7 @@ TEST(ToolsListResponse, HasGetProjectSettingsTool) {
         if (tool["name"] == "get_project_settings") {
             found = true;
             auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].empty());
+            EXPECT_TRUE(schema["properties"].contains("category"));
             EXPECT_TRUE(schema["required"].empty());
             break;
         }
