@@ -67,7 +67,7 @@ Plans:
 **Goal**: AI 可读取运行中游戏的节点属性、执行 GDScript 表达式、获取运行时场景树
 **Depends on**: Phase 12
 **Requirements**: RTST-01, RTST-02, RTST-03
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 13-01-PLAN.md — Core implementation: get_game_node_property, eval_in_game, get_game_scene_tree (C++ + GDScript + registry + dispatch)
 - [ ] 13-02-PLAN.md — UAT test suite, build verification, and end-to-end human verification
@@ -110,6 +110,6 @@ Plans:
 | 10. Running Game Bridge | v1.1 | 3/3 | Complete | 2026-03-18 |
 | 11. Prompt Templates | v1.1 | 1/1 | Complete | 2026-03-19 |
 | 12. Input Injection Enhancement | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
-| 13. Runtime State Query | v1.2 | 0/2 | Planning | - |
+| 13. Runtime State Query | 1/2 | In Progress|  | - |
 | 14. Game Output Enhancement | v1.2 | - | Planned | - |
 | 15. Integration Testing Toolkit | v1.2 | - | Planned | - |
