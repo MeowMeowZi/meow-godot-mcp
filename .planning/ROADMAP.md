@@ -120,4 +120,4 @@ Plans:
 | 12. Input Injection Enhancement | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
 | 13. Runtime State Query | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
 | 14. Game Output Enhancement | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
-| 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
+| 15. Integration Testing Toolkit | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
