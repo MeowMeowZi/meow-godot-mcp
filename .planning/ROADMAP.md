@@ -4,7 +4,7 @@
 
 - v1.0 MVP -- Phases 1-5 (shipped 2026-03-18)
 - v1.1 UI & Editor Expansion -- Phases 6-11 (shipped 2026-03-19)
-- v1.2 Runtime Interaction Enhancement -- Phases 12-15 (planning)
+- v1.2 Runtime Interaction Enhancement -- Phases 12-15 (shipped 2026-03-20)
 
 ## Phases
 
@@ -39,14 +39,14 @@ See `.planning/milestones/v1.1-ROADMAP.md` for full details.
 
 </details>
 
-### v1.2 Runtime Interaction Enhancement (In Progress)
+### v1.2 Runtime Interaction Enhancement (SHIPPED 2026-03-20)
 
 **Milestone Goal:** 增强 AI 与运行中游戏的交互能力，实现精确 UI 操控、运行时状态查询、自动化测试验证，从"能控制编辑器"升级为"能测试和调试游戏"。
 
 - [x] **Phase 12: Input Injection Enhancement** - click 自动 press+release，按节点路径点击 UI
 - [x] **Phase 13: Runtime State Query** - 读取运行中游戏的节点属性和变量值
 - [x] **Phase 14: Game Output Enhancement** - 自动化日志捕获，无需手动配置
-- [ ] **Phase 15: Integration Testing Toolkit** - 端到端自动测试工作流
+- [x] **Phase 15: Integration Testing Toolkit** - 端到端自动测试工作流
 
 ## Phase Details
 
@@ -93,10 +93,10 @@ Plans:
 **Goal**: 综合输入注入、状态查询、日志捕获能力，提供完整的 AI 自动测试闭环
 **Depends on**: Phase 13, Phase 14
 **Requirements**: TEST-01, TEST-02, TEST-03
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 15-01-PLAN.md — Core implementation: run_test_sequence tool (async state machine) + test_game_ui prompt template
-- [ ] 15-02-PLAN.md — UAT test suite (15 tests) and end-to-end human verification
+- [x] 15-01-PLAN.md — Core implementation: run_test_sequence tool (async state machine) + test_game_ui prompt template
+- [x] 15-02-PLAN.md — UAT test suite (15 tests) and end-to-end human verification
 **Success Criteria** (what must be TRUE):
   1. AI 可通过 run_test_sequence 批量执行输入序列并收集结果
   2. 结合 click_node + get_game_node_property 实现 UI 自动化断言
@@ -120,4 +120,4 @@ Plans:
 | 12. Input Injection Enhancement | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
 | 13. Runtime State Query | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
 | 14. Game Output Enhancement | v1.2 | Complete    | 2026-03-19 | 2026-03-20 |
-| 15. Integration Testing Toolkit | 1/2 | In Progress|  | - |
+| 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |

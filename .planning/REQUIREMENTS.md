@@ -34,9 +34,9 @@
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| TEST-01 | 新增 `run_test_sequence` 工具，批量执行输入序列并收集结果 | Must |
-| TEST-02 | 结合 click_node + get_game_node_property 实现 UI 自动化断言 | Must |
-| TEST-03 | 新增 Prompt 模板：自动测试游戏 UI 工作流 | Should |
+| TEST-01 | 新增 `run_test_sequence` 工具，批量执行输入序列并收集结果 | Must | Done (15-01) |
+| TEST-02 | 结合 click_node + get_game_node_property 实现 UI 自动化断言 | Must | Done (15-01) |
+| TEST-03 | 新增 Prompt 模板：自动测试游戏 UI 工作流 | Should | Done (15-01) |
 
 **Motivation:** 综合前几个 Phase 的能力，提供完整的 AI 自动测试闭环
 
