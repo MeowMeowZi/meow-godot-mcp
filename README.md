@@ -19,7 +19,7 @@
   - 动画系统：创建动画、添加轨道、关键帧 CRUD、动画属性设置
   - 视口截图：捕获编辑器 2D/3D 视口截图（MCP ImageContent）
   - 游戏桥接：输入注入（键盘/鼠标/Action）、游戏视口截图、桥接状态查询
-- **编辑器 Dock 面板**：实时连接状态、Godot 版本检测、Start/Stop/Restart 控制
+- **编辑器 Dock 面板**：实时连接状态、Godot 版本检测、启动/停止/重启控制、一键配置 Claude Code MCP
 - **6 个 Prompt 模板**：创建玩家控制器、设置场景结构、调试物理、创建 UI 界面、构建 UI 布局、设置动画
 - **游戏桥接**：通过 EditorDebuggerPlugin 与运行中的游戏双向通信，注入输入、捕获截图
 - **版本自适应**：运行时检测 Godot 版本，动态启用/禁用对应工具
@@ -66,6 +66,19 @@ scons bridge
 编译产物在 `project/addons/meow_godot_mcp/bin/` 目录下。
 
 ## 配置 AI 客户端
+
+### Claude Code（推荐）
+
+1. 在 Godot 编辑器右下角 Dock 面板点击 **「配置 Claude Code MCP」** 按钮
+2. 配置命令自动复制到剪贴板
+3. 在 Claude Code 终端粘贴执行
+4. 重启 Claude Code 即可连接
+
+或手动执行：
+
+```bash
+claude mcp add --transport stdio --scope project godot -- "path/to/addons/meow_godot_mcp/bin/godot-mcp-bridge"
+```
 
 ### Claude Desktop
 

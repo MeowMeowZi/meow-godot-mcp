@@ -19,7 +19,7 @@ Built as a C++ GDExtension with no Node.js/Python runtime required. AI tools (Cl
   - Animation system: create animations, add tracks, keyframe CRUD, animation properties
   - Viewport screenshots: capture editor 2D/3D viewport screenshots (MCP ImageContent)
   - Game bridge: input injection (keyboard/mouse/Action), game viewport capture, bridge status
-- **Editor Dock panel**: live connection status, Godot version detection, Start/Stop/Restart controls
+- **Editor Dock panel**: live connection status, Godot version detection, Start/Stop/Restart controls, one-click Claude Code MCP setup
 - **6 Prompt templates**: create player controller, setup scene structure, debug physics, create UI, build UI layout, setup animation
 - **Game bridge**: bidirectional communication with running game via EditorDebuggerPlugin for input injection and screenshot capture
 - **Version-adaptive**: detects Godot version at runtime, dynamically enables/disables tools
@@ -66,6 +66,19 @@ scons bridge
 Build output is in `project/addons/meow_godot_mcp/bin/`.
 
 ## Configure AI Client
+
+### Claude Code (Recommended)
+
+1. Click **"Configure Claude Code MCP"** button in the Godot editor dock panel (bottom-right)
+2. The setup command is automatically copied to your clipboard
+3. Paste and run it in the Claude Code terminal
+4. Restart Claude Code to connect
+
+Or manually run:
+
+```bash
+claude mcp add --transport stdio --scope project godot -- "path/to/addons/meow_godot_mcp/bin/godot-mcp-bridge"
+```
 
 ### Claude Desktop
 
