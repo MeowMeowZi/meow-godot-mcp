@@ -183,19 +183,15 @@ void MCPDock::show_configure_feedback(const String& command) {
             + String::utf8("\n\n执行后重启 Claude Code 即可连接。")
         );
         configure_feedback->set_visible(true);
-        feedback_timer = 10.0;  // Auto-hide after 10 seconds
+        feedback_timer = 1.0;  // Activate timer (hide on client connect)
     }
 }
 
 void MCPDock::tick_feedback(double delta, bool client_connected) {
-    if (feedback_timer > 0.0) {
-        // Hide on timeout OR when MCP client connects
-        feedback_timer -= delta;
-        if (feedback_timer <= 0.0 || client_connected) {
-            feedback_timer = 0.0;
-            if (configure_feedback) {
-                configure_feedback->set_visible(false);
-            }
+    if (feedback_timer > 0.0 && client_connected) {
+        feedback_timer = 0.0;
+        if (configure_feedback) {
+            configure_feedback->set_visible(false);
         }
     }
 }
