@@ -420,10 +420,11 @@ TEST(ToolsListResponse, HasGetResourceInfoTool) {
 }
 
 // --- Initialize response resources capability test ---
+// resources capability removed from initialize response (not supported, was causing null)
 
-TEST(InitializeResponse, HasResourcesCapability) {
+TEST(InitializeResponse, DoesNotAdvertiseResources) {
     auto response = create_initialize_response(1);
-    ASSERT_TRUE(response["result"]["capabilities"].contains("resources"));
+    EXPECT_FALSE(response["result"]["capabilities"].contains("resources"));
 }
 
 // --- Resources protocol builder tests ---
