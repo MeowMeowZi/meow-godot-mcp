@@ -9,6 +9,8 @@
 #include <string>
 #include <functional>
 
+enum class PendingType { NONE, VIEWPORT_CAPTURE, CLICK_NODE, GET_NODE_RECT };
+
 class MeowDebuggerPlugin : public godot::EditorDebuggerPlugin {
     GDCLASS(MeowDebuggerPlugin, godot::EditorDebuggerPlugin);
 
@@ -22,6 +24,8 @@ public:
     // Tool functions called by MCPServer dispatch
     nlohmann::json inject_input_tool(const nlohmann::json& args);
     nlohmann::json get_bridge_status_tool();
+    nlohmann::json click_node_tool(const nlohmann::json& id, const std::string& node_path);
+    nlohmann::json get_node_rect_tool(const nlohmann::json& id, const std::string& node_path);
 
     // Deferred capture: initiates request, returns special marker
     // When response arrives via _capture, calls the deferred_callback
@@ -47,11 +51,11 @@ private:
     int active_session_id = -1;
     bool game_connected = false;
 
-    // Pending viewport capture
-    nlohmann::json pending_capture_id;  // MCP request id waiting for response
-    int pending_capture_width = 0;
-    int pending_capture_height = 0;
-    bool has_pending_capture = false;
+    // Pending deferred request (viewport capture, click_node, get_node_rect)
+    PendingType pending_type = PendingType::NONE;
+    nlohmann::json pending_id;          // MCP request id for any pending deferred request
+    int pending_capture_width = 0;      // For viewport capture resize
+    int pending_capture_height = 0;     // For viewport capture resize
 
     DeferredCallback deferred_callback;
 };

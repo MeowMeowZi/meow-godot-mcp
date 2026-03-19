@@ -32,12 +32,26 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
         active_session_id = -1;
         game_connected = false;
 
-        // If there's a pending viewport capture, deliver error via deferred callback
-        if (has_pending_capture && deferred_callback) {
-            auto error_response = mcp::create_tool_result(pending_capture_id,
-                {{"error", "Game disconnected during viewport capture"}});
+        // If there's a pending deferred request, deliver error via deferred callback
+        if (pending_type != PendingType::NONE && deferred_callback) {
+            std::string error_msg;
+            switch (pending_type) {
+                case PendingType::VIEWPORT_CAPTURE:
+                    error_msg = "Game disconnected during viewport capture";
+                    break;
+                case PendingType::CLICK_NODE:
+                    error_msg = "Game disconnected during click_node";
+                    break;
+                case PendingType::GET_NODE_RECT:
+                    error_msg = "Game disconnected during get_node_rect";
+                    break;
+                default:
+                    error_msg = "Game disconnected during pending operation";
+                    break;
+            }
+            auto error_response = mcp::create_tool_result(pending_id, {{"error", error_msg}});
             deferred_callback(error_response);
-            has_pending_capture = false;
+            pending_type = PendingType::NONE;
         }
 
         UtilityFunctions::print(String::utf8("MCP Meow: 游戏调试会话已停止 (会话 "), p_session_id, ")");
@@ -66,7 +80,7 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
     }
 
     if (action == "viewport_data") {
-        if (has_pending_capture && deferred_callback) {
+        if (pending_type == PendingType::VIEWPORT_CAPTURE && deferred_callback) {
             String base64_godot = p_data[0];
             int img_width = p_data[1];
             int img_height = p_data[2];
@@ -75,10 +89,10 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
 
             if (base64_str.empty()) {
                 // Game viewport capture failed
-                auto error_response = mcp::create_tool_result(pending_capture_id,
+                auto error_response = mcp::create_tool_result(pending_id,
                     {{"error", "Game viewport capture failed"}});
                 deferred_callback(error_response);
-                has_pending_capture = false;
+                pending_type = PendingType::NONE;
                 return true;
             }
 
@@ -124,9 +138,61 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
             };
 
             auto response = mcp::create_image_tool_result(
-                pending_capture_id, base64_str, "image/png", metadata);
+                pending_id, base64_str, "image/png", metadata);
             deferred_callback(response);
-            has_pending_capture = false;
+            pending_type = PendingType::NONE;
+        }
+        return true;
+    }
+
+    if (action == "click_node_result") {
+        if (pending_type == PendingType::CLICK_NODE && deferred_callback) {
+            bool success = p_data[0];
+            String error_msg = p_data[1];
+            double cx = p_data[2];
+            double cy = p_data[3];
+
+            nlohmann::json result;
+            if (success) {
+                result = {{"success", true}, {"clicked_position", {{"x", cx}, {"y", cy}}}};
+            } else {
+                result = {{"error", std::string(error_msg.utf8().get_data())}};
+            }
+
+            auto response = mcp::create_tool_result(pending_id, result);
+            deferred_callback(response);
+            pending_type = PendingType::NONE;
+        }
+        return true;
+    }
+
+    if (action == "node_rect_result") {
+        if (pending_type == PendingType::GET_NODE_RECT && deferred_callback) {
+            bool success = p_data[0];
+            String error_msg = p_data[1];
+
+            nlohmann::json result;
+            if (success) {
+                double px = p_data[2];
+                double py = p_data[3];
+                double sx = p_data[4];
+                double sy = p_data[5];
+                double gx = p_data[6];
+                double gy = p_data[7];
+                result = {
+                    {"position", {{"x", px}, {"y", py}}},
+                    {"size", {{"width", sx}, {"height", sy}}},
+                    {"global_position", {{"x", gx}, {"y", gy}}},
+                    {"center", {{"x", px + sx / 2.0}, {"y", py + sy / 2.0}}},
+                    {"visible", true}
+                };
+            } else {
+                result = {{"error", std::string(error_msg.utf8().get_data())}};
+            }
+
+            auto response = mcp::create_tool_result(pending_id, result);
+            deferred_callback(response);
+            pending_type = PendingType::NONE;
         }
         return true;
     }
@@ -212,21 +278,36 @@ nlohmann::json MeowDebuggerPlugin::inject_input_tool(const nlohmann::json& args)
 
         if (mouse_action == "click") {
             std::string button = "left";
-            bool pressed = true;
             if (args.contains("button") && args["button"].is_string())
                 button = args["button"].get<std::string>();
-            if (args.contains("pressed") && args["pressed"].is_boolean())
-                pressed = args["pressed"].get<bool>();
 
-            Array data;
-            data.push_back(x);
-            data.push_back(y);
-            data.push_back(String(button.c_str()));
-            data.push_back(pressed);
-            send_to_game("meow_mcp:inject_mouse_click", data);
+            // Check if pressed is explicitly provided
+            bool explicit_pressed = args.contains("pressed") && args["pressed"].is_boolean();
 
-            return {{"success", true}, {"type", "mouse"}, {"mouse_action", "click"},
-                    {"position", {{"x", x}, {"y", y}}}, {"button", button}, {"pressed", pressed}};
+            if (!explicit_pressed) {
+                // Auto-cycle mode: tell game to do press+delay+release
+                Array data;
+                data.push_back(x);
+                data.push_back(y);
+                data.push_back(String(button.c_str()));
+                data.push_back(true);  // auto_cycle flag
+                send_to_game("meow_mcp:inject_mouse_click", data);
+
+                return {{"success", true}, {"type", "mouse"}, {"mouse_action", "click"},
+                        {"position", {{"x", x}, {"y", y}}}, {"button", button}, {"auto_cycle", true}};
+            } else {
+                // Backward-compatible single-fire behavior
+                bool pressed = args["pressed"].get<bool>();
+                Array data;
+                data.push_back(x);
+                data.push_back(y);
+                data.push_back(String(button.c_str()));
+                data.push_back(pressed);
+                send_to_game("meow_mcp:inject_mouse_click", data);
+
+                return {{"success", true}, {"type", "mouse"}, {"mouse_action", "click"},
+                        {"position", {{"x", x}, {"y", y}}}, {"button", button}, {"pressed", pressed}};
+            }
         }
 
         if (mouse_action == "move") {
@@ -291,19 +372,55 @@ nlohmann::json MeowDebuggerPlugin::request_game_viewport_capture(
     if (!is_game_connected()) {
         return {{"error", "No game running or bridge not connected"}};
     }
-    if (has_pending_capture) {
-        return {{"error", "Another viewport capture is already pending"}};
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending"}};
     }
 
-    pending_capture_id = id;
+    pending_id = id;
     pending_capture_width = width;
     pending_capture_height = height;
-    has_pending_capture = true;
+    pending_type = PendingType::VIEWPORT_CAPTURE;
 
     // Send capture request to the game companion
     Array data;
     send_to_game("meow_mcp:capture_viewport", data);
 
     // Return deferred marker -- MCPServer will NOT send response yet
+    return {{"__deferred", true}};
+}
+
+nlohmann::json MeowDebuggerPlugin::click_node_tool(const nlohmann::json& id, const std::string& node_path) {
+    if (!is_game_connected()) {
+        return {{"error", "No game running or bridge not connected"}};
+    }
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending"}};
+    }
+
+    pending_type = PendingType::CLICK_NODE;
+    pending_id = id;
+
+    Array data;
+    data.push_back(String(node_path.c_str()));
+    send_to_game("meow_mcp:click_node", data);
+
+    return {{"__deferred", true}};
+}
+
+nlohmann::json MeowDebuggerPlugin::get_node_rect_tool(const nlohmann::json& id, const std::string& node_path) {
+    if (!is_game_connected()) {
+        return {{"error", "No game running or bridge not connected"}};
+    }
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending"}};
+    }
+
+    pending_type = PendingType::GET_NODE_RECT;
+    pending_id = id;
+
+    Array data;
+    data.push_back(String(node_path.c_str()));
+    send_to_game("meow_mcp:get_node_rect", data);
+
     return {{"__deferred", true}};
 }
