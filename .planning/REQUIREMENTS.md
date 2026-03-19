@@ -22,11 +22,11 @@
 
 ## GOUT — Game Output Enhancement
 
-| ID | Requirement | Priority |
-|----|-------------|----------|
-| GOUT-01 | 游戏启动时自动启用日志捕获（通过 companion script 或 debugger 通道） | Must |
-| GOUT-02 | 支持结构化日志查询（按级别过滤、按时间范围、关键字搜索） | Should |
-| GOUT-03 | `print()` 输出实时可用，不依赖 file_logging 项目设置 | Must |
+| ID | Requirement | Priority | Status |
+|----|-------------|----------|--------|
+| GOUT-01 | 游戏启动时自动启用日志捕获（通过 companion script 或 debugger 通道） | Must | Done (14-01) |
+| GOUT-02 | 支持结构化日志查询（按级别过滤、按时间范围、关键字搜索） | Should | Done (14-01) |
+| GOUT-03 | `print()` 输出实时可用，不依赖 file_logging 项目设置 | Must | Done (14-01) |
 
 **Motivation:** 当前 get_game_output 依赖用户手动开启 file_logging，开箱体验差
 
