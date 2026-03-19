@@ -1,5 +1,14 @@
 # Milestones
 
+## v1.1 UI & Editor Expansion (Shipped: 2026-03-19)
+
+**Phases completed:** 6 phases, 16 plans, 0 tasks
+
+**Key accomplishments:**
+- (none recorded)
+
+---
+
 ## v1.0 MVP (Shipped: 2026-03-18)
 
 **Phases completed:** 5 phases, 15 plans | **Timeline:** 5 days (2026-03-14 → 2026-03-18)
