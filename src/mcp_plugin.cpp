@@ -211,25 +211,34 @@ void MCPPlugin::_on_configure_mcp_pressed() {
         "  }\n"
         "}\n");
 
-    // Write to project root
+    // Write .mcp.json to BOTH project root and parent directory
+    // Claude Code may run from either location
     String project_root = ps->globalize_path("res://");
-    String mcp_path = project_root + ".mcp.json";
+    // Normalize path separators
+    project_root = project_root.replace("\\", "/");
+    // Ensure trailing slash
+    if (!project_root.ends_with("/")) project_root += "/";
 
-    // Use native file I/O (globalized path)
-    Ref<FileAccess> file = FileAccess::open(
-        String("res://") + ".mcp.json", FileAccess::WRITE);
-    if (!file.is_valid()) {
-        // Try globalized path
-        file = FileAccess::open(mcp_path, FileAccess::WRITE);
+    // Parent directory (repo root, where Claude Code typically runs)
+    String parent_dir = project_root.substr(0, project_root.length() - 1);
+    int last_slash = parent_dir.rfind("/");
+    if (last_slash >= 0) {
+        parent_dir = parent_dir.substr(0, last_slash + 1);
     }
 
-    if (file.is_valid()) {
-        file->store_string(json_content);
-        file->close();
-        UtilityFunctions::print(String::utf8("MCP Meow: Claude Code MCP 配置已写入 "), mcp_path);
-    } else {
-        UtilityFunctions::print(String::utf8("MCP Meow: 写入 .mcp.json 失败: "), mcp_path);
+    // Write to both locations
+    String paths[] = { project_root + ".mcp.json", parent_dir + ".mcp.json" };
+    for (int i = 0; i < 2; i++) {
+        // Convert back to OS path for FileAccess
+        String os_path = paths[i].replace("/", "\\");
+        Ref<FileAccess> file = FileAccess::open(paths[i], FileAccess::WRITE);
+        if (file.is_valid()) {
+            file->store_string(json_content);
+            file->close();
+            UtilityFunctions::print(String::utf8("MCP Meow: 已写入 "), paths[i]);
+        }
     }
+    UtilityFunctions::print(String::utf8("MCP Meow: Claude Code MCP 配置完成，重启 Claude Code 生效"));
 }
 
 void MCPPlugin::_bind_methods() {
