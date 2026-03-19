@@ -5,7 +5,7 @@ milestone_name: UI & Editor Expansion
 status: completed
 stopped_at: v1.1 COMPLETE - All phases finished. Phase 11-01 was the final plan.
 last_updated: "2026-03-19T09:19:52Z"
-last_activity: "2026-03-19 - Completed quick task 260319-nzt: MCP HelloWorld test scene"
+last_activity: "2026-03-19 - Completed quick task 260319-o6n: Executor subagent Godot MCP access smoke test"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 Phase: 11 of 11 (Prompt Templates) -- sixth (final) phase of v1.1
 Plan: 1 of 1 (all plans complete)
 Status: complete
-Last activity: 2026-03-19 - Completed quick task 260319-nzt: MCP HelloWorld test scene (centered Label + console print)
+Last activity: 2026-03-19 - Completed quick task 260319-o6n: Executor subagent Godot MCP smoke test (MCP tools not in subagent tool set)
 
 Progress: [██████████] 100% -- v1.1 MILESTONE COMPLETE
 
@@ -146,9 +146,10 @@ None yet.
 | 260319-log | 搜打撤 Plus: BBCode彩色日志 + XP/升级 + 稀有度系统 + 出售/使用药草 | 2026-03-19 | 95604dc | [260319-log-ui](./quick/260319-log-ui/) |
 | 260319-mkm | 登录注册UI: 暗色卡片主题 + 表单验证 + 登录/注册模式切换 | 2026-03-19 | adda93a | [260319-mkm-login-ui](./quick/260319-mkm-login-ui/) |
 | 260319-nzt | MCP HelloWorld: 居中Label + 控制台打印 | 2026-03-19 | a843d78 | [260319-nzt-mcp-helloworld](./quick/260319-nzt-mcp-helloworld/) |
+| 260319-o6n | Subagent MCP验证: MCP工具在子agent不可用，回退直接写文件 | 2026-03-19 | 036bad0 | [260319-o6n-executor-subagent-godot-mcp](./quick/260319-o6n-executor-subagent-godot-mcp/) |
 
 ## Session Continuity
 
-Last session: 2026-03-19T09:19:52Z
-Stopped at: Completed quick task 260319-nzt (MCP HelloWorld test scene)
+Last session: 2026-03-19T09:28:33Z
+Stopped at: Completed quick task 260319-o6n (Executor subagent Godot MCP access smoke test)
 Resume file: None
