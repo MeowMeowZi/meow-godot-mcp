@@ -1,0 +1,217 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://backpack_ui.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_status"]
+bg_color = Color(0.15, 0.15, 0.22, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_left = 8
+corner_radius_bottom_right = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action"]
+bg_color = Color(0.14, 0.14, 0.21, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_log"]
+bg_color = Color(0.1, 0.1, 0.16, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_left = 8
+corner_radius_bottom_right = 8
+
+[node name="BackpackUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.08, 0.12, 1)
+
+[node name="MainLayout" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="LeftPanel" type="VBoxContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.6
+theme_override_constants/separation = 10
+
+[node name="StatusPanel" type="PanelContainer" parent="MainLayout/LeftPanel"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_status")
+
+[node name="StatusContent" type="VBoxContainer" parent="MainLayout/LeftPanel/StatusPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TitleLabel" type="Label" parent="MainLayout/LeftPanel/StatusPanel/StatusContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 28
+text = "搜打撤 Plus"
+horizontal_alignment = 1
+
+[node name="HPBarContainer" type="HBoxContainer" parent="MainLayout/LeftPanel/StatusPanel/StatusContent"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HPLabel" type="Label" parent="MainLayout/LeftPanel/StatusPanel/StatusContent/HPBarContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "HP:"
+
+[node name="HPBar" type="ProgressBar" parent="MainLayout/LeftPanel/StatusPanel/StatusContent/HPBarContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 20)
+max_value = 100.0
+value = 100.0
+
+[node name="StatusLabel" type="Label" parent="MainLayout/LeftPanel/StatusPanel/StatusContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 16
+text = "HP: 100/100 | 金币: 0 | 等级: 1"
+
+[node name="StatsLabel" type="Label" parent="MainLayout/LeftPanel/StatusPanel/StatusContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
+theme_override_font_sizes/font_size = 14
+text = "击杀: 0 | 探索: 0 | XP: 0/50"
+
+[node name="EncounterLabel" type="Label" parent="MainLayout/LeftPanel/StatusPanel/StatusContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 15
+text = "安全区域 - 准备探索"
+autowrap_mode = 2
+
+[node name="EnemyHPBar" type="ProgressBar" parent="MainLayout/LeftPanel/StatusPanel/StatusContent"]
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(0, 16)
+max_value = 100.0
+value = 100.0
+
+[node name="ActionPanel" type="PanelContainer" parent="MainLayout/LeftPanel"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_action")
+
+[node name="ActionContent" type="VBoxContainer" parent="MainLayout/LeftPanel/ActionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ActionRow1" type="HBoxContainer" parent="MainLayout/LeftPanel/ActionPanel/ActionContent"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BtnSearch" type="Button" parent="MainLayout/LeftPanel/ActionPanel/ActionContent/ActionRow1"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 44)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "搜 探索"
+
+[node name="BtnFight" type="Button" parent="MainLayout/LeftPanel/ActionPanel/ActionContent/ActionRow1"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 44)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "打 战斗"
+
+[node name="BtnRetreat" type="Button" parent="MainLayout/LeftPanel/ActionPanel/ActionContent/ActionRow1"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 44)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 16
+text = "撤 撤退"
+
+[node name="ActionRow2" type="HBoxContainer" parent="MainLayout/LeftPanel/ActionPanel/ActionContent"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BtnSellAll" type="Button" parent="MainLayout/LeftPanel/ActionPanel/ActionContent/ActionRow2"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 38)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "卖 全部出售"
+
+[node name="BtnUseHerb" type="Button" parent="MainLayout/LeftPanel/ActionPanel/ActionContent/ActionRow2"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 38)
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "药 使用药草"
+
+[node name="LogPanel" type="PanelContainer" parent="MainLayout/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_log")
+
+[node name="LogLabel" type="RichTextLabel" parent="MainLayout/LeftPanel/LogPanel"]
+layout_mode = 2
+theme_override_colors/default_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+text = ""
+scroll_active = true
+
+[node name="RightPanel" type="VBoxContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.4
+theme_override_constants/separation = 8
+
+[node name="BackpackHeader" type="HBoxContainer" parent="MainLayout/RightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="BackpackTitle" type="Label" parent="MainLayout/RightPanel/BackpackHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 22
+text = "背包"
+
+[node name="BackpackCountLabel" type="Label" parent="MainLayout/RightPanel/BackpackHeader"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
+theme_override_font_sizes/font_size = 16
+text = "0/16"
+
+[node name="BackpackScroll" type="ScrollContainer" parent="MainLayout/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BackpackGrid" type="GridContainer" parent="MainLayout/RightPanel/BackpackScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 4
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
