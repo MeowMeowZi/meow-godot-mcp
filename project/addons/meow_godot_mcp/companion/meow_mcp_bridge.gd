@@ -28,6 +28,11 @@ func _on_message(message: String, data: Array) -> bool:
 			return _inject_action(data)
 		"capture_viewport":
 			return _capture_viewport()
+		"click_node":
+			_handle_click_node(data)
+			return true
+		"get_node_rect":
+			return _handle_get_node_rect(data)
 	return false
 
 func _inject_key(data: Array) -> bool:
@@ -45,19 +50,45 @@ func _inject_mouse_click(data: Array) -> bool:
 	var x: float = data[0]
 	var y: float = data[1]
 	var button_str: String = data[2]
-	var pressed: bool = data[3]
+	var auto_cycle: bool = data[3] if data.size() > 3 and data[3] is bool and data[3] == true else false
 	var button_map = {
 		"left": MOUSE_BUTTON_LEFT,
 		"right": MOUSE_BUTTON_RIGHT,
 		"middle": MOUSE_BUTTON_MIDDLE
 	}
-	var event = InputEventMouseButton.new()
-	event.position = Vector2(x, y)
-	event.global_position = Vector2(x, y)
-	event.button_index = button_map.get(button_str, MOUSE_BUTTON_LEFT)
-	event.pressed = pressed
-	Input.parse_input_event(event)
-	EngineDebugger.send_message("meow_mcp:input_result", [true, ""])
+	var btn = button_map.get(button_str, MOUSE_BUTTON_LEFT)
+
+	if auto_cycle:
+		# Press
+		var press_event = InputEventMouseButton.new()
+		press_event.position = Vector2(x, y)
+		press_event.global_position = Vector2(x, y)
+		press_event.button_index = btn
+		press_event.pressed = true
+		Input.parse_input_event(press_event)
+
+		# 50ms delay
+		await get_tree().create_timer(0.05).timeout
+
+		# Release
+		var release_event = InputEventMouseButton.new()
+		release_event.position = Vector2(x, y)
+		release_event.global_position = Vector2(x, y)
+		release_event.button_index = btn
+		release_event.pressed = false
+		Input.parse_input_event(release_event)
+
+		EngineDebugger.send_message("meow_mcp:input_result", [true, ""])
+	else:
+		# Original single-fire behavior (data[3] is pressed bool)
+		var pressed: bool = data[3]
+		var event = InputEventMouseButton.new()
+		event.position = Vector2(x, y)
+		event.global_position = Vector2(x, y)
+		event.button_index = btn
+		event.pressed = pressed
+		Input.parse_input_event(event)
+		EngineDebugger.send_message("meow_mcp:input_result", [true, ""])
 	return true
 
 func _inject_mouse_move(data: Array) -> bool:
@@ -92,6 +123,86 @@ func _inject_action(data: Array) -> bool:
 	event.strength = 1.0 if pressed else 0.0
 	Input.parse_input_event(event)
 	EngineDebugger.send_message("meow_mcp:input_result", [true, ""])
+	return true
+
+func _resolve_node(node_path: String) -> Node:
+	var scene_root = get_tree().current_scene
+	if scene_root == null:
+		return null
+	if node_path.is_empty():
+		return scene_root
+	return scene_root.get_node_or_null(node_path)
+
+func _handle_click_node(data: Array) -> void:
+	var node_path: String = data[0]
+	var node = _resolve_node(node_path)
+
+	if node == null:
+		EngineDebugger.send_message("meow_mcp:click_node_result",
+			[false, "Node not found: " + node_path, 0.0, 0.0])
+		return
+
+	if not (node is Control):
+		EngineDebugger.send_message("meow_mcp:click_node_result",
+			[false, "Node is not a Control (type: " + node.get_class() + ")", 0.0, 0.0])
+		return
+
+	if not node.is_visible_in_tree():
+		EngineDebugger.send_message("meow_mcp:click_node_result",
+			[false, "Node is not visible in tree", 0.0, 0.0])
+		return
+
+	var rect: Rect2 = node.get_global_rect()
+	var center_x: float = rect.position.x + rect.size.x / 2.0
+	var center_y: float = rect.position.y + rect.size.y / 2.0
+
+	# Press
+	var press_event = InputEventMouseButton.new()
+	press_event.position = Vector2(center_x, center_y)
+	press_event.global_position = Vector2(center_x, center_y)
+	press_event.button_index = MOUSE_BUTTON_LEFT
+	press_event.pressed = true
+	Input.parse_input_event(press_event)
+
+	# 50ms delay
+	await get_tree().create_timer(0.05).timeout
+
+	# Release
+	var release_event = InputEventMouseButton.new()
+	release_event.position = Vector2(center_x, center_y)
+	release_event.global_position = Vector2(center_x, center_y)
+	release_event.button_index = MOUSE_BUTTON_LEFT
+	release_event.pressed = false
+	Input.parse_input_event(release_event)
+
+	EngineDebugger.send_message("meow_mcp:click_node_result",
+		[true, "", center_x, center_y])
+
+func _handle_get_node_rect(data: Array) -> bool:
+	var node_path: String = data[0]
+	var node = _resolve_node(node_path)
+
+	if node == null:
+		EngineDebugger.send_message("meow_mcp:node_rect_result",
+			[false, "Node not found: " + node_path, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+		return true
+
+	if not (node is Control):
+		EngineDebugger.send_message("meow_mcp:node_rect_result",
+			[false, "Node is not a Control (type: " + node.get_class() + ")",
+			 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+		return true
+
+	if not node.is_visible_in_tree():
+		EngineDebugger.send_message("meow_mcp:node_rect_result",
+			[false, "Node is not visible in tree", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+		return true
+
+	var rect: Rect2 = node.get_global_rect()
+	var global_pos: Vector2 = node.get_global_position()
+	EngineDebugger.send_message("meow_mcp:node_rect_result",
+		[true, "", rect.position.x, rect.position.y, rect.size.x, rect.size.y,
+		 global_pos.x, global_pos.y])
 	return true
 
 func _capture_viewport() -> bool:
