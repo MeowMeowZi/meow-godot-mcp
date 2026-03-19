@@ -103,24 +103,42 @@ jobs:
 
       - name: Package release
         run: |
+          # Debug: show artifact structure
+          echo "=== Artifact structure ==="
+          find artifacts/ -type f | head -30
+
           mkdir -p release/addons/meow_godot_mcp/bin
           mkdir -p release/addons/meow_godot_mcp/companion
+
           # Merge all platform artifacts into single addons directory
+          # upload-artifact may strip common path prefix, so search recursively
           for dir in artifacts/meow-godot-mcp-*/; do
-            # Copy bin/ contents (binaries from each platform)
-            cp -f "$dir"/project/addons/meow_godot_mcp/bin/* release/addons/meow_godot_mcp/bin/ 2>/dev/null || true
-            # Copy companion/ (same across platforms, just need one)
-            cp -f "$dir"/project/addons/meow_godot_mcp/companion/* release/addons/meow_godot_mcp/companion/ 2>/dev/null || true
-            # Copy metadata files (same across platforms)
-            cp -f "$dir"/project/addons/meow_godot_mcp/*.cfg release/addons/meow_godot_mcp/ 2>/dev/null || true
-            cp -f "$dir"/project/addons/meow_godot_mcp/*.gd release/addons/meow_godot_mcp/ 2>/dev/null || true
-            cp -f "$dir"/project/addons/meow_godot_mcp/*.gdextension release/addons/meow_godot_mcp/ 2>/dev/null || true
+            # Find and copy binary files
+            find "$dir" -name "*.dll" -o -name "*.so" -o -name "*.dylib" -o -name "*.framework" -o -name "godot-mcp-bridge*" | while read f; do
+              cp -f "$f" release/addons/meow_godot_mcp/bin/ 2>/dev/null || true
+            done
+            # Find and copy metadata + companion files
+            find "$dir" -name "*.cfg" | while read f; do cp -f "$f" release/addons/meow_godot_mcp/; done
+            find "$dir" -name "*.gdextension" | while read f; do cp -f "$f" release/addons/meow_godot_mcp/; done
+            find "$dir" -name "plugin.gd" | while read f; do cp -f "$f" release/addons/meow_godot_mcp/; done
+            find "$dir" -name "meow_mcp_bridge.gd" | while read f; do cp -f "$f" release/addons/meow_godot_mcp/companion/; done
           done
+
           # Remove .exp and .lib files (not needed for distribution)
           rm -f release/addons/meow_godot_mcp/bin/*.exp release/addons/meow_godot_mcp/bin/*.lib
+
           # List package contents
           echo "=== Package contents ==="
           find release/ -type f | sort
+
+          # Verify we have actual binaries
+          BIN_COUNT=$(find release/addons/meow_godot_mcp/bin -type f | wc -l)
+          echo "Binary count: $BIN_COUNT"
+          if [ "$BIN_COUNT" -eq 0 ]; then
+            echo "ERROR: No binaries found in package!"
+            exit 1
+          fi
+
           # Create zip
           cd release
           zip -r ../meow-godot-mcp-${GITHUB_REF_NAME}.zip addons/
