@@ -105,7 +105,7 @@ TEST(ToolsListResponse, HasGetSceneTreeTool) {
     EXPECT_EQ(response["id"], 2);
 
     auto tools = response["result"]["tools"];
-    ASSERT_EQ(tools.size(), 38);
+    ASSERT_EQ(tools.size(), 44);
     EXPECT_EQ(tools[0]["name"], "get_scene_tree");
 }
 
@@ -462,7 +462,7 @@ TEST(PromptsListResponse, HasCorrectStructure) {
     EXPECT_EQ(response["jsonrpc"], "2.0");
     EXPECT_EQ(response["id"], 10);
     auto prompts = response["result"]["prompts"];
-    ASSERT_EQ(prompts.size(), 6);
+    ASSERT_EQ(prompts.size(), 7);
     for (const auto& p : prompts) {
         EXPECT_TRUE(p.contains("name"));
         EXPECT_TRUE(p.contains("description"));
@@ -512,9 +512,9 @@ TEST(PromptNotFoundError, ContainsPromptName) {
 
 // --- Prompts data layer tests ---
 
-TEST(PromptsData, GetAllPromptsReturns6) {
+TEST(PromptsData, GetAllPromptsReturns7) {
     auto prompts = get_all_prompts_json();
-    ASSERT_EQ(prompts.size(), 6);
+    ASSERT_EQ(prompts.size(), 7);
 }
 
 TEST(PromptsData, PromptExistsWorks) {
