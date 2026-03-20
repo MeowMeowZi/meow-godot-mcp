@@ -4,20 +4,31 @@
 
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <fstream>
+#include <sstream>
 
 // Track log file read position for incremental reads
 static int64_t s_last_log_position = 0;
 
+// Get the game's log file path using OS::get_user_data_dir()
+// This resolves correctly even when called from the editor process
+static godot::String get_game_log_path() {
+    auto* os = godot::OS::get_singleton();
+    if (os) {
+        return os->get_user_data_dir().path_join("logs/godot.log");
+    }
+    return "user://logs/godot.log";
+}
+
 void reset_log_position() {
-    godot::String log_path = "user://logs/godot.log";
-    if (godot::FileAccess::file_exists(log_path)) {
-        auto file = godot::FileAccess::open(log_path, godot::FileAccess::READ);
-        if (file.is_valid()) {
-            file->seek_end(0);
-            s_last_log_position = file->get_position();
-        }
+    godot::String log_path = get_game_log_path();
+    std::string path_str(log_path.utf8().get_data());
+    std::ifstream file(path_str, std::ios::in | std::ios::binary | std::ios::ate);
+    if (file.is_open()) {
+        s_last_log_position = static_cast<int64_t>(file.tellg());
     } else {
         s_last_log_position = 0;
     }
@@ -50,7 +61,17 @@ nlohmann::json run_game(const std::string& mode, const std::string& scene_path) 
         return {{"success", false}, {"error", "scene_path is required when mode is 'custom'"}};
     }
 
-    // Reset log position to end of file before launching (legacy fallback)
+    // Auto-enable file logging so get_game_output works without manual setup (GOUT-01/03)
+    auto* ps = godot::ProjectSettings::get_singleton();
+    if (ps) {
+        bool logging_enabled = ps->get_setting("debug/file_logging/enable_file_logging");
+        if (!logging_enabled) {
+            ps->set_setting("debug/file_logging/enable_file_logging", true);
+            ps->save();
+        }
+    }
+
+    // Reset log position to end of file before launching
     reset_log_position();
 
     // Launch game
@@ -91,9 +112,13 @@ nlohmann::json stop_game() {
 }
 
 nlohmann::json get_game_output(bool clear_after_read) {
-    godot::String log_path = "user://logs/godot.log";
+    godot::String log_path = get_game_log_path();
 
-    if (!godot::FileAccess::file_exists(log_path)) {
+    std::string log_path_str(log_path.utf8().get_data());
+
+    // Use std::ifstream for shared read access (Windows locks files opened by game process)
+    std::ifstream file(log_path_str, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
         bool game_running = false;
         auto* ei = godot::EditorInterface::get_singleton();
         if (ei) {
@@ -101,41 +126,36 @@ nlohmann::json get_game_output(bool clear_after_read) {
         }
         return {{"success", true}, {"lines", nlohmann::json::array()},
                 {"count", 0}, {"game_running", game_running},
-                {"message", "No log file found. Enable file logging in Project Settings."}};
-    }
-
-    auto file = godot::FileAccess::open(log_path, godot::FileAccess::READ);
-    if (!file.is_valid()) {
-        // File may be locked by running game process (common on Windows)
-        bool game_running = false;
-        auto* ei = godot::EditorInterface::get_singleton();
-        if (ei) {
-            game_running = ei->is_playing_scene();
-        }
-        return {{"success", true}, {"lines", nlohmann::json::array()},
-                {"count", 0}, {"game_running", game_running},
-                {"message", "Log file exists but cannot be opened (may be locked by running game)"}};
+                {"message", "No log file found at: " + log_path_str}};
     }
 
     // Seek to last read position for incremental reads
     if (s_last_log_position > 0) {
-        int64_t file_len = file->get_length();
+        file.seekg(0, std::ios::end);
+        auto file_len = file.tellg();
         if (s_last_log_position > file_len) {
-            // File was truncated/rotated, reset to beginning
             s_last_log_position = 0;
         }
-        file->seek(s_last_log_position);
+        file.seekg(s_last_log_position);
     }
 
     nlohmann::json lines = nlohmann::json::array();
-    while (!file->eof_reached()) {
-        godot::String line = file->get_line();
-        if (line.length() > 0) {
-            lines.push_back(std::string(line.utf8().get_data()));
+    std::string line;
+    while (std::getline(file, line)) {
+        // Remove trailing \r if present (Windows line endings)
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (!line.empty()) {
+            lines.push_back(line);
         }
     }
 
-    int64_t new_position = file->get_position();
+    int64_t new_position = static_cast<int64_t>(file.tellg());
+    if (new_position < 0) {
+        // EOF reached, get actual position
+        file.clear();
+        file.seekg(0, std::ios::end);
+        new_position = static_cast<int64_t>(file.tellg());
+    }
 
     if (clear_after_read) {
         s_last_log_position = new_position;

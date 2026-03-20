@@ -548,12 +548,40 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 if (args.contains("keyword") && args["keyword"].is_string())
                     keyword = args["keyword"].get<std::string>();
             }
-            // Use debugger-channel buffer when bridge is available (preferred)
+            // Try debugger-channel buffer first, fall back to file-based reading
             if (game_bridge) {
-                return mcp::create_tool_result(id, game_bridge->get_buffered_game_output(clear_after_read, level, since, keyword));
+                auto result = game_bridge->get_buffered_game_output(clear_after_read, level, since, keyword);
+                // If debugger buffer had data, use it
+                if (result.contains("count") && result["count"].get<int>() > 0) {
+                    return mcp::create_tool_result(id, result);
+                }
             }
-            // Fallback to file-based reading (legacy, no filtering support)
-            return mcp::create_tool_result(id, get_game_output(clear_after_read));
+            // File-based reading (auto-enabled by run_game)
+            auto file_result = get_game_output(clear_after_read);
+            // Convert plain string lines to structured format with level inference
+            nlohmann::json structured = nlohmann::json::array();
+            if (file_result.contains("lines")) {
+                for (auto& line : file_result["lines"]) {
+                    std::string text = line.is_string() ? line.get<std::string>() : "";
+                    // Infer level from text prefixes (Godot log format)
+                    std::string inferred_level = "info";
+                    if (text.find("ERROR:") == 0 || text.find("   at:") == 0 ||
+                        text.find("   GDScript backtrace") == 0 ||
+                        text.find("       [") == 0) {
+                        inferred_level = "error";
+                    } else if (text.find("WARNING:") == 0) {
+                        inferred_level = "warning";
+                    }
+                    // Apply filters
+                    if (!level.empty() && inferred_level != level) continue;
+                    if (!keyword.empty() && text.find(keyword) == std::string::npos) continue;
+                    structured.push_back({{"text", text}, {"level", inferred_level}, {"timestamp_ms", 0}});
+                }
+            }
+            file_result["lines"] = structured;
+            file_result["count"] = structured.size();
+            file_result["total_buffered"] = file_result.value("count", 0);
+            return mcp::create_tool_result(id, file_result);
         }
 
         if (tool_name == "get_node_signals") {
