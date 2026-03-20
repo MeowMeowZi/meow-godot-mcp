@@ -19,7 +19,8 @@ func _on_message(message: String, data: Array) -> bool:
 		"inject_key":
 			return _inject_key(data)
 		"inject_mouse_click":
-			return _inject_mouse_click(data)
+			_inject_mouse_click(data)
+			return true
 		"inject_mouse_move":
 			return _inject_mouse_move(data)
 		"inject_mouse_scroll":
@@ -52,7 +53,7 @@ func _inject_key(data: Array) -> bool:
 	EngineDebugger.send_message("meow_mcp:input_result", [true, ""])
 	return true
 
-func _inject_mouse_click(data: Array) -> bool:
+func _inject_mouse_click(data: Array) -> void:
 	var x: float = data[0]
 	var y: float = data[1]
 	var button_str: String = data[2]
@@ -95,7 +96,6 @@ func _inject_mouse_click(data: Array) -> bool:
 		event.pressed = pressed
 		Input.parse_input_event(event)
 		EngineDebugger.send_message("meow_mcp:input_result", [true, ""])
-	return true
 
 func _inject_mouse_move(data: Array) -> bool:
 	var x: float = data[0]
