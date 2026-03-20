@@ -46,7 +46,7 @@ void MCPServer::set_game_bridge(MeowDebuggerPlugin* bridge) {
 }
 
 void MCPServer::queue_deferred_response(const nlohmann::json& response) {
-    std::lock_guard<std::mutex> lock(queue_mutex);
+    std::lock_guard<std::recursive_mutex> lock(queue_mutex);
     response_queue.push({response});
     response_cv.notify_one();
 }
@@ -97,7 +97,7 @@ void MCPServer::stop() {
 
     // Clear queues
     {
-        std::lock_guard<std::mutex> lock(queue_mutex);
+        std::lock_guard<std::recursive_mutex> lock(queue_mutex);
         while (!request_queue.empty()) request_queue.pop();
         while (!response_queue.empty()) response_queue.pop();
     }
@@ -147,7 +147,7 @@ void MCPServer::io_thread_func() {
         if (available <= 0) {
             // Check for pending responses to send
             {
-                std::lock_guard<std::mutex> lock(queue_mutex);
+                std::lock_guard<std::recursive_mutex> lock(queue_mutex);
                 while (!response_queue.empty()) {
                     auto resp = response_queue.front();
                     response_queue.pop();
@@ -183,7 +183,7 @@ void MCPServer::io_thread_func() {
                 bool handled = process_message_io(line);
                 if (!handled) {
                     // Request was queued -- wait for main thread response
-                    std::unique_lock<std::mutex> lock(queue_mutex);
+                    std::unique_lock<std::recursive_mutex> lock(queue_mutex);
                     response_cv.wait(lock, [this]{ return !response_queue.empty() || !running.load(); });
                     if (!running.load()) break;
                     // Send all pending responses
@@ -228,14 +228,14 @@ bool MCPServer::process_message_io(const std::string& line) {
 
     // Queue request for main thread processing
     {
-        std::lock_guard<std::mutex> lock(queue_mutex);
+        std::lock_guard<std::recursive_mutex> lock(queue_mutex);
         request_queue.push({result.message.method, result.message.id, result.message.params});
     }
     return false;
 }
 
 void MCPServer::poll() {
-    std::lock_guard<std::mutex> lock(queue_mutex);
+    std::lock_guard<std::recursive_mutex> lock(queue_mutex);
     while (!request_queue.empty()) {
         auto req = request_queue.front();
         request_queue.pop();

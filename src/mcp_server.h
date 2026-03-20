@@ -73,10 +73,10 @@ private:
     std::thread io_thread;
     std::atomic<bool> running{false};
     std::atomic<bool> client_connected{false};
-    std::mutex queue_mutex;
+    std::recursive_mutex queue_mutex;
     std::queue<PendingRequest> request_queue;
     std::queue<PendingResponse> response_queue;
-    std::condition_variable response_cv;
+    std::condition_variable_any response_cv;
 
     // Godot resources (main thread only)
     godot::EditorUndoRedoManager* undo_redo = nullptr;
