@@ -318,9 +318,10 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
 
         nlohmann::json result;
         if (success) {
-            try {
-                result = nlohmann::json::parse(std::string(json_str.utf8().get_data()));
-            } catch (...) {
+            std::string raw(json_str.utf8().get_data());
+            if (nlohmann::json::accept(raw)) {
+                result = nlohmann::json::parse(raw);
+            } else {
                 result = {{"error", "Failed to parse scene tree JSON from game"}};
             }
         } else {
