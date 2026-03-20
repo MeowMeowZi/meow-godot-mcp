@@ -14,7 +14,7 @@ Requirements covered:
   - GOUT-03: get_game_output returns structured entries with text/level/timestamp_ms
 
 Tests cover:
-  - tools/list still shows 43 tools (no new tools added, get_game_output enhanced only)
+  - tools/list still shows 44 tools (no new tools added, get_game_output enhanced only)
   - get_game_output schema includes level, since, keyword properties
   - Game launches and bridge connects automatically
   - get_game_output returns success with lines array (GOUT-01, GOUT-03)
@@ -185,20 +185,20 @@ def run_tests():
     print("=" * 60)
 
     # ===================================================================
-    # Test 1: tools/list still shows 43 tools (no new tools added)
+    # Test 1: tools/list still shows 44 tools (no new tools added)
     # ===================================================================
     try:
         resp = client.request("tools/list")
         tools = resp.get("result", {}).get("tools", [])
         tool_names = [t["name"] for t in tools]
         has_get_game_output = "get_game_output" in tool_names
-        ok = (len(tools) == 43 and has_get_game_output)
-        report(1, "tools/list shows 43 tools including get_game_output", ok,
+        ok = (len(tools) == 44 and has_get_game_output)
+        report(1, "tools/list shows 44 tools including get_game_output", ok,
                f"Tool count: {len(tools)}\n"
                f"         get_game_output present: {has_get_game_output}\n"
                f"         All tools: {tool_names}")
     except Exception as e:
-        report(1, "tools/list shows 43 tools including get_game_output", False,
+        report(1, "tools/list shows 44 tools including get_game_output", False,
                f"Error: {e}")
 
     # ===================================================================

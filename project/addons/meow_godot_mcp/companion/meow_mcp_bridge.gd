@@ -266,7 +266,7 @@ func _handle_eval_in_game(data: Array) -> bool:
 
 	var result = expr.execute([], get_tree().current_scene)
 
-	if expr.has_execute_error():
+	if expr.has_execute_failed():
 		EngineDebugger.send_message("meow_mcp:eval_result",
 			[false, "Execute error: " + expr.get_error_text(), ""])
 		return true

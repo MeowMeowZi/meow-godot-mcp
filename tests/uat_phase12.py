@@ -14,7 +14,7 @@ Requirements covered:
   - INPT-03: get_node_rect tool - get Control node screen coordinates and size
 
 Tests cover:
-  - tools/list shows 40 tools including click_node and get_node_rect (INPT-02, INPT-03)
+  - tools/list shows 44 tools including click_node and get_node_rect (INPT-02, INPT-03)
   - Game launches and bridge connects automatically
   - inject_input auto-cycle click with no explicit pressed param (INPT-01)
   - inject_input backward-compatible click with pressed=true (INPT-01)
@@ -187,7 +187,7 @@ def run_tests():
     print("=" * 60)
 
     # ===================================================================
-    # Test 1: tools/list shows 40 tools including click_node and
+    # Test 1: tools/list shows 44 tools including click_node and
     #         get_node_rect (INPT-02, INPT-03)
     # ===================================================================
     try:
@@ -196,14 +196,14 @@ def run_tests():
         tool_names = [t["name"] for t in tools]
         has_click_node = "click_node" in tool_names
         has_get_node_rect = "get_node_rect" in tool_names
-        ok = len(tools) == 40 and has_click_node and has_get_node_rect
-        report(1, "tools/list shows 40 tools including click_node and get_node_rect (INPT-02, INPT-03)", ok,
+        ok = len(tools) == 44 and has_click_node and has_get_node_rect
+        report(1, "tools/list shows 44 tools including click_node and get_node_rect (INPT-02, INPT-03)", ok,
                f"Tool count: {len(tools)}\n"
                f"         click_node present: {has_click_node}\n"
                f"         get_node_rect present: {has_get_node_rect}\n"
                f"         All tools: {tool_names}")
     except Exception as e:
-        report(1, "tools/list shows 40 tools including click_node and get_node_rect (INPT-02, INPT-03)", False,
+        report(1, "tools/list shows 44 tools including click_node and get_node_rect (INPT-02, INPT-03)", False,
                f"Error: {e}")
 
     # ===================================================================

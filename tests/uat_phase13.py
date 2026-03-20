@@ -14,7 +14,7 @@ Requirements covered:
   - RTST-03: get_game_scene_tree returns full scene tree structure from running game
 
 Tests cover:
-  - tools/list shows 43 tools including get_game_node_property, eval_in_game,
+  - tools/list shows 44 tools including get_game_node_property, eval_in_game,
     get_game_scene_tree (RTST-01, RTST-02, RTST-03)
   - Game launches and bridge connects automatically
   - get_game_scene_tree returns tree with name, type, path fields (RTST-03)
@@ -188,7 +188,7 @@ def run_tests():
     print("=" * 60)
 
     # ===================================================================
-    # Test 1: tools/list shows 43 tools including runtime state query
+    # Test 1: tools/list shows 44 tools including runtime state query
     #         tools (RTST-01, RTST-02, RTST-03)
     # ===================================================================
     try:
@@ -198,18 +198,18 @@ def run_tests():
         has_get_game_node_property = "get_game_node_property" in tool_names
         has_eval_in_game = "eval_in_game" in tool_names
         has_get_game_scene_tree = "get_game_scene_tree" in tool_names
-        ok = (len(tools) == 43 and
+        ok = (len(tools) == 44 and
               has_get_game_node_property and
               has_eval_in_game and
               has_get_game_scene_tree)
-        report(1, "tools/list shows 43 tools including runtime state query tools (RTST-01, RTST-02, RTST-03)", ok,
+        report(1, "tools/list shows 44 tools including runtime state query tools (RTST-01, RTST-02, RTST-03)", ok,
                f"Tool count: {len(tools)}\n"
                f"         get_game_node_property present: {has_get_game_node_property}\n"
                f"         eval_in_game present: {has_eval_in_game}\n"
                f"         get_game_scene_tree present: {has_get_game_scene_tree}\n"
                f"         All tools: {tool_names}")
     except Exception as e:
-        report(1, "tools/list shows 43 tools including runtime state query tools (RTST-01, RTST-02, RTST-03)", False,
+        report(1, "tools/list shows 44 tools including runtime state query tools (RTST-01, RTST-02, RTST-03)", False,
                f"Error: {e}")
 
     # ===================================================================

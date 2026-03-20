@@ -948,12 +948,15 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "click_node") {
             std::string node_path;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
             }
-            if (node_path.empty()) {
+            if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }
@@ -969,12 +972,15 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "get_node_rect") {
             std::string node_path;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
             }
-            if (node_path.empty()) {
+            if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }
