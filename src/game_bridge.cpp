@@ -77,53 +77,11 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
 }
 
 bool MeowDebuggerPlugin::_has_capture(const String &p_capture) const {
-    return p_capture == "meow_mcp" || p_capture == "output";
+    return p_capture == "meow_mcp";
 }
 
 bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
                                     int32_t p_session_id) {
-    // Phase 14: Capture output messages from the running game (print, push_error, push_warning)
-    // Godot routes "output" prefix messages to plugins that return true for _has_capture("output")
-    if (p_message.begins_with("output")) {
-        if (p_data.size() >= 2) {
-            auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now().time_since_epoch()).count();
-
-            if (p_data[0].get_type() == godot::Variant::STRING) {
-                // Single text+type pair: data[0]=text, data[1]=type_int
-                String text = p_data[0];
-                int type_val = p_data[1];
-                std::string level = "info";
-                if (type_val == 1) level = "error";
-                else if (type_val == 2) level = "warning";
-
-                std::string msg(text.utf8().get_data());
-                if (!msg.empty() && msg.back() == '\n') msg.pop_back();
-                if (!msg.empty()) {
-                    log_buffer.push_back({msg, level, now_ms});
-                }
-            } else if (p_data[0].get_type() == godot::Variant::PACKED_STRING_ARRAY ||
-                       p_data[0].get_type() == godot::Variant::ARRAY) {
-                // Array format: data[0]=Array<String>, data[1]=Array<int>
-                Array texts = p_data[0];
-                Array types = p_data[1];
-                for (int i = 0; i < texts.size(); i++) {
-                    String text = texts[i];
-                    int type_val = (i < types.size()) ? (int)types[i] : 0;
-                    std::string level = "info";
-                    if (type_val == 1) level = "error";
-                    else if (type_val == 2) level = "warning";
-                    std::string msg(text.utf8().get_data());
-                    if (!msg.empty() && msg.back() == '\n') msg.pop_back();
-                    if (!msg.empty()) {
-                        log_buffer.push_back({msg, level, now_ms});
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
     // p_message is full string like "meow_mcp:ready"
     // Extract action after the colon
     int colon_pos = p_message.find(":");
@@ -136,6 +94,35 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
         game_connected = true;
         active_session_id = p_session_id;
         UtilityFunctions::print(String::utf8("MCP Meow: 游戏桥接已连接 (会话 "), p_session_id, ")");
+        return true;
+    }
+
+    // Phase 17: Companion forwards log lines from game's log file via debugger channel
+    if (action == "game_log") {
+        if (p_data.size() >= 2) {
+            auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            Array texts = p_data[0];
+            Array levels = p_data[1];
+            for (int i = 0; i < texts.size(); i++) {
+                String text = texts[i];
+                std::string msg(text.utf8().get_data());
+                // Remove trailing \r if present
+                if (!msg.empty() && msg.back() == '\r') msg.pop_back();
+                if (!msg.empty()) {
+                    std::string level = "info";
+                    if (i < levels.size()) {
+                        String lvl = levels[i];
+                        std::string lvl_str(lvl.utf8().get_data());
+                        if (lvl_str == "error" || lvl_str == "warning") {
+                            level = lvl_str;
+                        }
+                    }
+                    log_buffer.push_back({msg, level, now_ms});
+                }
+            }
+        }
         return true;
     }
 

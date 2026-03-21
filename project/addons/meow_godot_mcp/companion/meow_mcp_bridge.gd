@@ -3,12 +3,64 @@
 # executes input injection and viewport capture, sends results back.
 extends Node
 
+# Log file forwarding: read game's log file and forward new lines via debugger channel
+const LOG_POLL_INTERVAL: float = 0.2  # 200ms polling for sub-1s capture
+var _log_file_path: String = ""
+var _log_read_pos: int = 0
+var _log_poll_timer: float = 0.0
+
 func _ready():
 	if not EngineDebugger.is_active():
 		queue_free()
 		return
 	EngineDebugger.register_message_capture("meow_mcp", _on_message)
 	EngineDebugger.send_message("meow_mcp:ready", [])
+
+	# Initialize log file reader: resolve path and seek to end of current file
+	_log_file_path = OS.get_user_data_dir().path_join("logs/godot.log")
+	if FileAccess.file_exists(_log_file_path):
+		var f = FileAccess.open(_log_file_path, FileAccess.READ)
+		if f:
+			f.seek_end(0)
+			_log_read_pos = f.get_position()
+			f.close()
+	set_process(true)
+
+func _process(delta: float) -> void:
+	_log_poll_timer += delta
+	if _log_poll_timer < LOG_POLL_INTERVAL:
+		return
+	_log_poll_timer = 0.0
+	_forward_new_log_lines()
+
+func _forward_new_log_lines() -> void:
+	if _log_file_path.is_empty() or not FileAccess.file_exists(_log_file_path):
+		return
+	var f = FileAccess.open(_log_file_path, FileAccess.READ)
+	if f == null:
+		return
+	var file_len = f.get_length()
+	if file_len <= _log_read_pos:
+		f.close()
+		return
+	f.seek(_log_read_pos)
+	var new_text = f.get_buffer(file_len - _log_read_pos).get_string_from_utf8()
+	_log_read_pos = file_len
+	f.close()
+	var lines = new_text.split("\n", false)
+	if lines.is_empty():
+		return
+	var texts: Array = []
+	var levels: Array = []
+	for line in lines:
+		var level: String = "info"
+		if line.begins_with("ERROR:") or line.begins_with("   at:") or line.begins_with("   GDScript backtrace"):
+			level = "error"
+		elif line.begins_with("WARNING:"):
+			level = "warning"
+		texts.append(line)
+		levels.append(level)
+	EngineDebugger.send_message("meow_mcp:game_log", [texts, levels])
 
 func _exit_tree():
 	if EngineDebugger.is_active():
