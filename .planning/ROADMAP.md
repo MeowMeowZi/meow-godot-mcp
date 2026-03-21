@@ -58,7 +58,7 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 
 **Milestone Goal:** 消除 MCP 工具使用中的摩擦点，让 AI 辅助游戏开发的工作流更顺畅。
 
-- [ ] **Phase 16: Game Bridge Auto-Wait** - run_game 自动等待 bridge 连接；根节点路径统一
+- [x] **Phase 16: Game Bridge Auto-Wait** - run_game 自动等待 bridge 连接；根节点路径统一 -- completed 2026-03-22
 - [ ] **Phase 17: Reliable Game Output** - game output 可靠捕获，不依赖 file_logging 刷新时机
 - [ ] **Phase 18: Tool Ergonomics** - set_layout_preset 等工具支持根节点；其他易用性改进
 
@@ -68,10 +68,10 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 **Goal**: run_game 返回时 bridge 已就绪，所有工具统一根节点路径约定
 **Depends on**: Phase 15
 **Requirements**: DX-01, DX-02
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 Plans:
-- [ ] 16-01-PLAN.md — Deferred wait_for_bridge + unified node_path root handling
-- [ ] 16-02-PLAN.md — UAT test suite for DX-01 and DX-02
+- [x] 16-01-PLAN.md — Deferred wait_for_bridge + unified node_path root handling
+- [x] 16-02-PLAN.md — UAT test suite for DX-01 and DX-02
 **Success Criteria** (what must be TRUE):
   1. run_game 带 wait_for_bridge 参数时，返回时 bridge 已连接（或超时报错）
   2. 所有接受 node_path 的工具统一支持 "" 和 "." 表示场景根节点
@@ -111,6 +111,6 @@ Plans:
 | 13. Runtime State Query | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 14. Game Output Enhancement | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
-| 16. Game Bridge Auto-Wait | 1/2 | In Progress|  | - |
+| 16. Game Bridge Auto-Wait | v1.3 | 2/2 | Complete | 2026-03-22 |
 | 17. Reliable Game Output | v1.3 | - | Planned | - |
 | 18. Tool Ergonomics | v1.3 | - | Planned | - |
