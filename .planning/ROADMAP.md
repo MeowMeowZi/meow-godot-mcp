@@ -120,4 +120,4 @@ Plans:
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 16. Game Bridge Auto-Wait | v1.3 | 2/2 | Complete | 2026-03-22 |
 | 17. Reliable Game Output | v1.3 | Complete    | 2026-03-21 | 2026-03-22 |
-| 18. Tool Ergonomics | v1.3 | 1/1 | Complete | 2026-03-22 |
+| 18. Tool Ergonomics | v1.3 | Complete    | 2026-03-21 | 2026-03-22 |
