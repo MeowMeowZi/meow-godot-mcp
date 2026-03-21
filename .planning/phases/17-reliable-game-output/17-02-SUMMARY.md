@@ -63,7 +63,7 @@ Each task was committed atomically:
 1. **Task 1: Create UAT test script for Phase 17** - `4723869` (test)
 2. **Task 2: Human verification -- run UAT against live Godot editor** - checkpoint approved (9/10 pass)
 
-**Plan metadata:** [pending] (docs: complete plan)
+**Plan metadata:** `35ebe7f` (docs: complete plan)
 
 ## Files Created/Modified
 - `tests/uat_phase17.py` - 10-test UAT suite for DX-03 reliable game output: MCP connection, game launch, print capture, latency check, error classification, level filter, keyword filter, incremental reads, response shape, game stop
