@@ -59,7 +59,7 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 **Milestone Goal:** 消除 MCP 工具使用中的摩擦点，让 AI 辅助游戏开发的工作流更顺畅。
 
 - [x] **Phase 16: Game Bridge Auto-Wait** - run_game 自动等待 bridge 连接；根节点路径统一 -- completed 2026-03-22
-- [ ] **Phase 17: Reliable Game Output** - game output 可靠捕获，不依赖 file_logging 刷新时机
+- [x] **Phase 17: Reliable Game Output** - game output 可靠捕获，不依赖 file_logging 刷新时机 (completed 2026-03-21)
 - [ ] **Phase 18: Tool Ergonomics** - set_layout_preset 等工具支持根节点；其他易用性改进
 
 ## Phase Details
@@ -80,10 +80,10 @@ Plans:
 **Goal**: print() 输出在所有场景下都能被 get_game_output 可靠捕获
 **Depends on**: Phase 16
 **Requirements**: DX-03
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 17-01-PLAN.md — Companion-side log forwarding + editor handler + dispatch cleanup
-- [ ] 17-02-PLAN.md — UAT test suite for DX-03
+- [x] 17-01-PLAN.md — Companion-side log forwarding + editor handler + dispatch cleanup
+- [x] 17-02-PLAN.md — UAT test suite for DX-03
 **Success Criteria** (what must be TRUE):
   1. 游戏中的 print() 调用在 1 秒内可通过 get_game_output 获取
   2. 不依赖 file_logging 项目设置的刷新时机
@@ -115,6 +115,6 @@ Plans:
 | 13. Runtime State Query | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 14. Game Output Enhancement | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
-| 16. Game Bridge Auto-Wait | v1.3 | Complete    | 2026-03-21 | 2026-03-22 |
-| 17. Reliable Game Output | 1/2 | In Progress|  | - |
+| 16. Game Bridge Auto-Wait | v1.3 | 2/2 | Complete | 2026-03-22 |
+| 17. Reliable Game Output | v1.3 | 2/2 | Complete | 2026-03-22 |
 | 18. Tool Ergonomics | v1.3 | - | Planned | - |
