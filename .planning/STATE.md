@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Developer Experience Polish
 status: unknown
-stopped_at: Completed 16-02-PLAN.md (Phase 16 complete)
-last_updated: "2026-03-21T20:52:15.372Z"
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-03-21T21:04:38.186Z"
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** Phase 16 — Game Bridge Auto-Wait
+**Current focus:** Phase 17 — Reliable Game Output
 
 ## Current Position
 
-Phase: 16 (Game Bridge Auto-Wait) — COMPLETE
-Plan: 2 of 2 (all plans complete)
+Phase: 17 (Reliable Game Output) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -72,6 +72,7 @@ Plan: 2 of 2 (all plans complete)
 | Phase 15 P02 | 5min | 2 tasks | 1 files |
 | Phase 16 P01 | 8min | 2 tasks | 3 files |
 | Phase 16 P02 | 5min | 2 tasks | 1 files |
+| Phase 17 P01 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -162,6 +163,9 @@ Recent decisions affecting v1.1:
 - [16-02]: UAT follows exact uat_phase15.py structure for cross-phase consistency
 - [16-02]: DX-02 tests run first (no game needed), DX-01 tests second (require game launch)
 - [16-02]: 11/13 pass accepted: tests 7-8 are test assertion issues (code behavior correct)
+- [Phase 17]: Companion reads game log file every 200ms and forwards via meow_mcp:game_log debugger message
+- [Phase 17]: Bridge buffer used exclusively when connected; file fallback only for null-bridge edge case
+- [Phase 17]: Removed broken _has_capture(output) interception (Godot 4.6 incompatible) and file_logging auto-enable
 
 ### Pending Todos
 
@@ -188,6 +192,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-22T04:45:00Z
-Stopped at: Completed 16-02-PLAN.md (Phase 16 complete)
+Last session: 2026-03-21T21:04:38.184Z
+Stopped at: Completed 17-01-PLAN.md
 Resume file: None

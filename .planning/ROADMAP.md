@@ -80,7 +80,7 @@ Plans:
 **Goal**: print() 输出在所有场景下都能被 get_game_output 可靠捕获
 **Depends on**: Phase 16
 **Requirements**: DX-03
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 17-01-PLAN.md — Companion-side log forwarding + editor handler + dispatch cleanup
 - [ ] 17-02-PLAN.md — UAT test suite for DX-03
@@ -116,5 +116,5 @@ Plans:
 | 14. Game Output Enhancement | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 16. Game Bridge Auto-Wait | v1.3 | Complete    | 2026-03-21 | 2026-03-22 |
-| 17. Reliable Game Output | v1.3 | 0/2 | Planning | - |
+| 17. Reliable Game Output | 1/2 | In Progress|  | - |
 | 18. Tool Ergonomics | v1.3 | - | Planned | - |
