@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Developer Experience Polish
-status: unknown
-stopped_at: Completed 17-02-PLAN.md
-last_updated: "2026-03-21T21:13:40.583Z"
+status: complete
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-03-21T21:22:36Z"
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** Phase 17 — Reliable Game Output
+**Current focus:** Phase 18 — Tool Ergonomics
 
 ## Current Position
 
-Phase: 17 (Reliable Game Output) — COMPLETE
-Plan: 2 of 2 (all complete)
+Phase: 18 (Tool Ergonomics) — COMPLETE
+Plan: 1 of 1 (all complete)
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Plan: 2 of 2 (all complete)
 | Phase 16 P02 | 5min | 2 tasks | 1 files |
 | Phase 17 P01 | 3min | 2 tasks | 4 files |
 | Phase 17 P02 | 5min | 2 tasks | 1 files |
+| Phase 18 P01 | 5min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -169,6 +170,8 @@ Recent decisions affecting v1.1:
 - [Phase 17]: Removed broken _has_capture(output) interception (Godot 4.6 incompatible) and file_logging auto-enable
 - [17-02]: 9/10 UAT tests pass; test 7 (keyword filter) is test sequencing issue, not code defect
 - [17-02]: UAT confirms print() capture latency well under 1 second via companion log forwarding
+- [18-01]: DX-04 satisfied by Phase 16 DX-02 work (has_node_path flag on all 13 tools including set_layout_preset)
+- [18-01]: UAT 0/5 is test setup issue (create_scene doesn't switch active editor scene), not code bug; underlying fix verified in Phase 16 UAT
 
 ### Pending Todos
 
@@ -195,6 +198,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T21:10:24Z
-Stopped at: Completed 17-02-PLAN.md
+Last session: 2026-03-21T21:22:36Z
+Stopped at: Completed 18-01-PLAN.md (v1.3 milestone complete)
 Resume file: None

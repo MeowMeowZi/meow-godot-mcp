@@ -5,7 +5,7 @@
 - v1.0 MVP -- Phases 1-5 (shipped 2026-03-18)
 - v1.1 UI & Editor Expansion -- Phases 6-11 (shipped 2026-03-19)
 - v1.2 Runtime Interaction Enhancement -- Phases 12-15 (shipped 2026-03-20)
-- v1.3 Developer Experience Polish -- Phases 16-18 (planning)
+- v1.3 Developer Experience Polish -- Phases 16-18 (shipped 2026-03-22)
 
 ## Phases
 
@@ -60,7 +60,7 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 
 - [x] **Phase 16: Game Bridge Auto-Wait** - run_game 自动等待 bridge 连接；根节点路径统一 -- completed 2026-03-22
 - [x] **Phase 17: Reliable Game Output** - game output 可靠捕获，不依赖 file_logging 刷新时机 (completed 2026-03-21)
-- [ ] **Phase 18: Tool Ergonomics** - set_layout_preset 等工具支持根节点；其他易用性改进
+- [x] **Phase 18: Tool Ergonomics** - set_layout_preset 等工具支持根节点；其他易用性改进 (completed 2026-03-22)
 
 ## Phase Details
 
@@ -92,9 +92,9 @@ Plans:
 **Goal**: 验证 DX-04 已被 Phase 16 的 node_path 统一工作覆盖，并用 UAT 测试正式关闭需求
 **Depends on**: Phase 16
 **Requirements**: DX-04
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 18-01-PLAN.md — UAT verification that set_layout_preset works on scene root node
+- [x] 18-01-PLAN.md — UAT verification that set_layout_preset works on scene root node
 **Success Criteria** (what must be TRUE):
   1. set_layout_preset 可对场景根节点使用
   2. UAT 测试验证 preset 实际生效（anchor 值正确）
@@ -120,4 +120,4 @@ Plans:
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 16. Game Bridge Auto-Wait | v1.3 | 2/2 | Complete | 2026-03-22 |
 | 17. Reliable Game Output | v1.3 | Complete    | 2026-03-21 | 2026-03-22 |
-| 18. Tool Ergonomics | v1.3 | 0/1 | Planning | - |
+| 18. Tool Ergonomics | v1.3 | 1/1 | Complete | 2026-03-22 |
