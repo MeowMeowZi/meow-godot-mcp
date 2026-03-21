@@ -401,16 +401,19 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "set_node_property") {
             std::string node_path, property, value;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
                 if (args.contains("property") && args["property"].is_string())
                     property = args["property"].get<std::string>();
                 if (args.contains("value") && args["value"].is_string())
                     value = args["value"].get<std::string>();
             }
-            if (node_path.empty() || property.empty() || value.empty()) {
+            if (!has_node_path || property.empty() || value.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: node_path, property, value");
             }
             return mcp::create_tool_result(id, set_node_property(node_path, property, value, undo_redo));
@@ -418,12 +421,15 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "delete_node") {
             std::string node_path;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
             }
-            if (node_path.empty()) {
+            if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
             return mcp::create_tool_result(id, delete_node(node_path, undo_redo));
@@ -481,14 +487,17 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "attach_script") {
             std::string node_path, script_path;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
                 if (args.contains("script_path") && args["script_path"].is_string())
                     script_path = args["script_path"].get<std::string>();
             }
-            if (node_path.empty() || script_path.empty()) {
+            if (!has_node_path || script_path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: node_path, script_path");
             }
             return mcp::create_tool_result(id, attach_script(node_path, script_path, undo_redo));
@@ -496,12 +505,15 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "detach_script") {
             std::string node_path;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
             }
-            if (node_path.empty()) {
+            if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
             return mcp::create_tool_result(id, detach_script(node_path, undo_redo));
@@ -632,12 +644,15 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "get_node_signals") {
             std::string node_path;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
             }
-            if (node_path.empty()) {
+            if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
             return mcp::create_tool_result(id, get_node_signals(node_path));
@@ -748,14 +763,17 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "set_layout_preset") {
             std::string node_path, preset;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
                 if (args.contains("preset") && args["preset"].is_string())
                     preset = args["preset"].get<std::string>();
             }
-            if (node_path.empty() || preset.empty()) {
+            if (!has_node_path || preset.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, preset");
             }
@@ -764,15 +782,18 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "set_theme_override") {
             std::string node_path;
+            bool has_node_path = false;
             nlohmann::json overrides;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
                 if (args.contains("overrides") && args["overrides"].is_object())
                     overrides = args["overrides"];
             }
-            if (node_path.empty() || overrides.empty()) {
+            if (!has_node_path || overrides.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, overrides");
             }
@@ -781,17 +802,20 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "create_stylebox") {
             std::string node_path, override_name;
+            bool has_node_path = false;
             nlohmann::json properties;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
                 if (args.contains("override_name") && args["override_name"].is_string())
                     override_name = args["override_name"].get<std::string>();
                 // Collect all arguments as properties (function will read what it needs)
                 properties = args;
             }
-            if (node_path.empty() || override_name.empty()) {
+            if (!has_node_path || override_name.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, override_name");
             }
@@ -800,12 +824,15 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "get_ui_properties") {
             std::string node_path;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
             }
-            if (node_path.empty()) {
+            if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }
@@ -814,14 +841,17 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "set_container_layout") {
             std::string node_path;
+            bool has_node_path = false;
             nlohmann::json layout_params;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
                 layout_params = args;
             }
-            if (node_path.empty()) {
+            if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }
@@ -830,12 +860,15 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
 
         if (tool_name == "get_theme_overrides") {
             std::string node_path;
+            bool has_node_path = false;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
+                if (args.contains("node_path") && args["node_path"].is_string()) {
                     node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
             }
-            if (node_path.empty()) {
+            if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }

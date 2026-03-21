@@ -46,7 +46,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to the target node relative to scene root (e.g., 'Player', 'Player/Sprite2D')"}}},
+                    {"node_path", {{"type", "string"}, {"description", "Path to the target node relative to scene root (e.g., 'Player', 'Player/Sprite2D'). Use '' or '.' for the scene root itself."}}},
                     {"property", {{"type", "string"}, {"description", "Property name in snake_case (e.g., position, rotation_degrees, visible, modulate, name)"}}},
                     {"value", {{"type", "string"}, {"description", "Property value as string. Auto-parsed: 'Vector2(100,200)', 'Color(1,0,0,1)', '#ff0000', '42', '3.14', 'true', 'false'"}}}
                 }},
@@ -60,7 +60,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to the node to delete, relative to scene root"}}}
+                    {"node_path", {{"type", "string"}, {"description", "Path to the node to delete, relative to scene root. Use '' or '.' for the scene root itself."}}}
                 }},
                 {"required", {"node_path"}}
             },
@@ -113,7 +113,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to target node relative to scene root"}}},
+                    {"node_path", {{"type", "string"}, {"description", "Path to target node relative to scene root. Use '' or '.' for the scene root itself."}}},
                     {"script_path", {{"type", "string"}, {"description", "Path to .gd file (e.g., res://scripts/player.gd)"}}}
                 }},
                 {"required", {"node_path", "script_path"}}
@@ -126,7 +126,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to the node to detach script from"}}}
+                    {"node_path", {{"type", "string"}, {"description", "Path to the node to detach script from. Use '' or '.' for the scene root itself."}}}
                 }},
                 {"required", {"node_path"}}
             },
@@ -223,7 +223,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to the node relative to scene root"}}}
+                    {"node_path", {{"type", "string"}, {"description", "Path to the node relative to scene root. Use '' or '.' for the scene root itself."}}}
                 }},
                 {"required", {"node_path"}}
             },
@@ -329,7 +329,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}},
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}},
                     {"preset", {{"type", "string"}, {"description", "Layout preset name (e.g., full_rect, center, top_wide)"}}}
                 }},
                 {"required", {"node_path", "preset"}}
@@ -342,7 +342,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}},
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}},
                     {"overrides", {{"type", "object"}, {"description", "Key-value pairs of theme overrides. Keys are theme override names (e.g., font_color, font_size). Values are strings: hex colors (#ff0000), integers (16), or Color() constructors."}}}
                 }},
                 {"required", {"node_path", "overrides"}}
@@ -355,7 +355,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}},
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}},
                     {"override_name", {{"type", "string"}, {"description", "Theme override name to apply the StyleBox to (e.g., panel, normal, hover, pressed, disabled, focus)"}}},
                     {"bg_color", {{"type", "string"}, {"description", "Background color as hex (#rrggbb or #rrggbbaa) or Color(r,g,b,a). Default: #999999"}}},
                     {"corner_radius", {{"type", "integer"}, {"description", "Corner radius applied to all 4 corners. Default: 0"}}},
@@ -380,7 +380,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}}
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}}
                 }},
                 {"required", {"node_path"}}
             },
@@ -392,7 +392,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Container node relative to scene root"}}},
+                    {"node_path", {{"type", "string"}, {"description", "Path to Container node relative to scene root. Use '' or '.' for the scene root itself."}}},
                     {"separation", {{"type", "integer"}, {"description", "Space between children in pixels (BoxContainer/GridContainer)"}}},
                     {"h_separation", {{"type", "integer"}, {"description", "Horizontal separation for GridContainer"}}},
                     {"v_separation", {{"type", "integer"}, {"description", "Vertical separation for GridContainer"}}},
@@ -411,7 +411,7 @@ const std::vector<ToolDef>& get_all_tools() {
             {
                 {"type", "object"},
                 {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}}
+                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}}
                 }},
                 {"required", {"node_path"}}
             },
@@ -614,7 +614,7 @@ const std::vector<ToolDef>& get_all_tools() {
                     {"node_path", {
                         {"type", "string"},
                         {"description", "Path to the Control node relative to the scene root "
-                                       "(e.g., 'BackpackUI/BtnSearch'). Must be a Control node."}
+                                       "(e.g., 'BackpackUI/BtnSearch'). Use '' or '.' for the scene root itself. Must be a Control node."}
                     }}
                 }},
                 {"required", {"node_path"}}
@@ -633,7 +633,7 @@ const std::vector<ToolDef>& get_all_tools() {
                     {"node_path", {
                         {"type", "string"},
                         {"description", "Path to the Control node relative to the scene root "
-                                       "(e.g., 'BackpackUI/BtnSearch'). Must be a Control node."}
+                                       "(e.g., 'BackpackUI/BtnSearch'). Use '' or '.' for the scene root itself. Must be a Control node."}
                     }}
                 }},
                 {"required", {"node_path"}}
