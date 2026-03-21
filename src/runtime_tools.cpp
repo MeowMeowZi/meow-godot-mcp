@@ -5,7 +5,6 @@
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/os.hpp>
-#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <fstream>
 #include <sstream>
@@ -61,17 +60,7 @@ nlohmann::json run_game(const std::string& mode, const std::string& scene_path) 
         return {{"success", false}, {"error", "scene_path is required when mode is 'custom'"}};
     }
 
-    // Auto-enable file logging so get_game_output works without manual setup (GOUT-01/03)
-    auto* ps = godot::ProjectSettings::get_singleton();
-    if (ps) {
-        bool logging_enabled = ps->get_setting("debug/file_logging/enable_file_logging");
-        if (!logging_enabled) {
-            ps->set_setting("debug/file_logging/enable_file_logging", true);
-            ps->save();
-        }
-    }
-
-    // Reset log position to end of file before launching
+    // Reset log position to end of file before launching (file-based fallback)
     reset_log_position();
 
     // Launch game
