@@ -5,6 +5,7 @@
 - v1.0 MVP -- Phases 1-5 (shipped 2026-03-18)
 - v1.1 UI & Editor Expansion -- Phases 6-11 (shipped 2026-03-19)
 - v1.2 Runtime Interaction Enhancement -- Phases 12-15 (shipped 2026-03-20)
+- v1.3 Developer Experience Polish -- Phases 16-18 (planning)
 
 ## Phases
 
@@ -53,6 +54,40 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 
 </details>
 
+### v1.3 Developer Experience Polish (In Progress)
+
+**Milestone Goal:** 消除 MCP 工具使用中的摩擦点，让 AI 辅助游戏开发的工作流更顺畅。
+
+- [ ] **Phase 16: Game Bridge Auto-Wait** - run_game 自动等待 bridge 连接；根节点路径统一
+- [ ] **Phase 17: Reliable Game Output** - game output 可靠捕获，不依赖 file_logging 刷新时机
+- [ ] **Phase 18: Tool Ergonomics** - set_layout_preset 等工具支持根节点；其他易用性改进
+
+## Phase Details
+
+### Phase 16: Game Bridge Auto-Wait
+**Goal**: run_game 返回时 bridge 已就绪，所有工具统一根节点路径约定
+**Depends on**: Phase 15
+**Requirements**: DX-01, DX-02
+**Success Criteria** (what must be TRUE):
+  1. run_game 带 wait_for_bridge 参数时，返回时 bridge 已连接（或超时报错）
+  2. 所有接受 node_path 的工具统一支持 "" 和 "." 表示场景根节点
+
+### Phase 17: Reliable Game Output
+**Goal**: print() 输出在所有场景下都能被 get_game_output 可靠捕获
+**Depends on**: Phase 16
+**Requirements**: DX-03
+**Success Criteria** (what must be TRUE):
+  1. 游戏中的 print() 调用在 1 秒内可通过 get_game_output 获取
+  2. 不依赖 file_logging 项目设置的刷新时机
+
+### Phase 18: Tool Ergonomics
+**Goal**: 修复工具易用性问题，减少常见操作的调用次数
+**Depends on**: Phase 16
+**Requirements**: DX-04
+**Success Criteria** (what must be TRUE):
+  1. set_layout_preset 可对场景根节点使用
+  2. 常见 UI 构建流程的工具调用次数减少
+
 ## Progress
 
 | Phase | Milestone | Plans | Status | Completed |
@@ -72,3 +107,6 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 | 13. Runtime State Query | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 14. Game Output Enhancement | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
+| 16. Game Bridge Auto-Wait | v1.3 | - | Planned | - |
+| 17. Reliable Game Output | v1.3 | - | Planned | - |
+| 18. Tool Ergonomics | v1.3 | - | Planned | - |
