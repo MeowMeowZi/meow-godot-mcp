@@ -68,6 +68,10 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 **Goal**: run_game 返回时 bridge 已就绪，所有工具统一根节点路径约定
 **Depends on**: Phase 15
 **Requirements**: DX-01, DX-02
+**Plans:** 2 plans
+Plans:
+- [ ] 16-01-PLAN.md — Deferred wait_for_bridge + unified node_path root handling
+- [ ] 16-02-PLAN.md — UAT test suite for DX-01 and DX-02
 **Success Criteria** (what must be TRUE):
   1. run_game 带 wait_for_bridge 参数时，返回时 bridge 已连接（或超时报错）
   2. 所有接受 node_path 的工具统一支持 "" 和 "." 表示场景根节点
@@ -107,6 +111,6 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 | 13. Runtime State Query | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 14. Game Output Enhancement | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
-| 16. Game Bridge Auto-Wait | v1.3 | - | Planned | - |
+| 16. Game Bridge Auto-Wait | v1.3 | 0/2 | In Progress | - |
 | 17. Reliable Game Output | v1.3 | - | Planned | - |
 | 18. Tool Ergonomics | v1.3 | - | Planned | - |
