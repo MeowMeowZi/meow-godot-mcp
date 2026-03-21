@@ -89,12 +89,15 @@ Plans:
   2. 不依赖 file_logging 项目设置的刷新时机
 
 ### Phase 18: Tool Ergonomics
-**Goal**: 修复工具易用性问题，减少常见操作的调用次数
+**Goal**: 验证 DX-04 已被 Phase 16 的 node_path 统一工作覆盖，并用 UAT 测试正式关闭需求
 **Depends on**: Phase 16
 **Requirements**: DX-04
+**Plans:** 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — UAT verification that set_layout_preset works on scene root node
 **Success Criteria** (what must be TRUE):
   1. set_layout_preset 可对场景根节点使用
-  2. 常见 UI 构建流程的工具调用次数减少
+  2. UAT 测试验证 preset 实际生效（anchor 值正确）
 
 ## Progress
 
@@ -117,4 +120,4 @@ Plans:
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 16. Game Bridge Auto-Wait | v1.3 | 2/2 | Complete | 2026-03-22 |
 | 17. Reliable Game Output | v1.3 | Complete    | 2026-03-21 | 2026-03-22 |
-| 18. Tool Ergonomics | v1.3 | - | Planned | - |
+| 18. Tool Ergonomics | v1.3 | 0/1 | Planning | - |
