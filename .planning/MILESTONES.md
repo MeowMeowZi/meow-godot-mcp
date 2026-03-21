@@ -1,5 +1,15 @@
 # Milestones
 
+## v1.3 Developer Experience Polish (Shipped: 2026-03-21)
+
+**Phases completed:** 3 phases, 5 plans, 0 tasks
+
+**Key accomplishments:**
+
+- (none recorded)
+
+---
+
 ## v1.2 Runtime Interaction Enhancement (Shipped: 2026-03-19)
 
 **Phases completed:** 4 phases, 8 plans, 0 tasks
