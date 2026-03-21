@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <queue>
 #include <atomic>
+#include <chrono>
 
 namespace godot {
 class EditorUndoRedoManager;
@@ -82,6 +83,12 @@ private:
     godot::EditorUndoRedoManager* undo_redo = nullptr;
     GodotVersion godot_version{4, 3, 0};
     MeowDebuggerPlugin* game_bridge = nullptr;
+
+    // Bridge wait state (for run_game wait_for_bridge)
+    bool waiting_for_bridge = false;
+    nlohmann::json bridge_wait_id;           // MCP request id
+    nlohmann::json bridge_wait_result;       // run_game result to include in response
+    std::chrono::steady_clock::time_point bridge_wait_deadline;
 };
 
 #endif // MEOW_GODOT_MCP_MCP_SERVER_H

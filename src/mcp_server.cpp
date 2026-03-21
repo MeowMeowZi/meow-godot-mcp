@@ -236,6 +236,28 @@ bool MCPServer::process_message_io(const std::string& line) {
 
 void MCPServer::poll() {
     std::lock_guard<std::recursive_mutex> lock(queue_mutex);
+
+    // Check bridge-wait state (run_game wait_for_bridge)
+    if (waiting_for_bridge) {
+        if (game_bridge && game_bridge->is_game_connected()) {
+            // Bridge connected - send success response
+            bridge_wait_result["bridge_connected"] = true;
+            auto response = mcp::create_tool_result(bridge_wait_id, bridge_wait_result);
+            response_queue.push({response});
+            response_cv.notify_one();
+            waiting_for_bridge = false;
+        } else if (std::chrono::steady_clock::now() >= bridge_wait_deadline) {
+            // Timeout - send result with bridge_connected=false
+            bridge_wait_result["bridge_connected"] = false;
+            bridge_wait_result["timeout"] = true;
+            auto response = mcp::create_tool_result(bridge_wait_id, bridge_wait_result);
+            response_queue.push({response});
+            response_cv.notify_one();
+            waiting_for_bridge = false;
+        }
+        // else: keep waiting (poll() called again next frame)
+    }
+
     while (!request_queue.empty()) {
         auto req = request_queue.front();
         request_queue.pop();
@@ -515,17 +537,41 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         if (tool_name == "run_game") {
             std::string mode;
             std::string scene_path;
+            bool wait_for_bridge = false;
+            int timeout_ms = 10000;
             if (params.contains("arguments") && params["arguments"].is_object()) {
                 auto& args = params["arguments"];
                 if (args.contains("mode") && args["mode"].is_string())
                     mode = args["mode"].get<std::string>();
                 if (args.contains("scene_path") && args["scene_path"].is_string())
                     scene_path = args["scene_path"].get<std::string>();
+                if (args.contains("wait_for_bridge") && args["wait_for_bridge"].is_boolean())
+                    wait_for_bridge = args["wait_for_bridge"].get<bool>();
+                if (args.contains("timeout") && args["timeout"].is_number_integer())
+                    timeout_ms = args["timeout"].get<int>();
             }
             if (mode.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: mode");
             }
-            return mcp::create_tool_result(id, run_game(mode, scene_path));
+            auto result = run_game(mode, scene_path);
+
+            // If wait_for_bridge requested and game launched/running successfully
+            if (wait_for_bridge && result.contains("success") && result["success"].get<bool>()) {
+                // If already running, check bridge immediately
+                bool already_running = result.value("already_running", false);
+                if (already_running && game_bridge && game_bridge->is_game_connected()) {
+                    result["bridge_connected"] = true;
+                    return mcp::create_tool_result(id, result);
+                }
+                // Defer response -- poll() will check bridge connection each frame
+                bridge_wait_id = id;
+                bridge_wait_result = result;
+                bridge_wait_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms);
+                waiting_for_bridge = true;
+                return {{"__deferred", true}};
+            }
+
+            return mcp::create_tool_result(id, result);
         }
 
         if (tool_name == "stop_game") {

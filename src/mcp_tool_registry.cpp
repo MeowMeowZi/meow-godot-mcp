@@ -168,14 +168,18 @@ const std::vector<ToolDef>& get_all_tools() {
         },
         {
             "run_game",
-            "Run the game in debug mode. Modes: 'main' (F5 - main scene), 'current' (F6 - current scene), 'custom' (specify scene_path). If game is already running, returns current status without restarting.",
+            "Run the game in debug mode. Modes: 'main' (F5 - main scene), 'current' (F6 - current scene), 'custom' (specify scene_path). If game is already running, returns current status without restarting. With wait_for_bridge=true, the response is deferred until the game's MCP bridge connects (or timeout). This eliminates the need to manually poll get_game_bridge_status.",
             {
                 {"type", "object"},
                 {"properties", {
                     {"mode", {{"type", "string"}, {"enum", {"main", "current", "custom"}},
                               {"description", "Play mode: main scene, current scene, or custom scene"}}},
                     {"scene_path", {{"type", "string"},
-                                   {"description", "Scene path for custom mode (e.g., res://levels/test.tscn)"}}}
+                                   {"description", "Scene path for custom mode (e.g., res://levels/test.tscn)"}}},
+                    {"wait_for_bridge", {{"type", "boolean"},
+                                        {"description", "If true, wait for the game bridge to connect before returning. Default: false"}}},
+                    {"timeout", {{"type", "integer"},
+                                {"description", "Timeout in milliseconds for wait_for_bridge. Default: 10000 (10 seconds)"}}}
                 }},
                 {"required", {"mode"}}
             },
