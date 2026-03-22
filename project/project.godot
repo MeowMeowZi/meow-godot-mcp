@@ -22,6 +22,10 @@ config/features=PackedStringArray("4.6")
 
 MeowMcpBridge="*uid://c68oyvrc85sp8"
 
+[debug]
+
+file_logging/enable_file_logging=true
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/meow_godot_mcp/plugin.cfg")

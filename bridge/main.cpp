@@ -11,6 +11,11 @@
 #include <string>
 #include <thread>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <tlhelp32.h>
+#endif
+
 // ---------------------------------------------------------------------------
 // Thread-safe message queue
 // ---------------------------------------------------------------------------
@@ -105,6 +110,53 @@ static BridgeConfig parse_args(int argc, char* argv[]) {
 }
 
 // ---------------------------------------------------------------------------
+// Parent process watchdog (Windows)
+// ---------------------------------------------------------------------------
+
+#ifdef _WIN32
+static void parent_watchdog_thread(std::atomic<bool>& running) {
+    // Get parent process handle -- if parent dies, bridge should exit
+    DWORD ppid = 0;
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32 pe;
+        pe.dwSize = sizeof(pe);
+        DWORD my_pid = GetCurrentProcessId();
+        if (Process32First(snapshot, &pe)) {
+            do {
+                if (pe.th32ProcessID == my_pid) {
+                    ppid = pe.th32ParentProcessID;
+                    break;
+                }
+            } while (Process32Next(snapshot, &pe));
+        }
+        CloseHandle(snapshot);
+    }
+
+    if (ppid == 0) return;
+
+    HANDLE parent = OpenProcess(SYNCHRONIZE, FALSE, ppid);
+    if (!parent) {
+        // Parent already gone
+        running.store(false);
+        return;
+    }
+
+    // Wait for parent to exit, checking every 2 seconds
+    while (running.load()) {
+        DWORD result = WaitForSingleObject(parent, 2000);
+        if (result == WAIT_OBJECT_0) {
+            // Parent exited
+            std::cerr << "[godot-mcp-bridge] Parent process exited, shutting down" << std::endl;
+            running.store(false);
+            break;
+        }
+    }
+    CloseHandle(parent);
+}
+#endif
+
+// ---------------------------------------------------------------------------
 // Stdin reader thread
 // ---------------------------------------------------------------------------
 
@@ -157,6 +209,11 @@ int main(int argc, char* argv[]) {
                        std::ref(transport),
                        std::ref(stdin_queue),
                        std::ref(running));
+
+    // Start parent process watchdog (Windows only)
+#ifdef _WIN32
+    std::thread watchdog(parent_watchdog_thread, std::ref(running));
+#endif
 
     // Main relay loop
     while (running.load()) {
@@ -214,6 +271,12 @@ int main(int argc, char* argv[]) {
     if (reader.joinable()) {
         reader.join();
     }
+
+#ifdef _WIN32
+    if (watchdog.joinable()) {
+        watchdog.join();
+    }
+#endif
 
     return 0;
 }

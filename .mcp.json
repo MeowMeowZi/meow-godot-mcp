@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "godot": {
+      "type": "stdio",
+      "command": "D:/Workspace/Godot/godot-mcp-meow/project/addons/meow_godot_mcp/bin/godot-mcp-bridge.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}
