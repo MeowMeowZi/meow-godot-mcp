@@ -81,6 +81,16 @@ nlohmann::json parse_variant_hint(const std::string& value_str, const std::strin
         return {{"type", "nil"}};
     }
 
+    // a2. Resource path: starts with "res://"
+    if (value_str.size() >= 6 && value_str.substr(0, 6) == "res://") {
+        return {{"type", "resource_path"}, {"raw", value_str}};
+    }
+
+    // a3. Inline resource creation: starts with "new:"
+    if (value_str.size() >= 4 && value_str.substr(0, 4) == "new:") {
+        return {{"type", "resource_new"}, {"raw", value_str}};
+    }
+
     // b. Godot constructor format (e.g., "Vector2(100, 200)", "Color(1, 0, 0, 1)")
     if (is_godot_constructor(value_str)) {
         return {{"type", "godot_constructor"}, {"raw", value_str}};
@@ -133,24 +143,141 @@ nlohmann::json parse_variant_hint(const std::string& value_str, const std::strin
 #include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/string_name.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/resource.hpp>
+#include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/core/object.hpp>
+
+// Helper: split "key=value, key2=value2" respecting nested parentheses
+static std::vector<std::pair<std::string, std::string>> parse_inline_properties(const std::string& content) {
+    std::vector<std::pair<std::string, std::string>> result;
+    if (content.empty()) return result;
+
+    int depth = 0;
+    size_t start = 0;
+
+    // Split by commas at depth 0
+    std::vector<std::string> segments;
+    for (size_t i = 0; i < content.size(); ++i) {
+        if (content[i] == '(') ++depth;
+        else if (content[i] == ')') --depth;
+        else if (content[i] == ',' && depth == 0) {
+            segments.push_back(content.substr(start, i - start));
+            start = i + 1;
+        }
+    }
+    segments.push_back(content.substr(start));
+
+    // Parse each "key=value" segment
+    for (auto& seg : segments) {
+        // Trim whitespace
+        size_t s = seg.find_first_not_of(" \t");
+        size_t e = seg.find_last_not_of(" \t");
+        if (s == std::string::npos) continue;
+        seg = seg.substr(s, e - s + 1);
+
+        auto eq_pos = seg.find('=');
+        if (eq_pos == std::string::npos) continue;
+
+        std::string key = seg.substr(0, eq_pos);
+        std::string val = seg.substr(eq_pos + 1);
+
+        // Trim key and value
+        size_t ks = key.find_first_not_of(" \t");
+        size_t ke = key.find_last_not_of(" \t");
+        if (ks != std::string::npos) key = key.substr(ks, ke - ks + 1);
+
+        size_t vs = val.find_first_not_of(" \t");
+        size_t ve = val.find_last_not_of(" \t");
+        if (vs != std::string::npos) val = val.substr(vs, ve - vs + 1);
+
+        if (!key.empty()) {
+            result.push_back({key, val});
+        }
+    }
+    return result;
+}
 
 godot::Variant parse_variant(const std::string& value_str, godot::Node* node, const std::string& property) {
     godot::String godot_str(value_str.c_str());
 
-    // 1. Try Godot's built-in parser (handles "Vector2(1,2)", "Color(1,0,0,1)", etc.)
+    // 1. Resource path: "res://..." -> load via ResourceLoader
+    if (value_str.size() >= 6 && value_str.substr(0, 6) == "res://") {
+        if (godot::ResourceLoader::get_singleton()->exists(godot_str)) {
+            godot::Ref<godot::Resource> res = godot::ResourceLoader::get_singleton()->load(godot_str);
+            if (res.is_valid()) {
+                return godot::Variant(res);
+            }
+        }
+        // Return nil with error context (caller will see property unchanged)
+        return godot::Variant();
+    }
+
+    // 2. Inline resource creation: "new:ClassName(prop=val, ...)"
+    if (value_str.size() >= 4 && value_str.substr(0, 4) == "new:") {
+        std::string spec = value_str.substr(4); // "ClassName(prop=val, ...)"
+
+        // Extract class name and properties content
+        auto paren_pos = spec.find('(');
+        std::string class_name;
+        std::string props_content;
+
+        if (paren_pos != std::string::npos && spec.back() == ')') {
+            class_name = spec.substr(0, paren_pos);
+            props_content = spec.substr(paren_pos + 1, spec.size() - paren_pos - 2);
+        } else {
+            // No parentheses: just a class name like "new:RectangleShape2D"
+            class_name = spec;
+        }
+
+        // Validate class exists and is a Resource subclass
+        godot::StringName gd_class(class_name.c_str());
+        if (!godot::ClassDB::class_exists(gd_class)) {
+            return godot::Variant(); // Unknown class
+        }
+        if (!godot::ClassDB::is_parent_class(gd_class, godot::StringName("Resource"))) {
+            return godot::Variant(); // Not a Resource
+        }
+
+        // Instantiate the resource
+        godot::Variant instance = godot::ClassDB::instantiate(gd_class);
+        godot::Object* obj = instance.operator godot::Object*();
+        if (!obj) {
+            return godot::Variant();
+        }
+
+        // Set properties
+        if (!props_content.empty()) {
+            auto props = parse_inline_properties(props_content);
+            for (auto& [key, val] : props) {
+                // Recursively parse property values (handles Vector2, float, etc.)
+                godot::Variant prop_val = parse_variant(val, nullptr, "");
+                obj->set(godot::StringName(key.c_str()), prop_val);
+            }
+        }
+
+        // Wrap in Ref to keep alive
+        godot::Ref<godot::Resource> ref(godot::Object::cast_to<godot::Resource>(obj));
+        if (ref.is_valid()) {
+            return godot::Variant(ref);
+        }
+        return godot::Variant();
+    }
+
+    // 3. Try Godot's built-in parser (handles "Vector2(1,2)", "Color(1,0,0,1)", etc.)
     godot::Variant parsed = godot::UtilityFunctions::str_to_var(godot_str);
     if (parsed.get_type() != godot::Variant::NIL || value_str == "null") {
         return parsed;
     }
 
-    // 2. Try hex color (str_to_var doesn't handle "#ff0000")
+    // 4. Try hex color (str_to_var doesn't handle "#ff0000")
     if (!value_str.empty() && value_str[0] == '#') {
         if (godot::Color::html_is_valid(godot_str)) {
             return godot::Variant(godot::Color::html(godot_str));
         }
     }
 
-    // 3. Type-aware parsing based on current property type
+    // 5. Type-aware parsing based on current property type
     if (node != nullptr && !property.empty()) {
         godot::Variant current = node->get(godot::StringName(property.c_str()));
         godot::Variant::Type target_type = current.get_type();
@@ -176,12 +303,22 @@ godot::Variant parse_variant(const std::string& value_str, godot::Node* node, co
                 }
                 break;
             }
+            case godot::Variant::OBJECT: {
+                // Target property is a Resource — try loading from path or inline creation
+                if (value_str.size() >= 6 && value_str.substr(0, 6) == "res://") {
+                    if (godot::ResourceLoader::get_singleton()->exists(godot_str)) {
+                        godot::Ref<godot::Resource> res = godot::ResourceLoader::get_singleton()->load(godot_str);
+                        if (res.is_valid()) return godot::Variant(res);
+                    }
+                }
+                break;
+            }
             default:
                 break;
         }
     }
 
-    // 4. Fallback: return as Godot String
+    // 6. Fallback: return as Godot String
     return godot::Variant(godot_str);
 }
 

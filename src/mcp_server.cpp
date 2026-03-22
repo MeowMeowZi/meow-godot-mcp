@@ -13,6 +13,10 @@
 #include "animation_tools.h"
 #include "viewport_tools.h"
 
+#include <godot_cpp/classes/editor_interface.hpp>
+#include "tilemap_tools.h"
+#include "physics_tools.h"
+
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
 
@@ -1179,6 +1183,126 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return result;
             }
             return mcp::create_tool_result(id, result);
+        }
+
+        // --- Phase 20: TileMap Operations ---
+
+        if (tool_name == "set_tilemap_cells") {
+            std::string node_path;
+            bool has_node_path = false;
+            nlohmann::json cells;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string()) {
+                    node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
+                if (args.contains("cells") && args["cells"].is_array())
+                    cells = args["cells"];
+            }
+            if (!has_node_path || cells.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: node_path, cells");
+            }
+            return mcp::create_tool_result(id, set_tilemap_cells(node_path, cells, undo_redo));
+        }
+
+        if (tool_name == "erase_tilemap_cells") {
+            std::string node_path;
+            bool has_node_path = false;
+            nlohmann::json coords;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string()) {
+                    node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
+                if (args.contains("coords") && args["coords"].is_array())
+                    coords = args["coords"];
+            }
+            if (!has_node_path || coords.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: node_path, coords");
+            }
+            return mcp::create_tool_result(id, erase_tilemap_cells(node_path, coords, undo_redo));
+        }
+
+        if (tool_name == "get_tilemap_cell_info") {
+            std::string node_path;
+            bool has_node_path = false;
+            nlohmann::json coords;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string()) {
+                    node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
+                if (args.contains("coords") && args["coords"].is_array())
+                    coords = args["coords"];
+            }
+            if (!has_node_path || coords.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: node_path, coords");
+            }
+            return mcp::create_tool_result(id, get_tilemap_cell_info(node_path, coords));
+        }
+
+        if (tool_name == "get_tilemap_info") {
+            std::string node_path;
+            bool has_node_path = false;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("node_path") && args["node_path"].is_string()) {
+                    node_path = args["node_path"].get<std::string>();
+                    has_node_path = true;
+                }
+            }
+            if (!has_node_path) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameter: node_path");
+            }
+            return mcp::create_tool_result(id, get_tilemap_info(node_path));
+        }
+
+        // --- Phase 21: Collision Shape Quick-Create ---
+
+        if (tool_name == "create_collision_shape") {
+            std::string parent_path, shape_type, name;
+            bool has_parent = false, has_type = false;
+            nlohmann::json shape_params;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("parent_path") && args["parent_path"].is_string()) {
+                    parent_path = args["parent_path"].get<std::string>();
+                    has_parent = true;
+                }
+                if (args.contains("shape_type") && args["shape_type"].is_string()) {
+                    shape_type = args["shape_type"].get<std::string>();
+                    has_type = true;
+                }
+                if (args.contains("shape_params") && args["shape_params"].is_object())
+                    shape_params = args["shape_params"];
+                if (args.contains("name") && args["name"].is_string())
+                    name = args["name"].get<std::string>();
+            }
+            if (!has_parent || !has_type) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: parent_path, shape_type");
+            }
+            return mcp::create_tool_result(id, create_collision_shape(parent_path, shape_type, shape_params, name, undo_redo));
+        }
+
+        if (tool_name == "restart_editor") {
+            bool save = true;
+            if (params.contains("arguments") && params["arguments"].is_object()) {
+                auto& args = params["arguments"];
+                if (args.contains("save") && args["save"].is_boolean())
+                    save = args["save"].get<bool>();
+            }
+            // Send response before restarting
+            auto response = mcp::create_tool_result(id, {{"success", true}, {"message", "Editor restarting..."}});
+            EditorInterface::get_singleton()->restart_editor(save);
+            return response;
         }
 
         return mcp::create_tool_not_found_error(id, tool_name);

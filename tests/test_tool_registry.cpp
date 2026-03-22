@@ -55,7 +55,7 @@ TEST(GodotVersion, LesserPatch) {
 
 TEST(ToolRegistry, HasExactly38Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 44);
+    ASSERT_EQ(tools.size(), 50);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
@@ -92,7 +92,10 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
         "inject_input", "capture_game_viewport", "get_game_bridge_status",
         "click_node", "get_node_rect",
         "get_game_node_property", "eval_in_game", "get_game_scene_tree",
-        "run_test_sequence"
+        "run_test_sequence",
+        "set_tilemap_cells", "erase_tilemap_cells", "get_tilemap_cell_info", "get_tilemap_info",
+        "create_collision_shape",
+        "restart_editor"
     };
     ASSERT_EQ(tools.size(), expected_names.size());
     for (size_t i = 0; i < tools.size(); i++) {
@@ -105,7 +108,7 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 TEST(FilteredTools, Version430Returns38Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 44);
+    EXPECT_EQ(json_tools.size(), 50);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -117,7 +120,7 @@ TEST(FilteredTools, Version420Returns0Tools) {
 TEST(FilteredTools, PermissiveVersionReturns38Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 44);
+    EXPECT_EQ(json_tools.size(), 50);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -141,7 +144,7 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 // --- Tool count tests ---
 
 TEST(ToolCount, Version430Returns38) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 44);
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 50);
 }
 
 TEST(ToolCount, Version420Returns0) {

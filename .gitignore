@@ -31,3 +31,4 @@ config.log
 # Binary output (tracked via .gitkeep)
 project/addons/meow_godot_mcp/bin/*
 !project/addons/meow_godot_mcp/bin/.gitkeep
+.env.local

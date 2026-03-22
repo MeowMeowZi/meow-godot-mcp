@@ -10,6 +10,8 @@
 //
 // Return format examples:
 //   {"type": "nil"}
+//   {"type": "resource_path", "raw": "res://icon.svg"}
+//   {"type": "resource_new", "raw": "new:RectangleShape2D(size=Vector2(100,50))"}
 //   {"type": "godot_constructor", "raw": "Vector2(100,200)"}
 //   {"type": "color_hex", "raw": "#ff0000"}
 //   {"type": "bool", "value": true}

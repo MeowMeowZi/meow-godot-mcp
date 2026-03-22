@@ -164,3 +164,75 @@ TEST(VariantParser, InvalidHexNonHexChars) {
     auto result = parse_variant_hint("#gggggg");
     EXPECT_NE(result["type"], "color_hex");
 }
+
+// --- Resource path detection ---
+
+TEST(VariantParser, ResourcePathDetected) {
+    auto result = parse_variant_hint("res://icon.svg");
+    EXPECT_EQ(result["type"], "resource_path");
+    EXPECT_EQ(result["raw"], "res://icon.svg");
+}
+
+TEST(VariantParser, ResourcePathWithSubdirectory) {
+    auto result = parse_variant_hint("res://textures/player/idle.png");
+    EXPECT_EQ(result["type"], "resource_path");
+    EXPECT_EQ(result["raw"], "res://textures/player/idle.png");
+}
+
+TEST(VariantParser, ResourcePathWithSpaces) {
+    auto result = parse_variant_hint("res://my assets/sprite.png");
+    EXPECT_EQ(result["type"], "resource_path");
+    EXPECT_EQ(result["raw"], "res://my assets/sprite.png");
+}
+
+TEST(VariantParser, ResourcePathTresFile) {
+    auto result = parse_variant_hint("res://tileset.tres");
+    EXPECT_EQ(result["type"], "resource_path");
+    EXPECT_EQ(result["raw"], "res://tileset.tres");
+}
+
+TEST(VariantParser, ResourcePathPrioritizedOverString) {
+    // "res://" should be detected before string fallback
+    auto result = parse_variant_hint("res://audio/bgm.ogg");
+    EXPECT_NE(result["type"], "string");
+    EXPECT_EQ(result["type"], "resource_path");
+}
+
+// --- Inline resource creation detection ---
+
+TEST(VariantParser, ResourceNewDetected) {
+    auto result = parse_variant_hint("new:RectangleShape2D(size=Vector2(100,50))");
+    EXPECT_EQ(result["type"], "resource_new");
+    EXPECT_EQ(result["raw"], "new:RectangleShape2D(size=Vector2(100,50))");
+}
+
+TEST(VariantParser, ResourceNewCircleShape) {
+    auto result = parse_variant_hint("new:CircleShape2D(radius=25)");
+    EXPECT_EQ(result["type"], "resource_new");
+    EXPECT_EQ(result["raw"], "new:CircleShape2D(radius=25)");
+}
+
+TEST(VariantParser, ResourceNewNoProperties) {
+    auto result = parse_variant_hint("new:RectangleShape2D");
+    EXPECT_EQ(result["type"], "resource_new");
+    EXPECT_EQ(result["raw"], "new:RectangleShape2D");
+}
+
+TEST(VariantParser, ResourceNewEmptyParens) {
+    auto result = parse_variant_hint("new:CapsuleShape2D()");
+    EXPECT_EQ(result["type"], "resource_new");
+    EXPECT_EQ(result["raw"], "new:CapsuleShape2D()");
+}
+
+TEST(VariantParser, ResourceNewMultipleProperties) {
+    auto result = parse_variant_hint("new:CapsuleShape2D(radius=10, height=40)");
+    EXPECT_EQ(result["type"], "resource_new");
+    EXPECT_EQ(result["raw"], "new:CapsuleShape2D(radius=10, height=40)");
+}
+
+TEST(VariantParser, ResourceNewPrioritizedOverConstructor) {
+    // "new:" prefix should be detected before godot_constructor
+    auto result = parse_variant_hint("new:BoxShape3D(size=Vector3(1,2,3))");
+    EXPECT_NE(result["type"], "godot_constructor");
+    EXPECT_EQ(result["type"], "resource_new");
+}

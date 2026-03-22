@@ -48,7 +48,9 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"properties", {
                     {"node_path", {{"type", "string"}, {"description", "Path to the target node relative to scene root (e.g., 'Player', 'Player/Sprite2D'). Use '' or '.' for the scene root itself."}}},
                     {"property", {{"type", "string"}, {"description", "Property name in snake_case (e.g., position, rotation_degrees, visible, modulate, name)"}}},
-                    {"value", {{"type", "string"}, {"description", "Property value as string. Auto-parsed: 'Vector2(100,200)', 'Color(1,0,0,1)', '#ff0000', '42', '3.14', 'true', 'false'"}}}
+                    {"value", {{"type", "string"}, {"description", "Property value as string. Auto-parsed: 'Vector2(100,200)', 'Color(1,0,0,1)', '#ff0000', '42', '3.14', 'true', 'false'. "
+                                                                  "For resource properties: 'res://path/to/resource.png' loads from disk. "
+                                                                  "'new:ClassName(prop=val)' creates inline (e.g., 'new:RectangleShape2D(size=Vector2(100,50))', 'new:CircleShape2D(radius=25)')."}}}
                 }},
                 {"required", {"node_path", "property", "value"}}
             },
@@ -732,6 +734,134 @@ const std::vector<ToolDef>& get_all_tools() {
                     }}
                 }},
                 {"required", {"steps"}}
+            },
+            {4, 3, 0}
+        },
+        // --- Phase 20: TileMap Operations ---
+        {
+            "set_tilemap_cells",
+            "Batch-place tiles on a TileMapLayer at specified grid coordinates. "
+            "The TileMapLayer must have a TileSet assigned. Supports undo/redo.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to TileMapLayer node relative to scene root"}}},
+                    {"cells", {
+                        {"type", "array"},
+                        {"description", "Array of tiles to place"},
+                        {"items", {
+                            {"type", "object"},
+                            {"properties", {
+                                {"x", {{"type", "integer"}, {"description", "Grid x coordinate"}}},
+                                {"y", {{"type", "integer"}, {"description", "Grid y coordinate"}}},
+                                {"source_id", {{"type", "integer"}, {"description", "TileSet source ID (usually 0 for the first atlas)"}}},
+                                {"atlas_x", {{"type", "integer"}, {"description", "Atlas tile x coordinate within the source"}}},
+                                {"atlas_y", {{"type", "integer"}, {"description", "Atlas tile y coordinate within the source"}}},
+                                {"alternative_tile", {{"type", "integer"}, {"description", "Alternative tile ID (default: 0)"}}}
+                            }},
+                            {"required", {"x", "y", "source_id", "atlas_x", "atlas_y"}}
+                        }}
+                    }}
+                }},
+                {"required", {"node_path", "cells"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "erase_tilemap_cells",
+            "Batch-erase tiles from a TileMapLayer at specified grid coordinates. "
+            "Already-empty cells are skipped. Supports undo/redo.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to TileMapLayer node relative to scene root"}}},
+                    {"coords", {
+                        {"type", "array"},
+                        {"description", "Array of grid coordinates to erase"},
+                        {"items", {
+                            {"type", "object"},
+                            {"properties", {
+                                {"x", {{"type", "integer"}, {"description", "Grid x coordinate"}}},
+                                {"y", {{"type", "integer"}, {"description", "Grid y coordinate"}}}
+                            }},
+                            {"required", {"x", "y"}}
+                        }}
+                    }}
+                }},
+                {"required", {"node_path", "coords"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_tilemap_cell_info",
+            "Query tile information at specified grid coordinates on a TileMapLayer. "
+            "Returns source_id, atlas coordinates, and whether the cell is empty.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to TileMapLayer node relative to scene root"}}},
+                    {"coords", {
+                        {"type", "array"},
+                        {"description", "Array of grid coordinates to query"},
+                        {"items", {
+                            {"type", "object"},
+                            {"properties", {
+                                {"x", {{"type", "integer"}, {"description", "Grid x coordinate"}}},
+                                {"y", {{"type", "integer"}, {"description", "Grid y coordinate"}}}
+                            }},
+                            {"required", {"x", "y"}}
+                        }}
+                    }}
+                }},
+                {"required", {"node_path", "coords"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "get_tilemap_info",
+            "Query TileMapLayer metadata including tile_set info, used cell count, and bounding rectangle.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {{"type", "string"}, {"description", "Path to TileMapLayer node relative to scene root"}}}
+                }},
+                {"required", {"node_path"}}
+            },
+            {4, 3, 0}
+        },
+        // --- Phase 21: Collision Shape Quick-Create ---
+        {
+            "create_collision_shape",
+            "Create a CollisionShape2D or CollisionShape3D node with a pre-configured shape resource in one step. "
+            "Automatically creates both the collision node and the shape, sets shape parameters, and adds to the scene tree. "
+            "Supports undo/redo.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"parent_path", {{"type", "string"}, {"description", "Path to parent node. The CollisionShape will be added as a child."}}},
+                    {"shape_type", {{"type", "string"}, {"enum", {"rectangle", "circle", "capsule", "segment", "world_boundary", "box", "sphere", "capsule_3d", "cylinder"}},
+                        {"description", "Shape type. 2D: rectangle, circle, capsule, segment, world_boundary. 3D: box, sphere, capsule_3d, cylinder."}}},
+                    {"shape_params", {{"type", "object"}, {"description",
+                        "Shape parameters. rectangle: {width, height}. circle: {radius}. capsule: {radius, height}. "
+                        "segment: {ax, ay, bx, by}. world_boundary: {normal_x, normal_y, distance}. "
+                        "box: {width, height, depth}. sphere: {radius}. capsule_3d: {radius, height}. cylinder: {radius, height}."}}},
+                    {"name", {{"type", "string"}, {"description", "Node name. Defaults to CollisionShape2D or CollisionShape3D."}}}
+                }},
+                {"required", {"parent_path", "shape_type"}}
+            },
+            {4, 3, 0}
+        },
+        // --- Restart Editor ---
+        {
+            "restart_editor",
+            "Restart the Godot editor. Useful after recompiling GDExtension plugins. "
+            "Saves the project before restarting by default.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"save", {{"type", "boolean"}, {"description", "Save the project before restarting. Default: true"}}}
+                }},
+                {"required", nlohmann::json::array()}
             },
             {4, 3, 0}
         }
