@@ -80,7 +80,7 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
 
 **Milestone Goal:** From toolbox to intelligent workbench -- AI gets richer context, smarter error recovery, composite operations, and guided workflows.
 
-- [ ] **Phase 22: Smart Error Handling** - Tool errors become diagnostic-rich: isError flag, did-you-mean suggestions, recovery guidance
+- [x] **Phase 22: Smart Error Handling** - Tool errors become diagnostic-rich: isError flag, did-you-mean suggestions, recovery guidance (completed 2026-03-24)
 - [ ] **Phase 23: Enriched Resources** - MCP Resources deliver scene context automatically: scripts, signals, node details, file metadata
 - [ ] **Phase 24: Composite Tools** - Multi-step operations as single tools: find_nodes, batch_set_property, create_character, create_ui_panel, duplicate_node
 - [ ] **Phase 25: Prompt Templates** - 8 workflow-oriented prompt templates for game building, debugging, and tool composition
@@ -97,10 +97,10 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
   3. When a tool fails due to missing preconditions (no scene open, game not running, missing parameter), the error tells the AI exactly what to do next (which tool to call, what format to use)
   4. Script parse errors include the offending line number and line content so the AI can fix the exact problem
   5. Every error response includes a `suggested_tools` list the AI can use to recover
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 22-01-PLAN.md -- Core error enrichment infrastructure: isError protocol, Levenshtein fuzzy matching, error categorization, dispatch-layer interception
-- [ ] 22-02-PLAN.md -- Parameter format hints for missing-param errors, script parse error line capture
+- [x] 22-01-PLAN.md -- Core error enrichment infrastructure: isError protocol, Levenshtein fuzzy matching, error categorization, dispatch-layer interception
+- [x] 22-02-PLAN.md -- Parameter format hints for missing-param errors, script parse error line capture
 
 ### Phase 23: Enriched Resources
 **Goal**: AI automatically receives rich scene context (scripts, signals, properties, file metadata) through MCP Resources without calling individual query tools
@@ -161,7 +161,7 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 | 17. Reliable Game Output | v1.3 | 2/2 | Complete | 2026-03-21 |
 | 18. Tool Ergonomics | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 19-21. 2D Game Dev Core | v1.4 | -- | Complete | 2026-03-22 |
-| 22. Smart Error Handling | v1.5 | 0/2 | In progress | - |
+| 22. Smart Error Handling | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 23. Enriched Resources | v1.5 | 0/TBD | Not started | - |
 | 24. Composite Tools | v1.5 | 0/TBD | Not started | - |
 | 25. Prompt Templates | v1.5 | 0/TBD | Not started | - |

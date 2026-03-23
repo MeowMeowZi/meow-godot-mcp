@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: AI 工作流增强
-status: ready_to_plan
-stopped_at: Roadmap created with 4 phases (22-25), ready to plan Phase 22
-last_updated: "2026-03-23T12:00:00.000Z"
+status: executing
+stopped_at: Completed 22-02-PLAN.md (Phase 22 Plan 02)
+last_updated: "2026-03-24T01:52:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 2
 ---
 
 # Project State
@@ -24,24 +24,25 @@ See: .planning/PROJECT.md (updated 2026-03-23)
 ## Current Position
 
 Phase: 22 of 25 (Smart Error Handling)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-23 — Roadmap created for v1.5
+Plan: 2 of 2 in current phase (all complete)
+Status: Executing
+Last activity: 2026-03-24 -- Completed 22-02 (parameter hints + script syntax)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50% (2/4 phases, 2/2 plans in Phase 22)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0 (v1.5)
-- Average duration: --
-- Total execution time: 0 hours
+- Total plans completed: 2 (v1.5)
+- Average duration: 11 min
+- Total execution time: 0.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| Phase 22 P01 | 11min | 2 tasks | 8 files |
+| Phase 22 P02 | 11min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -51,6 +52,9 @@ Progress: [░░░░░░░░░░] 0%
 - [v1.5]: 复合工具覆盖两个场景：场景构建（角色+碰撞体+脚本）和 UI 布局构建
 - [v1.5]: Phase 编号从 22 继续（v1.3=18, v1.4=19-21）
 - [v1.5]: Build order: ERR -> RES -> COMP -> PROMPT (dependency-driven)
+- [22-02]: TOOL_PARAM_HINTS static map with 40 tools for parameter format examples
+- [22-02]: check_gdscript_syntax is pure C++ bracket/string nesting tracker, no Godot dependency
+- [22-02]: Script syntax warnings are non-blocking (attach_script still succeeds with warning field)
 
 ### Pending Todos
 
@@ -78,7 +82,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-23 - Roadmap created for v1.5 (Phases 22-25)
-Last session: 2026-03-23
-Stopped at: Roadmap created, ready to plan Phase 22
+Last activity: 2026-03-24 - Completed 22-02 (parameter hints + script syntax checker)
+Last session: 2026-03-24T01:52:00Z
+Stopped at: Completed 22-02-PLAN.md (Phase 22 all plans complete)
 Resume file: None
