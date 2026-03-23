@@ -42,6 +42,18 @@ std::string enrich_unknown_class(const std::string& error_msg, const std::string
 // to INVALID_PARAMS error messages (ERR-04)
 std::string enrich_missing_params(const std::string& error_msg, const std::string& tool_name);
 
+// Script syntax error detection result (ERR-08)
+struct ScriptErrorInfo {
+    bool has_error;
+    int line_number;        // 1-based, 0 if unknown
+    std::string line_content;
+    std::string error_description;
+};
+
+// Basic GDScript syntax check: finds common errors like
+// mismatched brackets/parens, unterminated strings, bad indentation
+ScriptErrorInfo check_gdscript_syntax(const std::string& source_code);
+
 #ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 // Godot-dependent overload: fetches sibling names / class list from live editor
 // Falls back to pure C++ enrich_error for categories that don't need Godot context

@@ -157,6 +157,11 @@ static std::string enrich_type_mismatch(const std::string& error_msg) {
 }
 
 static std::string enrich_script_error(const std::string& error_msg) {
+    // Check for parse error patterns and provide more specific guidance
+    if (error_msg.find("parse error") != std::string::npos ||
+        error_msg.find("syntax error") != std::string::npos) {
+        return error_msg + " Use read_script to view the full source code, then use edit_script to fix the specific line.";
+    }
     return error_msg + " Use list_project_files to see available files in the project. Script paths must start with res:// (e.g. res://scripts/player.gd).";
 }
 
@@ -324,6 +329,140 @@ std::string enrich_missing_params(const std::string& error_msg, const std::strin
         return error_msg + " " + it->second;
     }
     return error_msg;
+}
+
+// --- GDScript basic syntax checker (ERR-08) ---
+
+ScriptErrorInfo check_gdscript_syntax(const std::string& source_code) {
+    if (source_code.empty()) {
+        return {false, 0, "", ""};
+    }
+
+    // Split into lines
+    std::vector<std::string> lines;
+    std::string current_line;
+    for (size_t i = 0; i < source_code.size(); ++i) {
+        if (source_code[i] == '\n') {
+            lines.push_back(current_line);
+            current_line.clear();
+        } else if (source_code[i] != '\r') {
+            current_line += source_code[i];
+        }
+    }
+    if (!current_line.empty()) {
+        lines.push_back(current_line);
+    }
+
+    // Track bracket/paren/brace nesting
+    int paren_depth = 0, bracket_depth = 0, brace_depth = 0;
+    int last_open_paren_line = 0, last_open_bracket_line = 0, last_open_brace_line = 0;
+    bool in_multiline_string = false;
+
+    for (size_t i = 0; i < lines.size(); ++i) {
+        const std::string& line = lines[i];
+
+        // Check for multiline string delimiters (triple-quote)
+        {
+            size_t pos = 0;
+            while (pos < line.size()) {
+                if (pos + 2 < line.size() && line[pos] == '"' && line[pos+1] == '"' && line[pos+2] == '"') {
+                    in_multiline_string = !in_multiline_string;
+                    pos += 3;
+                } else {
+                    pos++;
+                }
+            }
+        }
+
+        if (in_multiline_string) continue;
+
+        // Check for unterminated string on this line
+        bool in_string = false;
+        bool in_single_string = false;
+        bool escaped = false;
+
+        for (size_t j = 0; j < line.size(); ++j) {
+            char c = line[j];
+
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+
+            if (c == '\\') {
+                if (in_string || in_single_string) {
+                    escaped = true;
+                }
+                continue;
+            }
+
+            // Handle # comment (outside strings)
+            if (!in_string && !in_single_string && c == '#') {
+                break; // rest of line is comment
+            }
+
+            if (c == '"' && !in_single_string) {
+                in_string = !in_string;
+            } else if (c == '\'' && !in_string) {
+                in_single_string = !in_single_string;
+            }
+
+            if (!in_string && !in_single_string) {
+                if (c == '(') { paren_depth++; last_open_paren_line = static_cast<int>(i) + 1; }
+                else if (c == ')') { paren_depth--; }
+                else if (c == '[') { bracket_depth++; last_open_bracket_line = static_cast<int>(i) + 1; }
+                else if (c == ']') { bracket_depth--; }
+                else if (c == '{') { brace_depth++; last_open_brace_line = static_cast<int>(i) + 1; }
+                else if (c == '}') { brace_depth--; }
+
+                if (paren_depth < 0) {
+                    return {true, static_cast<int>(i) + 1, line, "Unmatched closing parenthesis"};
+                }
+                if (bracket_depth < 0) {
+                    return {true, static_cast<int>(i) + 1, line, "Unmatched closing bracket"};
+                }
+                if (brace_depth < 0) {
+                    return {true, static_cast<int>(i) + 1, line, "Unmatched closing brace"};
+                }
+            }
+        }
+
+        // Check for unterminated string literal on this line
+        if (in_string) {
+            return {true, static_cast<int>(i) + 1, line, "Unterminated string literal"};
+        }
+        if (in_single_string) {
+            return {true, static_cast<int>(i) + 1, line, "Unterminated string literal"};
+        }
+    }
+
+    // Check for unterminated multiline string
+    if (in_multiline_string) {
+        return {true, static_cast<int>(lines.size()), lines.empty() ? "" : lines.back(),
+                "Unterminated multiline string (missing closing \"\"\")"};
+    }
+
+    // Check for unclosed brackets at end of file
+    if (paren_depth > 0) {
+        return {true, last_open_paren_line,
+                (last_open_paren_line > 0 && last_open_paren_line <= static_cast<int>(lines.size()))
+                    ? lines[last_open_paren_line - 1] : "",
+                "Unclosed parenthesis"};
+    }
+    if (bracket_depth > 0) {
+        return {true, last_open_bracket_line,
+                (last_open_bracket_line > 0 && last_open_bracket_line <= static_cast<int>(lines.size()))
+                    ? lines[last_open_bracket_line - 1] : "",
+                "Unclosed bracket"};
+    }
+    if (brace_depth > 0) {
+        return {true, last_open_brace_line,
+                (last_open_brace_line > 0 && last_open_brace_line <= static_cast<int>(lines.size()))
+                    ? lines[last_open_brace_line - 1] : "",
+                "Unclosed brace"};
+    }
+
+    return {false, 0, "", ""};
 }
 
 // --- Godot-dependent section ---

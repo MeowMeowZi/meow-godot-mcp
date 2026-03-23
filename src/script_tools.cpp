@@ -1,4 +1,5 @@
 #include "script_tools.h"
+#include "error_enrichment.h"
 #include <sstream>
 #include <algorithm>
 
@@ -202,7 +203,18 @@ nlohmann::json write_script(const std::string& path, const std::string& content)
     // (create_node, attach_script) run shortly after. The file is written
     // to disk; the editor will pick it up on next filesystem scan.
 
-    return {{"success", true}, {"path", path}};
+    nlohmann::json result = {{"success", true}, {"path", path}};
+
+    // ERR-08: Basic syntax check on written content
+    auto syntax_check = check_gdscript_syntax(content);
+    if (syntax_check.has_error) {
+        result["warning"] = "Potential syntax error at line "
+            + std::to_string(syntax_check.line_number)
+            + ": " + syntax_check.error_description
+            + ". Line content: \"" + syntax_check.line_content + "\"";
+    }
+
+    return result;
 }
 
 nlohmann::json edit_script(const std::string& path, const std::string& operation,
@@ -291,7 +303,7 @@ nlohmann::json attach_script(const std::string& node_path, const std::string& sc
     script.instantiate();
     script->set_source_code(source);
     script->set_path(gd_script_path);
-    script->reload();
+    Error reload_err = script->reload();
 
     if (!script.is_valid()) {
         return {{"error", "Failed to create script: " + script_path}};
@@ -306,7 +318,25 @@ nlohmann::json attach_script(const std::string& node_path, const std::string& sc
     undo_redo->add_undo_method(node, "set_script", old_script);
     undo_redo->commit_action();
 
-    return {{"success", true}, {"node_path", node_path}, {"script_path", script_path}};
+    nlohmann::json result = {{"success", true}, {"node_path", node_path}, {"script_path", script_path}};
+
+    // ERR-08: Check for parse errors after reload
+    if (reload_err != OK) {
+        std::string source_str(source.utf8().get_data());
+        auto syntax_check = check_gdscript_syntax(source_str);
+
+        std::string warning_msg = "Script has parse errors";
+        if (syntax_check.has_error && syntax_check.line_number > 0) {
+            warning_msg += " at line " + std::to_string(syntax_check.line_number)
+                        + ": " + syntax_check.error_description
+                        + ". Line content: \"" + syntax_check.line_content + "\"";
+        }
+        warning_msg += ". The script was attached but may not function correctly."
+                       " Use read_script to view the full source and edit_script to fix the error.";
+        result["warning"] = warning_msg;
+    }
+
+    return result;
 }
 
 nlohmann::json detach_script(const std::string& node_path,

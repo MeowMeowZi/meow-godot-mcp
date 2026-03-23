@@ -286,3 +286,88 @@ TEST(MissingParams, UnknownToolReturnsOriginalMessageUnchanged) {
     auto result = enrich_missing_params("Missing required parameter: foo", "nonexistent_tool_xyz");
     EXPECT_EQ(result, "Missing required parameter: foo");
 }
+
+// ========================================================================
+// check_gdscript_syntax tests (ERR-08: script parse error line detection)
+// ========================================================================
+
+TEST(ScriptSyntax, ValidScript) {
+    auto result = check_gdscript_syntax("extends Node\n\nfunc _ready():\n\tpass\n");
+    EXPECT_FALSE(result.has_error);
+}
+
+TEST(ScriptSyntax, UnclosedParen) {
+    auto result = check_gdscript_syntax("extends Node\n\nfunc _ready():\n\tvar x = foo(\n");
+    EXPECT_TRUE(result.has_error);
+    EXPECT_EQ(result.line_number, 4);
+    EXPECT_NE(result.error_description.find("parenthesis"), std::string::npos);
+}
+
+TEST(ScriptSyntax, ExtraClosingBracket) {
+    auto result = check_gdscript_syntax("extends Node\n\nfunc _ready():\n\tvar x = [1, 2]]\n");
+    EXPECT_TRUE(result.has_error);
+    EXPECT_EQ(result.line_number, 4);
+}
+
+TEST(ScriptSyntax, EmptyScript) {
+    auto result = check_gdscript_syntax("");
+    EXPECT_FALSE(result.has_error);
+}
+
+TEST(ScriptSyntax, UnterminatedString) {
+    auto result = check_gdscript_syntax("extends Node\n\nfunc _ready():\n\tvar s = \"hello\n");
+    EXPECT_TRUE(result.has_error);
+    EXPECT_EQ(result.line_number, 4);
+    EXPECT_NE(result.error_description.find("string"), std::string::npos);
+}
+
+TEST(ScriptSyntax, MatchedBracketsAndParens) {
+    auto result = check_gdscript_syntax(
+        "extends Node\n"
+        "\n"
+        "func _ready():\n"
+        "\tvar d = {\"key\": [1, 2, 3]}\n"
+        "\tvar v = Vector2(100, 200)\n"
+    );
+    EXPECT_FALSE(result.has_error);
+}
+
+TEST(ScriptSyntax, UnclosedBrace) {
+    auto result = check_gdscript_syntax("extends Node\n\nfunc _ready():\n\tvar d = {\n");
+    EXPECT_TRUE(result.has_error);
+    EXPECT_EQ(result.line_number, 4);
+    EXPECT_NE(result.error_description.find("brace"), std::string::npos);
+}
+
+TEST(ScriptSyntax, CommentIgnoresSymbols) {
+    // Brackets in comments should not affect nesting
+    auto result = check_gdscript_syntax(
+        "extends Node\n"
+        "# This has unmatched ( [ { but it's a comment\n"
+        "func _ready():\n"
+        "\tpass\n"
+    );
+    EXPECT_FALSE(result.has_error);
+}
+
+TEST(ScriptSyntax, StringIgnoresSymbols) {
+    // Brackets inside strings should not affect nesting
+    auto result = check_gdscript_syntax(
+        "extends Node\n"
+        "\n"
+        "func _ready():\n"
+        "\tvar s = \"this has ( unmatched [ brackets\"\n"
+    );
+    EXPECT_FALSE(result.has_error);
+}
+
+TEST(ScriptSyntax, EscapedQuoteInString) {
+    // Escaped quote should not terminate the string
+    auto result = check_gdscript_syntax(
+        "extends Node\n"
+        "\n"
+        "func _ready():\n"
+        "\tvar s = \"he said \\\"hello\\\"\"\n"
+    );
+    EXPECT_FALSE(result.has_error);
+}
