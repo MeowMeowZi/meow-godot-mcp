@@ -24,6 +24,56 @@
 
 using namespace godot;
 
+// Helper: extract arguments object from params, returns empty object if missing
+static inline const nlohmann::json& get_args(const nlohmann::json& params) {
+    static const nlohmann::json empty_obj = nlohmann::json::object();
+    if (params.contains("arguments") && params["arguments"].is_object()) {
+        return params["arguments"];
+    }
+    return empty_obj;
+}
+
+// Helper: extract string parameter from JSON, returns empty string if missing/wrong type
+static inline std::string get_string(const nlohmann::json& obj, const char* key) {
+    if (obj.contains(key) && obj[key].is_string()) {
+        return obj[key].get<std::string>();
+    }
+    return {};
+}
+
+// Helper: extract int parameter from JSON, returns default_val if missing/wrong type
+static inline int get_int(const nlohmann::json& obj, const char* key, int default_val = 0) {
+    if (obj.contains(key) && obj[key].is_number_integer()) {
+        return obj[key].get<int>();
+    }
+    return default_val;
+}
+
+// Helper: extract bool parameter from JSON, returns default_val if missing/wrong type
+static inline bool get_bool(const nlohmann::json& obj, const char* key, bool default_val = false) {
+    if (obj.contains(key) && obj[key].is_boolean()) {
+        return obj[key].get<bool>();
+    }
+    return default_val;
+}
+
+// Helper: extract double parameter from JSON, returns default_val if missing/wrong type
+static inline double get_double(const nlohmann::json& obj, const char* key, double default_val = 0.0) {
+    if (obj.contains(key) && obj[key].is_number()) {
+        return obj[key].get<double>();
+    }
+    return default_val;
+}
+
+// Helper: serialize JSON and send over TCP peer
+static void send_json(const Ref<StreamPeerTCP>& peer, const nlohmann::json& json_data) {
+    std::string json_str = json_data.dump() + "\n";
+    PackedByteArray data;
+    data.resize(static_cast<int64_t>(json_str.size()));
+    memcpy(data.ptrw(), json_str.data(), json_str.size());
+    peer->put_data(data);
+}
+
 MCPServer::MCPServer()
     : initialized(false), port(6800) {
 }
@@ -99,12 +149,9 @@ void MCPServer::stop() {
     // Clear game bridge reference
     game_bridge = nullptr;
 
-    // Clear queues
-    {
-        std::lock_guard<std::recursive_mutex> lock(queue_mutex);
-        while (!request_queue.empty()) request_queue.pop();
-        while (!response_queue.empty()) response_queue.pop();
-    }
+    // Clear queues (no lock needed -- IO thread already joined)
+    while (!request_queue.empty()) request_queue.pop();
+    while (!response_queue.empty()) response_queue.pop();
 }
 
 bool MCPServer::is_running() const {
@@ -155,11 +202,7 @@ void MCPServer::io_thread_func() {
                 while (!response_queue.empty()) {
                     auto resp = response_queue.front();
                     response_queue.pop();
-                    std::string json_str = resp.response.dump() + "\n";
-                    PackedByteArray data;
-                    data.resize(static_cast<int64_t>(json_str.size()));
-                    memcpy(data.ptrw(), json_str.data(), json_str.size());
-                    client_peer->put_data(data);
+                    send_json(client_peer, resp.response);
                 }
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -194,11 +237,7 @@ void MCPServer::io_thread_func() {
                     while (!response_queue.empty()) {
                         auto resp = response_queue.front();
                         response_queue.pop();
-                        std::string json_str = resp.response.dump() + "\n";
-                        PackedByteArray resp_data;
-                        resp_data.resize(static_cast<int64_t>(json_str.size()));
-                        memcpy(resp_data.ptrw(), json_str.data(), json_str.size());
-                        client_peer->put_data(resp_data);
+                        send_json(client_peer, resp.response);
                     }
                 }
             }
@@ -212,11 +251,7 @@ bool MCPServer::process_message_io(const std::string& line) {
     if (!result.success) {
         // Send error response directly (no Godot API calls needed)
         if (client_peer.is_valid()) {
-            std::string json_str = result.error_response.dump() + "\n";
-            PackedByteArray data;
-            data.resize(static_cast<int64_t>(json_str.size()));
-            memcpy(data.ptrw(), json_str.data(), json_str.size());
-            client_peer->put_data(data);
+            send_json(client_peer, result.error_response);
         }
         return true;
     }
@@ -361,42 +396,22 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_scene_tree") {
-            // Extract optional arguments
-            int max_depth = -1;  // unlimited
-            bool include_properties = true;
-            std::string root_path;
-
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("max_depth") && args["max_depth"].is_number_integer()) {
-                    max_depth = args["max_depth"].get<int>();
-                }
-                if (args.contains("include_properties") && args["include_properties"].is_boolean()) {
-                    include_properties = args["include_properties"].get<bool>();
-                }
-                if (args.contains("root_path") && args["root_path"].is_string()) {
-                    root_path = args["root_path"].get<std::string>();
-                }
-            }
-
+            auto& args = get_args(params);
+            int max_depth = get_int(args, "max_depth", -1);
+            bool include_properties = get_bool(args, "include_properties", true);
+            std::string root_path = get_string(args, "root_path");
             nlohmann::json result = get_scene_tree(max_depth, include_properties, root_path);
             return mcp::create_tool_result(id, result);
         }
 
         if (tool_name == "create_node") {
-            std::string type, parent_path, node_name;
+            auto& args = get_args(params);
+            std::string type = get_string(args, "type");
+            std::string parent_path = get_string(args, "parent_path");
+            std::string node_name = get_string(args, "name");
             nlohmann::json properties;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("type") && args["type"].is_string())
-                    type = args["type"].get<std::string>();
-                if (args.contains("parent_path") && args["parent_path"].is_string())
-                    parent_path = args["parent_path"].get<std::string>();
-                if (args.contains("name") && args["name"].is_string())
-                    node_name = args["name"].get<std::string>();
-                if (args.contains("properties") && args["properties"].is_object())
-                    properties = args["properties"];
-            }
+            if (args.contains("properties") && args["properties"].is_object())
+                properties = args["properties"];
             if (type.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: type");
             }
@@ -404,19 +419,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "set_node_property") {
-            std::string node_path, property, value;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                if (args.contains("property") && args["property"].is_string())
-                    property = args["property"].get<std::string>();
-                if (args.contains("value") && args["value"].is_string())
-                    value = args["value"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
+            std::string property = get_string(args, "property");
+            std::string value = get_string(args, "value");
             if (!has_node_path || property.empty() || value.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: node_path, property, value");
             }
@@ -424,15 +431,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "delete_node") {
-            std::string node_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
@@ -440,12 +441,8 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "read_script") {
-            std::string path;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("path") && args["path"].is_string())
-                    path = args["path"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string path = get_string(args, "path");
             if (path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
             }
@@ -453,14 +450,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "write_script") {
-            std::string path, content;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("path") && args["path"].is_string())
-                    path = args["path"].get<std::string>();
-                if (args.contains("content") && args["content"].is_string())
-                    content = args["content"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string path = get_string(args, "path");
+            std::string content = get_string(args, "content");
             if (path.empty() || content.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: path, content");
             }
@@ -468,21 +460,12 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "edit_script") {
-            std::string path, operation, content;
-            int line = 0, end_line = -1;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("path") && args["path"].is_string())
-                    path = args["path"].get<std::string>();
-                if (args.contains("operation") && args["operation"].is_string())
-                    operation = args["operation"].get<std::string>();
-                if (args.contains("line") && args["line"].is_number_integer())
-                    line = args["line"].get<int>();
-                if (args.contains("content") && args["content"].is_string())
-                    content = args["content"].get<std::string>();
-                if (args.contains("end_line") && args["end_line"].is_number_integer())
-                    end_line = args["end_line"].get<int>();
-            }
+            auto& args = get_args(params);
+            std::string path = get_string(args, "path");
+            std::string operation = get_string(args, "operation");
+            int line = get_int(args, "line");
+            std::string content = get_string(args, "content");
+            int end_line = get_int(args, "end_line", -1);
             if (path.empty() || operation.empty() || line == 0) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: path, operation, line");
             }
@@ -490,17 +473,10 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "attach_script") {
-            std::string node_path, script_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                if (args.contains("script_path") && args["script_path"].is_string())
-                    script_path = args["script_path"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
+            std::string script_path = get_string(args, "script_path");
             if (!has_node_path || script_path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: node_path, script_path");
             }
@@ -508,15 +484,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "detach_script") {
-            std::string node_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
@@ -528,22 +498,14 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_project_settings") {
-            std::string category;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("category") && args["category"].is_string())
-                    category = args["category"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string category = get_string(args, "category");
             return mcp::create_tool_result(id, get_project_settings(category));
         }
 
         if (tool_name == "get_resource_info") {
-            std::string path;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("path") && args["path"].is_string())
-                    path = args["path"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string path = get_string(args, "path");
             if (path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
             }
@@ -551,21 +513,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "run_game") {
-            std::string mode;
-            std::string scene_path;
-            bool wait_for_bridge = false;
-            int timeout_ms = 10000;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("mode") && args["mode"].is_string())
-                    mode = args["mode"].get<std::string>();
-                if (args.contains("scene_path") && args["scene_path"].is_string())
-                    scene_path = args["scene_path"].get<std::string>();
-                if (args.contains("wait_for_bridge") && args["wait_for_bridge"].is_boolean())
-                    wait_for_bridge = args["wait_for_bridge"].get<bool>();
-                if (args.contains("timeout") && args["timeout"].is_number_integer())
-                    timeout_ms = args["timeout"].get<int>();
-            }
+            auto& args = get_args(params);
+            std::string mode = get_string(args, "mode");
+            std::string scene_path = get_string(args, "scene_path");
+            bool wait_for_bridge = get_bool(args, "wait_for_bridge");
+            int timeout_ms = get_int(args, "timeout", 10000);
             if (mode.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: mode");
             }
@@ -595,21 +547,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_game_output") {
-            bool clear_after_read = true;
-            std::string level;
+            auto& args = get_args(params);
+            bool clear_after_read = get_bool(args, "clear_after_read", true);
+            std::string level = get_string(args, "level");
             int64_t since = 0;
-            std::string keyword;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("clear_after_read") && args["clear_after_read"].is_boolean())
-                    clear_after_read = args["clear_after_read"].get<bool>();
-                if (args.contains("level") && args["level"].is_string())
-                    level = args["level"].get<std::string>();
-                if (args.contains("since") && args["since"].is_number_integer())
-                    since = args["since"].get<int64_t>();
-                if (args.contains("keyword") && args["keyword"].is_string())
-                    keyword = args["keyword"].get<std::string>();
-            }
+            if (args.contains("since") && args["since"].is_number_integer())
+                since = args["since"].get<int64_t>();
+            std::string keyword = get_string(args, "keyword");
             // Use debugger-channel buffer when bridge is active (companion forwards log data)
             if (game_bridge && game_bridge->is_game_connected()) {
                 auto result = game_bridge->get_buffered_game_output(clear_after_read, level, since, keyword);
@@ -641,15 +585,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_node_signals") {
-            std::string node_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
@@ -657,18 +595,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "connect_signal") {
-            std::string source_path, signal_name, target_path, method_name;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("source_path") && args["source_path"].is_string())
-                    source_path = args["source_path"].get<std::string>();
-                if (args.contains("signal_name") && args["signal_name"].is_string())
-                    signal_name = args["signal_name"].get<std::string>();
-                if (args.contains("target_path") && args["target_path"].is_string())
-                    target_path = args["target_path"].get<std::string>();
-                if (args.contains("method_name") && args["method_name"].is_string())
-                    method_name = args["method_name"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string source_path = get_string(args, "source_path");
+            std::string signal_name = get_string(args, "signal_name");
+            std::string target_path = get_string(args, "target_path");
+            std::string method_name = get_string(args, "method_name");
             if (source_path.empty() || signal_name.empty() || target_path.empty() || method_name.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: source_path, signal_name, target_path, method_name");
@@ -677,18 +608,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "disconnect_signal") {
-            std::string source_path, signal_name, target_path, method_name;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("source_path") && args["source_path"].is_string())
-                    source_path = args["source_path"].get<std::string>();
-                if (args.contains("signal_name") && args["signal_name"].is_string())
-                    signal_name = args["signal_name"].get<std::string>();
-                if (args.contains("target_path") && args["target_path"].is_string())
-                    target_path = args["target_path"].get<std::string>();
-                if (args.contains("method_name") && args["method_name"].is_string())
-                    method_name = args["method_name"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string source_path = get_string(args, "source_path");
+            std::string signal_name = get_string(args, "signal_name");
+            std::string target_path = get_string(args, "target_path");
+            std::string method_name = get_string(args, "method_name");
             if (source_path.empty() || signal_name.empty() || target_path.empty() || method_name.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: source_path, signal_name, target_path, method_name");
@@ -697,22 +621,14 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "save_scene") {
-            std::string path;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("path") && args["path"].is_string())
-                    path = args["path"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string path = get_string(args, "path");
             return mcp::create_tool_result(id, save_scene(path));
         }
 
         if (tool_name == "open_scene") {
-            std::string path;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("path") && args["path"].is_string())
-                    path = args["path"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string path = get_string(args, "path");
             if (path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
             }
@@ -724,16 +640,10 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "create_scene") {
-            std::string root_type, path, root_name;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("root_type") && args["root_type"].is_string())
-                    root_type = args["root_type"].get<std::string>();
-                if (args.contains("path") && args["path"].is_string())
-                    path = args["path"].get<std::string>();
-                if (args.contains("root_name") && args["root_name"].is_string())
-                    root_name = args["root_name"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string root_type = get_string(args, "root_type");
+            std::string path = get_string(args, "path");
+            std::string root_name = get_string(args, "root_name");
             if (root_type.empty() || path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: root_type, path");
             }
@@ -741,16 +651,10 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "instantiate_scene") {
-            std::string scene_path, parent_path, name;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("scene_path") && args["scene_path"].is_string())
-                    scene_path = args["scene_path"].get<std::string>();
-                if (args.contains("parent_path") && args["parent_path"].is_string())
-                    parent_path = args["parent_path"].get<std::string>();
-                if (args.contains("name") && args["name"].is_string())
-                    name = args["name"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string scene_path = get_string(args, "scene_path");
+            std::string parent_path = get_string(args, "parent_path");
+            std::string name = get_string(args, "name");
             if (scene_path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: scene_path");
             }
@@ -760,17 +664,10 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 7: UI System tools ---
 
         if (tool_name == "set_layout_preset") {
-            std::string node_path, preset;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                if (args.contains("preset") && args["preset"].is_string())
-                    preset = args["preset"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
+            std::string preset = get_string(args, "preset");
             if (!has_node_path || preset.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, preset");
@@ -779,18 +676,12 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "set_theme_override") {
-            std::string node_path;
-            bool has_node_path = false;
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             nlohmann::json overrides;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                if (args.contains("overrides") && args["overrides"].is_object())
-                    overrides = args["overrides"];
-            }
+            if (args.contains("overrides") && args["overrides"].is_object())
+                overrides = args["overrides"];
             if (!has_node_path || overrides.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, overrides");
@@ -799,20 +690,12 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "create_stylebox") {
-            std::string node_path, override_name;
-            bool has_node_path = false;
-            nlohmann::json properties;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                if (args.contains("override_name") && args["override_name"].is_string())
-                    override_name = args["override_name"].get<std::string>();
-                // Collect all arguments as properties (function will read what it needs)
-                properties = args;
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
+            std::string override_name = get_string(args, "override_name");
+            // Collect all arguments as properties (function will read what it needs)
+            nlohmann::json properties = args;
             if (!has_node_path || override_name.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, override_name");
@@ -821,15 +704,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_ui_properties") {
-            std::string node_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
@@ -838,17 +715,10 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "set_container_layout") {
-            std::string node_path;
-            bool has_node_path = false;
-            nlohmann::json layout_params;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                layout_params = args;
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
+            nlohmann::json layout_params = args;
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
@@ -857,15 +727,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_theme_overrides") {
-            std::string node_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
@@ -876,18 +740,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 8: Animation System tools ---
 
         if (tool_name == "create_animation") {
-            std::string animation_name, player_path, parent_path, node_name;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("animation_name") && args["animation_name"].is_string())
-                    animation_name = args["animation_name"].get<std::string>();
-                if (args.contains("player_path") && args["player_path"].is_string())
-                    player_path = args["player_path"].get<std::string>();
-                if (args.contains("parent_path") && args["parent_path"].is_string())
-                    parent_path = args["parent_path"].get<std::string>();
-                if (args.contains("node_name") && args["node_name"].is_string())
-                    node_name = args["node_name"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string animation_name = get_string(args, "animation_name");
+            std::string player_path = get_string(args, "player_path");
+            std::string parent_path = get_string(args, "parent_path");
+            std::string node_name = get_string(args, "node_name");
             if (animation_name.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: animation_name");
@@ -896,18 +753,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "add_animation_track") {
-            std::string player_path, animation_name, track_type, track_path;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("player_path") && args["player_path"].is_string())
-                    player_path = args["player_path"].get<std::string>();
-                if (args.contains("animation_name") && args["animation_name"].is_string())
-                    animation_name = args["animation_name"].get<std::string>();
-                if (args.contains("track_type") && args["track_type"].is_string())
-                    track_type = args["track_type"].get<std::string>();
-                if (args.contains("track_path") && args["track_path"].is_string())
-                    track_path = args["track_path"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string player_path = get_string(args, "player_path");
+            std::string animation_name = get_string(args, "animation_name");
+            std::string track_type = get_string(args, "track_type");
+            std::string track_path = get_string(args, "track_path");
             if (player_path.empty() || animation_name.empty() || track_type.empty() || track_path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: player_path, animation_name, track_type, track_path");
@@ -916,27 +766,14 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "set_keyframe") {
-            std::string player_path, animation_name, action_str, value_str;
-            int track_index = -1;
-            double time = 0.0;
-            double transition = 1.0;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("player_path") && args["player_path"].is_string())
-                    player_path = args["player_path"].get<std::string>();
-                if (args.contains("animation_name") && args["animation_name"].is_string())
-                    animation_name = args["animation_name"].get<std::string>();
-                if (args.contains("track_index") && args["track_index"].is_number_integer())
-                    track_index = args["track_index"].get<int>();
-                if (args.contains("time") && args["time"].is_number())
-                    time = args["time"].get<double>();
-                if (args.contains("action") && args["action"].is_string())
-                    action_str = args["action"].get<std::string>();
-                if (args.contains("value") && args["value"].is_string())
-                    value_str = args["value"].get<std::string>();
-                if (args.contains("transition") && args["transition"].is_number())
-                    transition = args["transition"].get<double>();
-            }
+            auto& args = get_args(params);
+            std::string player_path = get_string(args, "player_path");
+            std::string animation_name = get_string(args, "animation_name");
+            int track_index = get_int(args, "track_index", -1);
+            double time = get_double(args, "time");
+            std::string action_str = get_string(args, "action");
+            std::string value_str = get_string(args, "value");
+            double transition = get_double(args, "transition", 1.0);
             if (player_path.empty() || animation_name.empty() || track_index < 0 || action_str.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: player_path, animation_name, track_index, time, action");
@@ -945,14 +782,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_animation_info") {
-            std::string player_path, animation_name;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("player_path") && args["player_path"].is_string())
-                    player_path = args["player_path"].get<std::string>();
-                if (args.contains("animation_name") && args["animation_name"].is_string())
-                    animation_name = args["animation_name"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string player_path = get_string(args, "player_path");
+            std::string animation_name = get_string(args, "animation_name");
             if (player_path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: player_path");
@@ -961,16 +793,10 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "set_animation_properties") {
-            std::string player_path, animation_name;
-            nlohmann::json props;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("player_path") && args["player_path"].is_string())
-                    player_path = args["player_path"].get<std::string>();
-                if (args.contains("animation_name") && args["animation_name"].is_string())
-                    animation_name = args["animation_name"].get<std::string>();
-                props = args;
-            }
+            auto& args = get_args(params);
+            std::string player_path = get_string(args, "player_path");
+            std::string animation_name = get_string(args, "animation_name");
+            nlohmann::json props = args;
             if (player_path.empty() || animation_name.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: player_path, animation_name");
@@ -981,17 +807,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 9: Viewport Screenshot tools ---
 
         if (tool_name == "capture_viewport") {
-            std::string viewport_type = "2d";
-            int width = 0, height = 0;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("viewport_type") && args["viewport_type"].is_string())
-                    viewport_type = args["viewport_type"].get<std::string>();
-                if (args.contains("width") && args["width"].is_number_integer())
-                    width = args["width"].get<int>();
-                if (args.contains("height") && args["height"].is_number_integer())
-                    height = args["height"].get<int>();
-            }
+            auto& args = get_args(params);
+            std::string viewport_type = get_string(args, "viewport_type");
+            if (viewport_type.empty()) viewport_type = "2d";
+            int width = get_int(args, "width");
+            int height = get_int(args, "height");
             auto result = capture_viewport(viewport_type, width, height);
             // If error, return as regular TextContent
             if (result.contains("error")) {
@@ -1007,10 +827,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 10: Game Bridge tools ---
 
         if (tool_name == "inject_input") {
-            nlohmann::json args;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                args = params["arguments"];
-            }
+            auto& args = get_args(params);
             if (!args.contains("type") || !args["type"].is_string()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: type");
@@ -1022,14 +839,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "capture_game_viewport") {
-            int width = 0, height = 0;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("width") && args["width"].is_number_integer())
-                    width = args["width"].get<int>();
-                if (args.contains("height") && args["height"].is_number_integer())
-                    height = args["height"].get<int>();
-            }
+            auto& args = get_args(params);
+            int width = get_int(args, "width");
+            int height = get_int(args, "height");
             if (!game_bridge) {
                 return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
             }
@@ -1052,15 +864,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 12: Input Injection Enhancement tools ---
 
         if (tool_name == "click_node") {
-            std::string node_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
@@ -1076,15 +882,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_node_rect") {
-            std::string node_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
@@ -1102,14 +902,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 13: Runtime State Query tools ---
 
         if (tool_name == "get_game_node_property") {
-            std::string node_path, property;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string())
-                    node_path = args["node_path"].get<std::string>();
-                if (args.contains("property") && args["property"].is_string())
-                    property = args["property"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            std::string property = get_string(args, "property");
             if (property.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: property");
@@ -1125,12 +920,8 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "eval_in_game") {
-            std::string expression;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("expression") && args["expression"].is_string())
-                    expression = args["expression"].get<std::string>();
-            }
+            auto& args = get_args(params);
+            std::string expression = get_string(args, "expression");
             if (expression.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: expression");
@@ -1146,12 +937,8 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_game_scene_tree") {
-            int max_depth = -1;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("max_depth") && args["max_depth"].is_number_integer())
-                    max_depth = args["max_depth"].get<int>();
-            }
+            auto& args = get_args(params);
+            int max_depth = get_int(args, "max_depth", -1);
             if (!game_bridge) {
                 return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
             }
@@ -1165,12 +952,10 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 15: Integration Testing Toolkit ---
 
         if (tool_name == "run_test_sequence") {
+            auto& args = get_args(params);
             nlohmann::json steps;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("steps") && args["steps"].is_array())
-                    steps = args["steps"];
-            }
+            if (args.contains("steps") && args["steps"].is_array())
+                steps = args["steps"];
             if (steps.empty() || !steps.is_array()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: steps (must be a non-empty array)");
@@ -1188,18 +973,12 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 20: TileMap Operations ---
 
         if (tool_name == "set_tilemap_cells") {
-            std::string node_path;
-            bool has_node_path = false;
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             nlohmann::json cells;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                if (args.contains("cells") && args["cells"].is_array())
-                    cells = args["cells"];
-            }
+            if (args.contains("cells") && args["cells"].is_array())
+                cells = args["cells"];
             if (!has_node_path || cells.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, cells");
@@ -1208,18 +987,12 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "erase_tilemap_cells") {
-            std::string node_path;
-            bool has_node_path = false;
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             nlohmann::json coords;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                if (args.contains("coords") && args["coords"].is_array())
-                    coords = args["coords"];
-            }
+            if (args.contains("coords") && args["coords"].is_array())
+                coords = args["coords"];
             if (!has_node_path || coords.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, coords");
@@ -1228,18 +1001,12 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_tilemap_cell_info") {
-            std::string node_path;
-            bool has_node_path = false;
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             nlohmann::json coords;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-                if (args.contains("coords") && args["coords"].is_array())
-                    coords = args["coords"];
-            }
+            if (args.contains("coords") && args["coords"].is_array())
+                coords = args["coords"];
             if (!has_node_path || coords.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, coords");
@@ -1248,15 +1015,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "get_tilemap_info") {
-            std::string node_path;
-            bool has_node_path = false;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("node_path") && args["node_path"].is_string()) {
-                    node_path = args["node_path"].get<std::string>();
-                    has_node_path = true;
-                }
-            }
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
@@ -1267,24 +1028,15 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         // --- Phase 21: Collision Shape Quick-Create ---
 
         if (tool_name == "create_collision_shape") {
-            std::string parent_path, shape_type, name;
-            bool has_parent = false, has_type = false;
+            auto& args = get_args(params);
+            std::string parent_path = get_string(args, "parent_path");
+            bool has_parent = args.contains("parent_path") && args["parent_path"].is_string();
+            std::string shape_type = get_string(args, "shape_type");
+            bool has_type = args.contains("shape_type") && args["shape_type"].is_string();
             nlohmann::json shape_params;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("parent_path") && args["parent_path"].is_string()) {
-                    parent_path = args["parent_path"].get<std::string>();
-                    has_parent = true;
-                }
-                if (args.contains("shape_type") && args["shape_type"].is_string()) {
-                    shape_type = args["shape_type"].get<std::string>();
-                    has_type = true;
-                }
-                if (args.contains("shape_params") && args["shape_params"].is_object())
-                    shape_params = args["shape_params"];
-                if (args.contains("name") && args["name"].is_string())
-                    name = args["name"].get<std::string>();
-            }
+            if (args.contains("shape_params") && args["shape_params"].is_object())
+                shape_params = args["shape_params"];
+            std::string name = get_string(args, "name");
             if (!has_parent || !has_type) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: parent_path, shape_type");
@@ -1293,12 +1045,8 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         }
 
         if (tool_name == "restart_editor") {
-            bool save = true;
-            if (params.contains("arguments") && params["arguments"].is_object()) {
-                auto& args = params["arguments"];
-                if (args.contains("save") && args["save"].is_boolean())
-                    save = args["save"].get<bool>();
-            }
+            auto& args = get_args(params);
+            bool save = get_bool(args, "save", true);
             // Send response before restarting
             auto response = mcp::create_tool_result(id, {{"success", true}, {"message", "Editor restarting..."}});
             EditorInterface::get_singleton()->restart_editor(save);
