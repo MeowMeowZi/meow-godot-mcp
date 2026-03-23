@@ -112,6 +112,22 @@ nlohmann::json create_tool_result(const nlohmann::json& id, const nlohmann::json
     };
 }
 
+nlohmann::json create_tool_error_result(const nlohmann::json& id, const std::string& error_text) {
+    return {
+        {"jsonrpc", "2.0"},
+        {"id", id},
+        {"result", {
+            {"content", {
+                {
+                    {"type", "text"},
+                    {"text", error_text}
+                }
+            }},
+            {"isError", true}
+        }}
+    };
+}
+
 nlohmann::json create_error_response(const nlohmann::json& id, int code, const std::string& message) {
     return {
         {"jsonrpc", "2.0"},
