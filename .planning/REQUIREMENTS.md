@@ -78,13 +78,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| _(populated by roadmapper)_ | | |
+| ERR-01 | Phase 22 | Pending |
+| ERR-02 | Phase 22 | Pending |
+| ERR-03 | Phase 22 | Pending |
+| ERR-04 | Phase 22 | Pending |
+| ERR-05 | Phase 22 | Pending |
+| ERR-06 | Phase 22 | Pending |
+| ERR-07 | Phase 22 | Pending |
+| ERR-08 | Phase 22 | Pending |
+| RES-01 | Phase 23 | Pending |
+| RES-02 | Phase 23 | Pending |
+| RES-03 | Phase 23 | Pending |
+| COMP-01 | Phase 24 | Pending |
+| COMP-02 | Phase 24 | Pending |
+| COMP-03 | Phase 24 | Pending |
+| COMP-04 | Phase 24 | Pending |
+| COMP-05 | Phase 24 | Pending |
+| PROMPT-01 | Phase 25 | Pending |
+| PROMPT-02 | Phase 25 | Pending |
+| PROMPT-03 | Phase 25 | Pending |
+| PROMPT-04 | Phase 25 | Pending |
+| PROMPT-05 | Phase 25 | Pending |
+| PROMPT-06 | Phase 25 | Pending |
+| PROMPT-07 | Phase 25 | Pending |
+| PROMPT-08 | Phase 25 | Pending |
 
 **Coverage:**
 - v1.5 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- Mapped to phases: 24
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-23*
-*Last updated: 2026-03-23 after initial definition*
+*Last updated: 2026-03-23 after roadmap creation*

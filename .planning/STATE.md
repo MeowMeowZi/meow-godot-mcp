@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: AI 工作流增强
-status: defining_requirements
-stopped_at: Milestone v1.5 started — defining requirements
-last_updated: "2026-03-23T10:00:00.000Z"
+status: ready_to_plan
+stopped_at: Roadmap created with 4 phases (22-25), ready to plan Phase 22
+last_updated: "2026-03-23T12:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,14 +19,29 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** Milestone v1.5 — AI 工作流增强
+**Current focus:** Phase 22 — Smart Error Handling
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-23 — Milestone v1.5 started
+Phase: 22 of 25 (Smart Error Handling)
+Plan: 0 of TBD in current phase
+Status: Ready to plan
+Last activity: 2026-03-23 — Roadmap created for v1.5
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0 (v1.5)
+- Average duration: --
+- Total execution time: 0 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
 
 ## Accumulated Context
 
@@ -34,8 +49,8 @@ Last activity: 2026-03-23 — Milestone v1.5 started
 
 - [v1.5]: Resources 增强优先于 MCP Sampling（覆盖面广、所有客户端支持）
 - [v1.5]: 复合工具覆盖两个场景：场景构建（角色+碰撞体+脚本）和 UI 布局构建
-- [v1.5]: v1.4 (2D tools) 补记到 MILESTONES.md，版本号从 v1.5 继续
 - [v1.5]: Phase 编号从 22 继续（v1.3=18, v1.4=19-21）
+- [v1.5]: Build order: ERR -> RES -> COMP -> PROMPT (dependency-driven)
 
 ### Pending Todos
 
@@ -43,7 +58,9 @@ None yet.
 
 ### Blockers/Concerns
 
-None yet.
+- UndoRedo single-action grouping for composite tools needs prototyping (Phase 24)
+- tools/list payload size must be measured before adding composite tools (budget: 40KB)
+- create_ui_panel declarative JSON schema has no prior art in codebase
 
 ### Quick Tasks Completed
 
@@ -61,7 +78,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-23 - Started milestone v1.5: AI 工作流增强
+Last activity: 2026-03-23 - Roadmap created for v1.5 (Phases 22-25)
 Last session: 2026-03-23
-Stopped at: Defining requirements for v1.5
+Stopped at: Roadmap created, ready to plan Phase 22
 Resume file: None
