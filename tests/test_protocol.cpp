@@ -638,3 +638,33 @@ TEST(ImageToolResult, PreservesStringId) {
     auto response = mcp::create_image_tool_result("req-99", "data", "image/png");
     EXPECT_EQ(response["id"], "req-99");
 }
+
+// --- create_tool_error_result tests ---
+
+TEST(ToolErrorResult, HasIsErrorTrue) {
+    auto response = mcp::create_tool_error_result(1, "some error");
+    EXPECT_TRUE(response["result"]["isError"].get<bool>());
+}
+
+TEST(ToolErrorResult, HasTextContent) {
+    auto response = mcp::create_tool_error_result(1, "some error");
+    auto content = response["result"]["content"];
+    ASSERT_EQ(content.size(), 1);
+    EXPECT_EQ(content[0]["type"], "text");
+    EXPECT_EQ(content[0]["text"], "some error");
+}
+
+TEST(ToolErrorResult, PreservesIntegerId) {
+    auto response = mcp::create_tool_error_result(42, "error msg");
+    EXPECT_EQ(response["id"], 42);
+}
+
+TEST(ToolErrorResult, PreservesStringId) {
+    auto response = mcp::create_tool_error_result("req-123", "error msg");
+    EXPECT_EQ(response["id"], "req-123");
+}
+
+TEST(ToolErrorResult, HasJsonRpc2) {
+    auto response = mcp::create_tool_error_result(1, "test");
+    EXPECT_EQ(response["jsonrpc"], "2.0");
+}
