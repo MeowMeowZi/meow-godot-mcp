@@ -8,19 +8,24 @@
 
 ## 特性
 
-- **38 个 MCP 工具**，覆盖完整编辑器 + 游戏运行时工作流：
+- **50 个 MCP 工具**，覆盖完整编辑器 + 游戏运行时工作流：
   - 场景 CRUD：查询场景树、创建/修改/删除节点（支持 Ctrl+Z 撤销）
   - 场景文件管理：保存/打开/列出/创建场景，实例化 PackedScene
   - 脚本管理：读/写/编辑 GDScript，附加/分离脚本
   - 项目查询：文件列表、项目设置、资源信息
-  - 运行时控制：启动/停止游戏、捕获日志输出
+  - 运行时控制：启动/停止游戏、捕获日志输出、自动等待桥接连接
   - 信号管理：查询/连接/断开节点信号
   - UI 系统：布局预设、主题覆盖、StyleBox 创建、容器配置、UI 属性查询
   - 动画系统：创建动画、添加轨道、关键帧 CRUD、动画属性设置
   - 视口截图：捕获编辑器 2D/3D 视口截图（MCP ImageContent）
-  - 游戏桥接：输入注入（键盘/鼠标/Action）、游戏视口截图、桥接状态查询
+  - 游戏桥接：输入注入（键盘/鼠标/Action）、按路径点击 UI 节点、游戏视口截图
+  - 运行时查询：读取游戏节点属性、执行 GDScript 表达式、获取运行时场景树
+  - 集成测试：批量测试步骤执行与断言
+  - TileMap 操作：批量放置/擦除瓦片、查询瓦片信息
+  - 碰撞形状：一步创建 CollisionShape2D/3D 并配置形状
+  - 资源属性：通过 `res://` 路径加载贴图/音频、`new:ClassName()` 内联创建资源
 - **编辑器 Dock 面板**：实时连接状态、Godot 版本检测、启动/停止/重启控制、一键配置 Claude Code MCP
-- **6 个 Prompt 模板**：创建玩家控制器、设置场景结构、调试物理、创建 UI 界面、构建 UI 布局、设置动画
+- **7 个 Prompt 模板**：创建玩家控制器、设置场景结构、调试物理、创建 UI 界面、构建 UI 布局、设置动画、测试游戏 UI
 - **游戏桥接**：通过 EditorDebuggerPlugin 与运行中的游戏双向通信，注入输入、捕获截图
 - **版本自适应**：运行时检测 Godot 版本，动态启用/禁用对应工具
 - **完整 MCP 协议**：JSON-RPC 2.0、tools、resources、prompts、ImageContent（spec 2025-03-26）
@@ -43,7 +48,7 @@ Godot 编辑器
 
 ### 从 Release 安装（推荐）
 
-1. 从 [Releases](https://gitee.com/MeowMeowZi/meow-godot-mcp/releases) 下载对应平台的 zip
+1. 从 [GitHub Releases](https://github.com/MeowMeowZi/meow-godot-mcp/releases) 或 [Gitee Releases](https://gitee.com/MeowMeowZi/meow-godot-mcp/releases) 下载对应平台的 zip
 2. 解压到 Godot 项目根目录（会创建 `addons/meow_godot_mcp/` 目录）
 3. 打开 Godot → 项目设置 → 插件 → 启用 "Godot MCP Meow"
 
@@ -51,7 +56,7 @@ Godot 编辑器
 
 ```bash
 # 克隆仓库（含 godot-cpp 子模块）
-git clone --recursive https://gitee.com/MeowMeowZi/meow-godot-mcp.git
+git clone --recursive https://github.com/MeowMeowZi/meow-godot-mcp.git
 cd meow-godot-mcp
 
 # 编译 GDExtension 插件
@@ -107,7 +112,7 @@ Bridge 使用标准 stdio 传输，兼容任何支持 MCP 协议的 AI 客户端
 |------|------|
 | `get_scene_tree` | 获取当前场景树结构 |
 | `create_node` | 创建新节点（支持撤销） |
-| `set_node_property` | 设置节点属性（支持撤销） |
+| `set_node_property` | 设置节点属性（支持 `res://` 资源加载和 `new:` 内联创建） |
 | `delete_node` | 删除节点（支持撤销） |
 
 ### 脚本管理（v1.0）
@@ -132,9 +137,9 @@ Bridge 使用标准 stdio 传输，兼容任何支持 MCP 协议的 AI 客户端
 
 | 工具 | 说明 |
 |------|------|
-| `run_game` | 启动游戏（主场景/当前/自定义） |
+| `run_game` | 启动游戏（支持自动等待桥接连接） |
 | `stop_game` | 停止游戏 |
-| `get_game_output` | 获取游戏日志输出 |
+| `get_game_output` | 获取游戏日志输出（支持 level/keyword/since 过滤） |
 | `get_node_signals` | 查询节点信号 |
 | `connect_signal` | 连接信号 |
 | `disconnect_signal` | 断开信号 |
@@ -176,13 +181,50 @@ Bridge 使用标准 stdio 传输，兼容任何支持 MCP 协议的 AI 客户端
 |------|------|
 | `capture_viewport` | 捕获编辑器 2D/3D 视口截图（返回 MCP ImageContent） |
 
-### 游戏桥接（v1.1）
+### 游戏桥接与输入（v1.1 + v1.2）
 
 | 工具 | 说明 |
 |------|------|
 | `inject_input` | 向运行中的游戏注入输入（键盘/鼠标/Action） |
 | `capture_game_viewport` | 捕获运行中游戏的视口截图 |
 | `get_game_bridge_status` | 查询游戏桥接连接状态 |
+| `click_node` | 按节点路径点击运行中游戏的 UI 控件 |
+| `get_node_rect` | 获取 Control 节点的屏幕矩形坐标 |
+
+### 运行时状态查询（v1.2）
+
+| 工具 | 说明 |
+|------|------|
+| `get_game_node_property` | 读取运行中游戏的节点属性 |
+| `eval_in_game` | 在运行中的游戏执行 GDScript 表达式 |
+| `get_game_scene_tree` | 获取运行中游戏的完整场景树 |
+
+### 集成测试（v1.2）
+
+| 工具 | 说明 |
+|------|------|
+| `run_test_sequence` | 执行测试步骤序列并断言结果 |
+
+### TileMap 操作（v1.4）
+
+| 工具 | 说明 |
+|------|------|
+| `set_tilemap_cells` | 批量放置瓦片到指定网格坐标 |
+| `erase_tilemap_cells` | 批量擦除指定坐标的瓦片 |
+| `get_tilemap_cell_info` | 查询指定坐标的瓦片信息 |
+| `get_tilemap_info` | 查询 TileMapLayer 元信息（TileSet、已用格数等） |
+
+### 碰撞形状（v1.4）
+
+| 工具 | 说明 |
+|------|------|
+| `create_collision_shape` | 一步创建 CollisionShape2D/3D 并配置形状（支持 9 种形状类型） |
+
+### 编辑器控制（v1.4）
+
+| 工具 | 说明 |
+|------|------|
+| `restart_editor` | 重启 Godot 编辑器（适用于 DLL 重编译后重载） |
 
 ## 系统要求
 
@@ -194,7 +236,7 @@ Bridge 使用标准 stdio 传输，兼容任何支持 MCP 协议的 AI 客户端
 - C++17, godot-cpp v10+
 - nlohmann/json 3.12.0
 - SCons 构建系统
-- GoogleTest 单元测试 (160 tests)
+- GoogleTest 单元测试 (82 tests) + Python UAT (23 tests)
 
 ## 许可证
 
