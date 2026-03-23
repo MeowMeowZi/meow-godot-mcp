@@ -1,17 +1,17 @@
 # Project Research Summary
 
-**Project:** Godot MCP Meow — v1.1 UI & Editor Expansion
-**Domain:** Godot GDExtension MCP Server Plugin (C++)
-**Researched:** 2026-03-18
-**Confidence:** HIGH (stack and architecture), MEDIUM (input injection and game-side screenshot bridge)
+**Project:** Godot MCP Meow — v1.5 AI Workflow Enhancement
+**Domain:** C++ GDExtension MCP Server Plugin for Godot Engine
+**Researched:** 2026-03-23
+**Confidence:** HIGH
 
 ## Executive Summary
 
-The v1.1 milestone adds five feature areas to an established 18-tool MCP server: UI system tools, animation editing tools, scene file management, input injection, and viewport screenshots. The existing C++ GDExtension architecture — two-process bridge + TCP relay, IO thread + main thread queue, per-module tool functions, `nlohmann::json` returns, `EditorUndoRedoManager` for mutations — extends cleanly to all five areas without any new external dependencies. No new libraries are required; all features use godot-cpp bindings to APIs already present in Godot 4.3+. The tool registry and dispatch chain require only additive modifications. Five new source file pairs and three modified existing files cover the entire v1.1 scope.
+Godot MCP Meow v1.5 is an architectural intelligence upgrade to an existing, battle-tested 50-tool MCP server. The research is unanimous on a key insight: this milestone adds zero new Godot API surface and zero new external libraries. Every v1.5 feature (composite tools, enriched resources, smart error handling, expanded prompts) is implemented by extending existing C++ code patterns within the same stack — C++17, godot-cpp v10+, nlohmann/json 3.12.0, SCons, and GoogleTest. The zero-dependency differentiator is preserved. The recommended implementation order is strict: smart error handling first, then enriched resources, then composite tools, then expanded prompts. This ordering is dependency-driven — errors improve all downstream features, resources validate read-only paths before mutations, composites depend on primitives being stable, and prompts must reference finalized tool names.
 
-The recommended build sequence is: scene file management first (pure `EditorInterface` API, low risk, immediately fills the critical gap where the AI cannot save its own work), then UI tools, then animation tools, and finally the running-game bridge (input injection + game screenshots) which is the most architecturally complex feature. The running-game bridge is the sole feature that requires cross-process communication: the game runs as a separate OS process and neither its viewport nor its `Input` singleton is accessible from the editor plugin. A companion GDScript autoload is the recommended bridge approach, matching what Godot MCP Pro and GoPeak use. The companion autoload serves as shared infrastructure for both game screenshots and input injection, so these two features must be designed together.
+The dominant risk is not technical complexity but architectural discipline. Research identifies three systemic failure modes: (1) composite tools duplicating atomic tool logic instead of calling shared internal functions, causing behavioral divergence over time; (2) the monolithic `handle_request()` dispatcher — already 750-1060 lines — growing to 1500+ lines without refactoring; and (3) enriched resources returning unbounded data that floods the AI context window. Each of these risks has a clear prevention strategy that must be designed into the first phase, not retrofitted. A hard budget constraint must be set before any tool is added: `tools/list` payload must stay under 40KB and individual resource responses under 10KB.
 
-The most important pitfalls to resolve before implementation begins are: (1) `set_anchors_preset()` is silently broken — always use `set_anchors_and_offsets_preset()` instead; (2) animation track NodePaths are relative to the AnimationPlayer's root node, not the player itself — paths must be computed dynamically; (3) running-game screenshots and input injection both cross an OS process boundary, making them a fundamental architectural decision rather than a minor implementation detail; and (4) the synchronous `poll()` loop must be extended to support deferred responses for screenshot capture that requires waiting for `RenderingServer::frame_post_draw`. Addressing all four before writing code prevents major rework.
+The competitive differentiation case for v1.5 is strong. No competitor (Godot MCP Pro, Better Godot MCP, GDAI MCP) offers composite tools with single-action UndoRedo rollback — they all use WebSocket round-trips that create separate undo entries per step. No competitor uses proper MCP Resources for auto-context; they use tools. The `isError: true` error handling pattern, specified in MCP spec 2025-03-26, is absent from all reviewed competitors and is the highest-ROI, lowest-cost feature in the entire v1.5 scope.
 
 ---
 
@@ -19,161 +19,170 @@ The most important pitfalls to resolve before implementation begins are: (1) `se
 
 ### Recommended Stack
 
-No changes to the existing stack. v1.1 is a pure extension of the validated C++17 + godot-cpp v10+ + nlohmann/json + SCons foundation. All 30+ new godot-cpp headers required by v1.1 features have been verified present in `godot-cpp/gen/include/godot_cpp/classes/`. Five new `.cpp` source files are auto-detected by SCons' existing glob pattern. No build system changes are needed.
+**Zero new dependencies.** The existing stack handles all v1.5 requirements. A URI template library (RFC 6570) was explicitly evaluated and rejected — the `godot://node/{path}` scheme uses Level 1 simple variable expansion that requires only ~30 LOC of `std::string::find()` + `substr()`. An error catalog framework was rejected as over-engineering; a static `std::unordered_map<std::string, ErrorInfo>` at ~200 LOC covers all ~50 tools with ~15 error categories. Template engines for prompts were rejected because the existing `PromptDef` lambda pattern already handles `{argument}` substitution.
 
-**Core technologies (unchanged from v1.0):**
-- **C++17 + godot-cpp v10+**: GDExtension plugin — sole implementation language
-- **nlohmann/json 3.12.0**: MCP protocol serialization — all tool return values
-- **SCons**: Build system — auto-detects new `.cpp` files, no changes needed
-- **stdio bridge + TCP relay**: AI client transport — unchanged for v1.1
-- **GoogleTest**: Unit testing — new modules need coverage behind `MEOW_GODOT_MCP_GODOT_ENABLED` guards
+**New source files required (6 files total):**
+- `src/composite_tools.h` / `.cpp` — composite tool implementations (~500-800 LOC)
+- `src/resource_providers.h` / `.cpp` — enriched resource data providers
+- `src/error_diagnostics.h` / `.cpp` — error categorization and enrichment (~200-300 LOC)
 
-**New godot-cpp header groups verified present:**
-- UI: `control.hpp`, `style_box_flat.hpp`, `theme.hpp`, `box_container.hpp`, `grid_container.hpp`, `margin_container.hpp`
-- Animation: `animation.hpp`, `animation_player.hpp`, `animation_mixer.hpp`, `animation_library.hpp`
-- Scene management: `editor_interface.hpp` (already used — new methods only)
-- Input: `input.hpp`, `input_event_key.hpp`, `input_event_mouse_button.hpp`, `input_event_mouse_motion.hpp`
-- Screenshots: `sub_viewport.hpp`, `viewport_texture.hpp`, `image.hpp`, `marshalls.hpp`
+**Core technologies (all unchanged):**
+- **C++17** — language standard, already in use
+- **godot-cpp v10+ (Godot 4.3+)** — GDExtension bindings, already in use
+- **nlohmann/json 3.12.0** — JSON handling, already latest release (2025-04-11)
+- **SCons** — build system; `Glob("src/*.cpp")` auto-detects new files, no SConscript changes needed
+- **GoogleTest** — unit testing; CMakeLists.txt needs new test file entries only
 
 ### Expected Features
 
-The competitive landscape (GoPeak: 95+ tools, Godot MCP Pro: 162 tools, GDAI: ~30 tools) shows every major gap clearly. v1.1 closes all meaningful gaps while maintaining the zero-dependency GDExtension advantage no competitor has. Projected tool count: v1.0 is 18 tools; v1.1 adds ~14-16 for a total of ~32-34.
+**Must have — v1.5 launch (P1):**
+- Smart error handling with `isError: true` flag and node-not-found suggestions — highest ROI, zero dependencies, improves all other features
+- `find_nodes` composite tool — search by type, name pattern, property value; enables batch workflows
+- `batch_set_property` composite tool — most-requested missing feature vs. competitors
+- `create_character` composite tool — highest-visibility feature for new users
+- Enriched `godot://scene_tree` resource with properties, scripts, and signals inline — biggest context improvement
+- 4-5 new prompt templates (platformer, debug crash, tilemap, tool composition guide) — low cost, high discoverability
 
-**Must have (table stakes):**
-- `save_scene` / `open_scene` / `get_open_scenes` — AI currently cannot save its own work; most critical missing capability
-- `get_control_properties` — AI needs Control-specific data (anchors, size flags, theme overrides) to understand UI layouts
-- `set_theme_override` — per-control theme customization without creating full Theme resources
-- `set_layout_preset` (via `set_anchors_and_offsets_preset`) — standard way to position Controls
-- `get_animations` / `get_animation_info` — read-only query of AnimationPlayer state
-- `create_animation` + `add_track` + `insert_keyframe` — programmatic animation creation
-- `capture_editor_viewport` — editor 2D/3D viewport screenshots (no game running needed)
-- `inject_key` / `inject_mouse_click` / `inject_action` — game input for AI playtesting
+**Should have — v1.5.x patches (P2):**
+- `create_ui_panel` composite tool — needed but input schema design is complex
+- Resource templates (`godot://node/{path}`, `godot://script/{path}`) with `resources/templates/list` MCP protocol handler
+- `duplicate_node` composite tool — useful but less common workflow
+- Project structure resource with file metadata
 
-**Should have (competitive differentiators):**
-- `create_new_scene` — AI-driven new scene creation
-- `capture_game_screenshot` — running game screenshots that close the build-test-fix loop
-- `instantiate_scene` (PackedScene) — prefab-style workflows
-- Animation playback control (`play`, `stop`, `seek`) for in-editor preview
-- UI layout builder compound tool — reduces AI round-trips for common UI patterns
-
-**Defer to v1.2+:**
-- Input sequence / macro (timed sequences of inputs)
-- Screenshot comparison / diffing
-- AnimationTree state machine editing (too complex, poor API surface)
-- Gamepad input simulation (low demand signal)
-- Close scene (no public API — proposal #8806 still open)
+**Defer — v2+ (P3):**
+- "Create complete scene from template" composite — very high complexity, needs careful template design
+- Scene diff resource — requires snapshot infrastructure
+- Resource subscriptions (`resources/subscribe`) — spec support exists but marginal value for editor workflows; no major AI client supports it
 
 ### Architecture Approach
 
-All new tools follow the identical pattern as v1.0 tools: free functions in `.h`/`.cpp` module pairs, `MEOW_GODOT_MCP_GODOT_ENABLED` guards for testability, additive entries in `mcp_tool_registry.cpp`, additive `if (tool_name == "...")` branches in `mcp_server.cpp::handle_request()`, and all Godot API calls on the main thread via `poll()`. Three existing files require substantive changes: `mcp_protocol.h/.cpp` needs a `create_image_tool_result()` function for MCP `ImageContent` responses (screenshots require this — text content cannot carry image data), `mcp_server.cpp` needs new dispatch branches, and `mcp_tool_registry.cpp` needs ~12-15 new ToolDef entries.
+The v1.5 architecture is additive: three new module pairs (composite_tools, resource_providers, error_diagnostics) plug into the existing monolithic dispatcher with minimal surface-area changes to mcp_server.cpp. The Godot-free boundary (registry/protocol headers contain no Godot types, enabling GoogleTest without godot-cpp linkage) must be preserved — all Godot-dependent logic lives in `.cpp` files behind `#ifdef MEOW_GODOT_MCP_GODOT_ENABLED`. The if/else dispatch chain in `handle_request()` is a recognized tech debt item but should NOT be refactored in v1.5 — the table-dispatch refactor is a separate concern for v2.0. Error enrichment is implemented as a passive wrapper called after each tool function returns, adding zero overhead on the success path.
 
-**New source file pairs:**
-1. **`ui_tools.h/.cpp`** — Control property inspection, `set_anchors_and_offsets_preset()` layout, per-control theme overrides via `add_theme_*_override()`, StyleBoxFlat creation
-2. **`animation_tools.h/.cpp`** — AnimationPlayer/Library/Animation CRUD, track management (add/remove), keyframe operations (insert/remove), read-only queries
-3. **`editor_tools.h/.cpp`** — Scene file management (save/open/list), editor viewport screenshot capture, editor-side input injection; may split into separate files if it grows beyond ~400 lines
+**Major components (v1.5 additions):**
+1. **composite_tools** — multi-step orchestrators calling existing atomic functions directly (not re-dispatching through MCP); each composite wraps all sub-steps in a single UndoRedo action
+2. **resource_providers** — read-only query functions reusing existing tool modules (scene_tools, signal_tools, script_tools); expose via extended `resources/list` and new `resources/templates/list` handler
+3. **error_diagnostics** — error categorization (`categorize_error`, Godot-free, unit-testable) plus Godot-dependent enrichment (`enrich_error`, adds did-you-mean suggestions and context); wired into dispatcher as a post-call wrapper
+4. **mcp_prompts.cpp (extended)** — 5-8 new PromptDef entries using existing lambda pattern; prompts written after composite tools are finalized to reference accurate tool names
 
-**Modified existing files:**
-4. **`mcp_protocol.cpp`** — New `create_image_tool_result()` function wrapping base64 PNG data as MCP `ImageContent`
-5. **`mcp_server.cpp`** — New dispatch branches, special-case `capture_viewport` to call `create_image_tool_result()`
-6. **`mcp_tool_registry.cpp`** — ~12-15 new ToolDef entries
-
-**New companion component (game-side):**
-7. **Companion GDScript autoload** — Cross-process bridge for running game screenshots and input injection; lives in the game project, not the editor plugin
-
-The screenshot data flow is the only new pattern: `capture_viewport` must call `create_image_tool_result()` instead of `create_tool_result()`. All other tools retain the existing text content path.
+**Data flow for the key new pattern (composite tool):**
+```
+MCP Client -> tools/call "create_character"
+  -> MCPServer::handle_request() dispatch
+    -> composite_tools::create_character()
+      -> scene_mutation::create_node()               (step 1)
+      -> physics_tools::create_collision_shape()     (step 2)
+      -> script_tools::write_script()               (step 3)
+      -> script_tools::attach_script()              (step 4)
+    -> error_diagnostics::enrich_error() (if error)
+  -> mcp::create_tool_result()
+-> MCP Client
+```
 
 ### Critical Pitfalls
 
-1. **Running game is a separate OS process** (Pitfalls 1 and 4) — both game viewport screenshots and input injection require cross-process communication. `get_viewport()` and `Input::parse_input_event()` in the editor process have zero effect on the running game. Verified by all existing Godot MCP implementations that handle screenshots. Architecture decision required before implementing either feature: use a companion GDScript autoload (recommended), EditorDebuggerPlugin IPC, or limit to editor-only scope.
+1. **Composite tool logic duplication** — Composite tools must call existing internal C++ functions (e.g., `create_node()` from scene_mutation.cpp), not reimplement Godot API calls. Divergent implementations will drift on bug fixes. Prevention: design shared internal function boundaries before writing any composite tool.
 
-2. **`set_anchors_preset()` is silently broken** (Pitfall 2) — confirmed broken across Godot 4.0-4.6 in GitHub issues #66651, #67161, #85185, #92487. Always use `set_anchors_and_offsets_preset()`. Anchor presets on Container children have no effect at all — detect parent type and use `size_flags_*` instead.
+2. **Partial failure without rollback** — If a composite tool's step 3 of 5 fails, steps 1-2 have already mutated the scene. The AI retries and creates duplicates. Prevention: validate all inputs upfront before any mutation; wrap the entire composite in one UndoRedo action so rollback is atomic. Start with Option B (per-step UndoRedo, pragmatic) and document the behavior explicitly.
 
-3. **Animation track paths are relative to the AnimationPlayer's root node** (Pitfall 3) — tracks silently animate nothing if the NodePath is computed relative to the AnimationPlayer itself. Use `root_node.get_path_to(target_node)` to compute correct paths. Also: call `track_set_path()` before `track_insert_key()`, and always add animations through `AnimationLibrary` (Godot 4 requirement, Pitfall 9).
+3. **Tool count explosion exceeding context budget** — 50 tools are already ~35KB of schema JSON. Adding 8+ composite tools without removing or shrinking atomic equivalents pushes toward 60KB+. Industry data: 40+ tools across 3 MCP servers consumed 143K of 200K context tokens; Perplexity dropped MCP internally citing 72% context waste (March 2026). Prevention: set hard limit of 40KB for `tools/list` response and measure after each addition. Trim descriptions of existing verbose tools (`inject_input`, `run_test_sequence`).
 
-4. **No `await` in C++ GDExtension** (Pitfall 13) — screenshot capture must wait for `RenderingServer::frame_post_draw` before the image is valid. The synchronous `poll()` model must be extended. Options: flag + next-frame fulfillment in the following `poll()` call, or accept one-frame-stale data (sufficient for most use cases and far simpler to implement).
+4. **Enriched resources returning unbounded data** — A 200-node scene with full script content, all signal connections, and all property details produces 50,000-500,000+ token Resource responses. Prevention: use tiered URIs (compact scene tree by default; detailed node info only via `godot://node/{path}`); enforce 10KB cap per resource response; never include full script source in Resources — return path and line count only.
 
-5. **Image-to-base64 pipeline has multiple failure modes** (Pitfall 10) — `save_png_to_buffer()` crashes on compressed textures; large images exceed MCP buffer limits. Always call `img->decompress()` first, resize to a maximum width, prefer JPEG encoding for smaller payload, and use MCP `ImageContent` type rather than text-embedded base64.
+5. **Prompt templates hardcoding tool names that drift** — Prompt templates reference tool names that change when composite tools supersede atomic tools. No build-time check exists. Prevention: add a unit test that parses all prompt template output, extracts `Tool: <name>` references, and asserts each exists in `get_all_tools()`. Build this test in Phase 1 before any tool names change.
 
 ---
 
 ## Implications for Roadmap
 
-All five feature areas are independent of each other (no inter-feature dependencies), but the running-game bridge (input injection + game screenshots) requires its own companion autoload infrastructure that the other three areas do not need. The natural grouping is: editor-only features first (scene management, UI, animation), then the cross-process bridge features last.
+Based on all four research files, the dependency graph is unambiguous: smart errors enable everything else, composite tools depend on atomic tool stability, prompts depend on composite tool names. The recommended phase structure follows this dependency order exactly.
 
-### Phase 1: Scene File Management
+### Phase 1: Smart Error Handling Foundation
 
-**Rationale:** Smallest scope, lowest risk, pure `EditorInterface` API, zero dependencies on new infrastructure. Fills the most critical gap (AI cannot save its work) with 3-4 tools. Provides foundation for multi-scene workflows needed by all later phases.
+**Rationale:** Error enrichment is a passive wrapper with no dependencies on other v1.5 features. Adding it first means all subsequent features (composite tools, enriched resources) automatically get diagnostic-rich error responses from the moment they are written. This is the highest-ROI, lowest-risk starting point.
 
-**Delivers:** `save_scene`, `save_scene_as`, `open_scene`, `get_open_scenes`, `get_current_scene_info`
+**Delivers:**
+- `src/error_diagnostics.h/.cpp` with `categorize_error()` (Godot-free, GoogleTest-covered) and `enrich_error()` (Godot-dependent)
+- `isError: true` on all tool error results via `create_tool_error_result()` in mcp_protocol.cpp
+- Did-you-mean node suggestions using Levenshtein distance against actual scene tree
+- Error catalog: ~15 error codes covering all 50 tools (NODE_NOT_FOUND, NO_SCENE_OPEN, INVALID_NODE_TYPE, SCRIPT_NOT_FOUND, GAME_NOT_RUNNING, BRIDGE_NOT_CONNECTED, etc.)
+- Unit test: `test_error_diagnostics.cpp` validating categorization and suggestions without Godot linkage
+- Unit test: prompt template tool reference validator (validation harness built before any tool names change)
 
-**Addresses:** Scene file management table stakes; enables AI to persist all edits from v1.0 and future v1.1 work
+**Addresses:** FEATURES.md P1 — smart error handling; PITFALLS.md P5 (prompt drift) mitigation infrastructure; PITFALLS.md P6 (error leakage) by establishing message budget constraints
 
-**Avoids:** Pitfall 6 — validate `get_edited_scene_root()` before saving, check Error return value. Pitfall 14 — do not rely on `scene_changed` signal alone after `open_scene_from_path`; add a frame delay and poll `get_edited_scene_root()`.
+**Avoids:** Inline error enhancement per tool in handle_request() (PITFALLS.md P8 anti-pattern — keeps dispatcher lean)
 
-**Research flag:** No deeper research needed. API surface is small and well-documented.
+---
 
-### Phase 2: UI System Tools
+### Phase 2: Enriched MCP Resources
 
-**Rationale:** Control node APIs are stable and well-documented. No running-game dependency. The critical `set_anchors_preset` bug is fully understood and the fix is one function name change. Theme overrides follow a typed-method pattern that is distinct from `set_node_property`.
+**Rationale:** Resources are read-only queries that reuse existing tool module functions. They have no mutation risk and validate the resource_providers module pattern before composite tools depend on similar infrastructure. Implementing resources before composites also gives AI clients richer scene context to use when invoking composite tools.
 
-**Delivers:** `get_control_properties`, `set_layout_preset`, `set_theme_override`, `remove_theme_override`; optional enhancement to `scene_tools::serialize_node()` to include Control-specific summary fields
+**Delivers:**
+- `src/resource_providers.h/.cpp` with `get_node_details()`, `get_signal_map()`, `get_scene_scripts()`
+- Extended `resources/list` with `godot://signal_map` and `godot://scene_scripts` static resources
+- New `resources/templates/list` MCP protocol handler with `godot://node/{path}` and `godot://script/{path}` templates
+- Updated `create_initialize_response()` to declare `resources` capability
+- `create_resource_templates_list_response()` builder in mcp_protocol.cpp
+- UAT test: `tests/uat_enriched_resources.py` — resources/list, resources/read, template resources
 
-**Addresses:** UI system table stakes; enables AI to build and style Control hierarchies
+**Addresses:** FEATURES.md P1 — enriched scene_tree resource; FEATURES.md P2 — resource templates; PITFALLS.md P4 mitigation (tiered URIs, 10KB response cap enforced here)
 
-**Avoids:** Pitfall 2 — use `set_anchors_and_offsets_preset()`, never `set_anchors_preset()`. Pitfall 11 — detect Container parents and use `size_flags_*`. Pitfall 5 — use `add_theme_*_override()` methods, not Theme resource assignment from GDExtension code. Pitfall 16 — prefer composite tools over individual setter tools to prevent tool count explosion.
+**Avoids:** Including full script source in resource responses (return path + line count only); making resource handlers that mutate state; modifying existing `get_scene_tree()` function
 
-**Research flag:** No deeper research needed. Composite tool design requires API judgment during planning, not external research.
+---
 
-### Phase 3: Animation Tools
+### Phase 3: Composite Tools
 
-**Rationale:** Most complex editor-side feature. The animation hierarchy (Player → Library → Animation → Track → Key) is deep with ordering constraints (path before keys, library before animation). Build read-only tools first (`get_animations`, `get_animation_info`), then mutation tools. No running-game dependency.
+**Rationale:** Composite tools are the most complex feature and the most likely to surface edge cases. They should be implemented after error diagnostics are in place (automatic error enrichment accelerates debugging during development) and after resource providers are validated (AI can use resources to verify composite results). Composite tool names must be finalized before Phase 4 prompts can reference them.
 
-**Delivers:** `get_animations`, `get_animation_info`, `create_animation`, `add_track`, `insert_keyframe`, `remove_keyframe`; optional `play_animation` / `stop_animation` for in-editor preview
+**Delivers:**
+- `src/composite_tools.h/.cpp` with `create_character`, `batch_set_property`, `find_nodes`, `create_ui_panel`, `duplicate_node`
+- ToolDef entries in mcp_tool_registry.cpp for each composite tool
+- Dispatch branches in mcp_server.cpp (in a clearly marked `// === Composite Tools ===` section)
+- Structured `nodes_created` + `steps_completed` result format for all composites
+- Partial failure response with `partial_results` and `failed_step` fields
+- UAT test: `tests/uat_composite_tools.py` — create_character, verify nodes exist, Ctrl+Z rollback
+- Automated check: `tools/list` payload must remain under 40KB after each composite tool addition
 
-**Addresses:** Animation system table stakes; enables AI to create and edit animations programmatically
+**Addresses:** FEATURES.md P1 — create_character, batch_set_property, find_nodes; FEATURES.md P2 — create_ui_panel, duplicate_node; PITFALLS.md P1 (logic duplication), P2 (partial failure rollback), P3 (tool count budget), P11 (max 8 parameters per composite schema)
 
-**Avoids:** Pitfall 3 — compute NodePaths from AnimationPlayer's `root_node` property, call `track_set_path` before `track_insert_key`, call `clear_caches()` after modification. Pitfall 9 — always use AnimationLibrary layer, check `has_animation_library("")` before creating. Pitfall 12 — wrap multi-step create operations in a single UndoRedo action.
+**Avoids:** Creating a generic pipeline framework for composites (ARCHITECTURE.md anti-pattern 1); modifying existing tool function signatures (ARCHITECTURE.md anti-pattern 3); including deferred async sub-steps inside composites (e.g., capture_viewport — keep composites in the editor-only domain)
 
-**Research flag:** A short design spike on UndoRedo feasibility for animation operations is warranted before implementation. ARCHITECTURE.md Decision 4 recommends skipping UndoRedo for animation mutations (too complex), but this tradeoff should be explicit in the plan.
+---
 
-### Phase 4: Editor Viewport Screenshots
+### Phase 4: Expanded Prompt Templates
 
-**Rationale:** Introduces the only new data flow pattern (ImageContent response). Requires the `mcp_protocol.cpp` extension first. Build after all text-response tools are stable. Editor viewport capture (2D and 3D) requires no game running and no cross-process work — it is the simpler half of the screenshot feature.
+**Rationale:** Prompts are purely additive text content with zero mutation risk. They must come last because they reference specific tool names and parameters — including composite tool names from Phase 3. Writing prompts before composite tools are finalized leads to stale references from day one.
 
-**Delivers:** `capture_editor_viewport` (2D and 3D modes), `mcp_protocol::create_image_tool_result()`, optional image resize and compression parameters
+**Delivers:**
+- 5-8 new PromptDef entries in mcp_prompts.cpp: `build_platformer_game`, `build_top_down_game`, `debug_game_crash`, `setup_tilemap_level`, `tool_composition_guide`, `fix_common_errors`, `create_game_from_scratch`
+- Each prompt embeds resource references (link to `godot://scene_tree` etc.) and explicit tool call sequences with verified parameter formats
+- Total prompt count: ~12-15 (7 existing + 5-8 new)
+- Unit test: all new prompts verified against registry by the validation harness built in Phase 1
 
-**Addresses:** Visual feedback for AI; editor layout inspection; closes the gap with all three competitors on screenshot capability
+**Addresses:** FEATURES.md P1 — 4-5 new prompt templates; PITFALLS.md P5 and P10 (template maintenance) via the validation unit test from Phase 1
 
-**Avoids:** Pitfall 7 — connect `frame_post_draw` one-shot callback or accept one-frame stale; always validate `img->is_empty()` and `img->get_width() > 0`. Pitfall 10 — decompress before PNG save, resize to max width, prefer JPEG for smaller payload. Pitfall 13 — decide on deferred-response approach for `poll()` before writing the tool.
+**Avoids:** Writing prompts before composite tools exist (PITFALLS.md P5); exceeding 15 total prompts without categorization (FEATURES.md anti-feature); embedding full GDScript code in prompt text (FEATURES.md anti-feature)
 
-**Research flag:** Requires one internal architecture decision (deferred-response mechanism) before implementation. No external research needed — the decision is between two known options.
-
-### Phase 5: Running-Game Bridge (Input Injection + Game Screenshots)
-
-**Rationale:** Highest complexity, highest reward. The companion GDScript autoload is shared infrastructure for both input injection and game-side screenshots — build them together. Build game screenshot first (easier to test visually), then layer input injection on top. Requires a running game for all testing, which slows iteration compared to earlier phases.
-
-**Delivers:** Companion autoload (`mcp_runtime_helper.gd`), `capture_game_screenshot`, `inject_key`, `inject_mouse_click`, `inject_mouse_motion`, `inject_action`
-
-**Addresses:** Build-test-fix loop closure; AI playtesting capability; full feature parity with GoPeak and Godot MCP Pro on runtime tools
-
-**Avoids:** Pitfall 1 — companion autoload with file-based or TCP bridge; never attempt direct viewport access from editor. Pitfall 4 — game-side `Input.parse_input_event()` only, not editor-side. Pitfall 8 — always inject press+release pairs, account for viewport scaling in mouse coordinates, use `Input.action_press/release` for action-based input. Pitfall 13 — game-side autoload uses GDScript `await RenderingServer.frame_post_draw`.
-
-**Research flag:** Needs a research spike on the IPC mechanism before implementation. File-based polling vs. TCP connection from autoload vs. EditorDebuggerPlugin each have distinct tradeoffs for latency, reliability, and implementation complexity. Godot MCP Pro and GoPeak (both use autoload + WebSocket/TCP) are the primary architecture references.
-
-### Phase 6: Prompt Templates
-
-**Rationale:** Pure text, no API risk. Depends on all tool definitions being finalized. Low effort, meaningful DX improvement for AI users. No competitor ships curated prompts alongside their tools.
-
-**Delivers:** New MCP prompt templates for UI building (`build_ui_layout`), animation workflows (`setup_animation`), and playtesting (`debug_game`)
-
-**Research flag:** No research needed.
+---
 
 ### Phase Ordering Rationale
 
-- Phases 1-3 are editor-only and share no dependencies. Scene Management comes first because it gives the AI the ability to persist all subsequent work immediately.
-- Phase 4 (editor screenshots) must come after Phases 1-3 are stable because it introduces the first new response type in the protocol layer; a bug in `create_image_tool_result()` would affect all subsequent testing.
-- Phase 5 must come last because it requires a running game for all testing (slows iteration), and its IPC design decision must be made carefully with full understanding of the completed editor-side architecture.
-- Phase 6 can only be written once all tool names are final.
+- Error handling is implemented before everything because the `enrich_error()` wrapper has no dependencies and benefits every tool call during development. Every subsequent tool call during Phase 2 and 3 automatically gets diagnostic-rich errors.
+- Resources are implemented before composites because they are read-only. They prove the new module pattern (resource_providers.h) works correctly before composite tools use the same module pattern. Declaring the `resources` capability in the initialize response is a protocol-level change best validated in isolation.
+- Composite tools are implemented before prompts because prompt templates must reference real, stable tool names and parameter schemas. Composite tool names and schemas must be frozen before prompts are written.
+- The prompt template validation unit test is built in Phase 1 (before any tool surface changes occur) so it catches drift from the very first composite tool addition.
+
+### Research Flags
+
+Phases needing deeper research during planning:
+- **Phase 3 (Composite Tools):** UndoRedo single-action grouping implementation is the highest-risk technical detail. The ARCHITECTURE.md recommends starting with Option B (per-step UndoRedo, pragmatic) to avoid refactoring existing tool functions, but the UX implications should be validated with a prototype before committing to the approach. Additionally, the `create_ui_panel` input schema design (declarative layout spec) has no prior art in the codebase and may benefit from per-phase research.
+- **Phase 2 (Enriched Resources):** The 10KB resource response cap and tiered URI design should be validated against real 100-200 node scenes before implementation. The exact fields to include in `get_node_details()` may need tuning based on what AI clients actually consume.
+
+Phases with standard patterns (skip research-phase):
+- **Phase 1 (Smart Error Handling):** The MCP `isError: true` pattern is fully specified in MCP spec 2025-03-26 and 2025-06-18. The Levenshtein distance implementation is a well-known algorithm. No additional research needed.
+- **Phase 4 (Expanded Prompts):** Purely additive text following the established `PromptDef` lambda pattern. No new APIs or protocol changes. No additional research needed.
 
 ---
 
@@ -181,47 +190,45 @@ All five feature areas are independent of each other (no inter-feature dependenc
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All required godot-cpp headers verified present locally. No new dependencies introduced. Build system unchanged. |
-| Features | HIGH | Competitive landscape well-researched across 3 named competitors. Table stakes and deferral decisions are grounded in market evidence and API feasibility. |
-| Architecture | HIGH | New modules follow established patterns exactly. Three file modifications are additive and low-risk. ImageContent response is specified by MCP 2025-06-18 spec. |
-| Pitfalls | HIGH (editor-side) / MEDIUM (game bridge) | Editor-side pitfalls verified via Godot GitHub issues with specific issue numbers. Game-side bridge pitfalls are architectural in nature; the specific IPC mechanism has not been prototyped in this codebase. |
+| Stack | HIGH | Zero new dependencies confirmed by cross-checking spec requirements against existing codebase. nlohmann/json 3.12.0 confirmed as latest release. No version conflicts. |
+| Features | HIGH | Based on MCP spec analysis (primary), direct codebase review (primary), and competitor audit of Godot MCP Pro, Better Godot MCP, and GDAI MCP. Feature prioritization (P1/P2/P3) is well-grounded in both user value and implementation cost estimates. |
+| Architecture | HIGH | Based on direct review of all source files. Component boundaries and data flows verified against existing code patterns in scene_mutation.cpp, physics_tools.cpp, and mcp_server.cpp. One area of genuine uncertainty: UndoRedo single-action grouping for composites (see Gaps). |
+| Pitfalls | HIGH | 11 pitfalls identified from MCP ecosystem evidence (industry data on context window waste, Perplexity case study), v1.0-v1.4 project experience, and codebase analysis. Recovery strategies and prevention phases are mapped for all 11. |
 
-**Overall confidence:** HIGH for Phases 1-4. MEDIUM for Phase 5 (game bridge IPC not yet prototyped).
+**Overall confidence: HIGH**
 
 ### Gaps to Address
 
-- **Phase 5 IPC mechanism**: File-based polling, TCP connection from autoload to editor, or EditorDebuggerPlugin? A prototype sprint is needed before committing to the Phase 5 plan. Godot MCP Pro and GoPeak are the primary references.
-- **Animation UndoRedo feasibility**: Can animation track/keyframe mutations be wrapped in `EditorUndoRedoManager` actions cleanly? ARCHITECTURE.md recommends skipping it (too complex), but this tradeoff should be made explicit in the Phase 3 plan so users understand which operations are not undoable.
-- **Viewport screenshot timing**: One-frame-stale (accept previous frame's render) vs. deferred-response (wait for `frame_post_draw`). For editor viewports that render continuously, one-frame-stale is almost always acceptable and is far simpler. This decision should be recorded in the Phase 4 plan.
-- **`open_scene_from_path` signature change** between Godot 4.3 and 4.4 (added `set_inherited` parameter): apply the version-adaptive tool registry pattern from v1.0.
-- **`parse_input_event` + `use_accumulated_input = false` regression in Godot 4.4.1**: reported on forum but no GitHub issue number confirmed — needs validation during Phase 5 planning.
+- **UndoRedo single-action grouping:** ARCHITECTURE.md recommends Option B (pragmatic per-step UndoRedo) to avoid refactoring existing tool functions. The correct choice between Option A (single atomic action) and Option B should be determined by prototyping `create_character` in Phase 3 and testing Ctrl+Z behavior before implementing other composite tools. Document the chosen behavior explicitly in the composite tool ToolDef descriptions.
+- **tools/list payload baseline:** The current 50-tool `tools/list` payload is estimated at ~35KB but not precisely measured. Before Phase 3, measure the actual payload size to establish the headroom available for composite tool additions (budget: 40KB hard limit).
+- **Resource response size for real scenes:** The 10KB cap on resource responses is derived from industry best practices but has not been measured against an actual Godot project. Validate against a 50-200 node test scene early in Phase 2.
+- **create_ui_panel schema design:** No prior art exists in the codebase for a declarative UI layout specification as a JSON input parameter. This schema design is the highest-uncertainty element in Phase 3 and may benefit from reviewing how better-godot-mcp handles analogous composite inputs.
 
 ---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-
-- Godot 4.3 official docs: EditorInterface, Animation, AnimationPlayer, AnimationMixer, AnimationLibrary, Control, StyleBox, Theme, Container, InputEvent, Image, Marshalls, Viewport — all API signatures verified
-- godot-cpp headers: all 30+ required headers confirmed present locally in `godot-cpp/gen/include/godot_cpp/classes/`
-- Godot engine source (godotengine/godot): `control.cpp`, `animation.cpp`, `box_container.cpp`, `grid_container.cpp`, `editor_interface.h` — implementation details verified
-- MCP spec 2025-06-18: `ImageContent`, `TextContent` response formats
-- Rokojori API Mirror: cross-verification of Godot 4.3 API signatures for EditorInterface, Animation, AnimationMixer, AnimationLibrary, Control, Input, Image, StyleBoxFlat, Theme, Viewport
+- MCP Specification 2025-03-26 — resources, resource templates, URI schemes, capabilities declaration
+- MCP Specification 2025-06-18 — tools `isError` flag, structured tool results, tool annotations
+- Existing codebase (direct review) — mcp_server.cpp, mcp_protocol.h/.cpp, mcp_prompts.cpp, mcp_tool_registry.h/.cpp, scene_mutation.cpp, physics_tools.cpp, signal_tools.cpp, script_tools.cpp, ui_tools.cpp
+- nlohmann/json GitHub Releases — confirmed 3.12.0 is latest (released 2025-04-11)
+- Project MEMORY.md — architecture decisions, two-process pattern, threading model
 
 ### Secondary (MEDIUM confidence)
+- [54 Patterns for Building Better MCP Tools (Arcade)](https://arcade.dev/blog/mcp-tool-patterns) — composite tool patterns, error-guided recovery, composition principles
+- [Better MCP Tool Call Error Responses (Alpic AI)](https://dev.to/alpic/better-mcp-toolscall-error-responses-help-your-ai-recover-gracefully-15c7) — isError vs JSON-RPC errors, tool ordering guidance
+- [MCP Server Best Practices (MCPcat)](https://mcpcat.io/blog/mcp-server-best-practices/) — tool composition, batch patterns
+- [Better Godot MCP (18 mega-tools)](https://github.com/n24q02m/better-godot-mcp) — composite tool design reference, schema patterns
+- [GDAI MCP Server](https://gdaimcp.com/) — debug loop with auto-screenshot, visual feedback workflow
+- [MCP Prompts for Workflow Automation (Zuplo)](https://zuplo.com/blog/mcp-server-prompts) — prompt design patterns, multi-step workflow guidance
 
-- Godot GitHub issues: #66651, #67161, #85185, #92487 (anchor preset bug), #17313 (animation track paths), #87692, #85931, #96808, #73557 (input injection bugs), #50787, #108535 (image pipeline bugs), #97427 (scene_changed signal bug), #8806 (no close_scene API), #84550 (theme overrides missing for GDExtension)
-- godot-cpp issues: #1332 (ThemeDB slowdown from GDExtension constructor)
-- Competing implementations: GoPeak (95+ tools, input + screenshots), Godot MCP Pro (162 tools, autoload approach), GDAI MCP (~30 tools) — architecture reference for game bridge approach
-- Community sources: ShaggyDev viewport screenshot tutorial (Feb 2025), Godot forum threads on GDExtension async patterns and input injection
-- Godot proposals: #8806 (close_scene), #8777 (GDExtension debugger tooling), #10994 (editor-game communication)
-
-### Tertiary (LOW confidence)
-
-- `parse_input_event` + `use_accumulated_input = false` regression in Godot 4.4.1: forum-reported, no GitHub issue confirmed — needs validation at Phase 5
-- EditorDebuggerPlugin GDExtension support limitations (proposal #8777): proposal exists but current state of GDExtension support should be re-verified at Phase 5 planning
+### Industry data (MEDIUM-HIGH confidence)
+- [The MCP Context Window Problem (Junia AI)](https://www.junia.ai/blog/mcp-context-window-problem) — 40-tool threshold, 40KB budget guidance
+- [Perplexity Drops MCP Internally (Nevo Systems)](https://nevo.systems/blogs/news/perplexity-drops-mcp-protocol-72-percent-context-window-waste) — 72% context waste figure, March 2026
+- [Your MCP Server Is Eating Your Context Window (APIdecks)](https://www.apideck.com/blog/mcp-server-eating-context-window-cli-alternative) — 143K of 200K tokens consumed by 40 tools across 3 servers
+- [Godot MCP Pro (162 tools)](https://github.com/youichi-uda/godot-mcp-pro) — batch_set_property, find_nodes_by_type reference implementation
 
 ---
-
-*Research completed: 2026-03-18*
+*Research completed: 2026-03-23*
 *Ready for roadmap: yes*

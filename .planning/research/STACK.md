@@ -1,624 +1,313 @@
-# Technology Stack: v1.1 UI & Editor Expansion
+# Stack Research: v1.5 AI Workflow Enhancement
 
 **Project:** Godot MCP Meow
-**Researched:** 2026-03-18
-**Scope:** NEW APIs only for v1.1 features. Existing stack (C++17, godot-cpp v10+, nlohmann/json, SCons, stdio bridge + TCP relay, GoogleTest) is validated and unchanged.
+**Researched:** 2026-03-23
+**Confidence:** HIGH
+**Scope:** Stack additions for composite tools, enriched MCP Resources, smart error handling, and expanded prompt templates. Existing stack (C++17, godot-cpp v10+, nlohmann/json 3.12.0, SCons, stdio bridge + TCP relay, GoogleTest) is validated and unchanged.
 
 ## Executive Summary
 
-v1.1 adds five feature areas: UI system tools, Animation tools, scene file management, input injection, and viewport screenshots. **No new external libraries are needed.** All features use godot-cpp bindings to existing Godot 4.3+ engine APIs. The existing tool architecture (ToolDef registry + dispatch in mcp_server.cpp + per-module .cpp/.h files) extends naturally to all five areas.
+v1.5 requires **zero new external libraries**. All four feature areas are implementable by extending existing C++ code patterns with the same dependencies already in use. The critical insight is that these features are *architectural enhancements* to the MCP protocol layer and tool dispatch system, not new Godot API integrations.
 
-The key architectural insight: these features operate on the **same node tree** the existing tools already manipulate. `set_node_property` can already set Control/Theme/Animation properties via the variant parser. The new tools add **domain-specific convenience** -- bulk operations, structured queries, and capabilities that require multiple Godot API calls (e.g., "add animation track + insert keyframes" as one tool call).
+- **Composite tools** reuse existing atomic tool functions (create_node, set_node_property, etc.) composed into higher-level orchestration functions.
+- **Enriched Resources** extend the existing `resources/list` and `resources/read` handlers with new URI schemes and `resources/templates/list` support, using simple string matching -- no RFC 6570 library needed.
+- **Smart error handling** wraps existing tool return values with structured diagnostic JSON, modifying `create_tool_result` and tool functions to include `isError: true` + diagnostic context.
+- **Expanded prompts** add more entries to the existing `PromptDef` vector in `mcp_prompts.cpp` using the same pattern.
 
----
-
-## New godot-cpp Headers Required
-
-All headers verified present in `godot-cpp/gen/include/godot_cpp/classes/`.
-
-### UI System Tools
-
-| Header | Class | Purpose | Confidence |
-|--------|-------|---------|------------|
-| `control.hpp` | `Control` | Theme override methods, anchor/offset, size flags, focus | HIGH |
-| `theme.hpp` | `Theme` | Create/modify Theme resources (set_stylebox, set_color, etc.) | HIGH |
-| `style_box.hpp` | `StyleBox` | Base class for content_margin access | HIGH |
-| `style_box_flat.hpp` | `StyleBoxFlat` | Create flat styleboxes (bg_color, border, corner_radius) | HIGH |
-| `style_box_texture.hpp` | `StyleBoxTexture` | Texture-based styleboxes | MEDIUM |
-| `container.hpp` | `Container` | Base container, fit_child_in_rect | HIGH |
-| `box_container.hpp` | `BoxContainer` | alignment property, separation theme constant | HIGH |
-| `grid_container.hpp` | `GridContainer` | columns property | HIGH |
-| `margin_container.hpp` | `MarginContainer` | margin_left/right/top/bottom theme constants | HIGH |
-
-### Animation Tools
-
-| Header | Class | Purpose | Confidence |
-|--------|-------|---------|------------|
-| `animation.hpp` | `Animation` | Track management (add_track, track_insert_key, etc.) | HIGH |
-| `animation_player.hpp` | `AnimationPlayer` | Playback control (play, stop, seek) | HIGH |
-| `animation_mixer.hpp` | `AnimationMixer` | Library management (add_animation_library, get_animation) | HIGH |
-| `animation_library.hpp` | `AnimationLibrary` | Animation storage (add_animation, get_animation_list) | HIGH |
-
-### Scene File Management
-
-| Header | Class | Purpose | Confidence |
-|--------|-------|---------|------------|
-| `editor_interface.hpp` | `EditorInterface` | Already used. New methods: save_scene, open_scene_from_path, etc. | HIGH |
-
-### Input Injection
-
-| Header | Class | Purpose | Confidence |
-|--------|-------|---------|------------|
-| `input.hpp` | `Input` | parse_input_event, action_press, action_release | HIGH |
-| `input_event.hpp` | `InputEvent` | Base input event class | HIGH |
-| `input_event_key.hpp` | `InputEventKey` | Keyboard input simulation | HIGH |
-| `input_event_mouse_button.hpp` | `InputEventMouseButton` | Mouse click simulation | HIGH |
-| `input_event_mouse_motion.hpp` | `InputEventMouseMotion` | Mouse movement simulation | HIGH |
-| `input_event_action.hpp` | `InputEventAction` | Named action simulation | HIGH |
-| `input_map.hpp` | `InputMap` | Query available input actions | HIGH |
-
-### Viewport Screenshot
-
-| Header | Class | Purpose | Confidence |
-|--------|-------|---------|------------|
-| `viewport.hpp` | `Viewport` | get_texture() to retrieve rendered content | HIGH |
-| `viewport_texture.hpp` | `ViewportTexture` | Texture wrapper for viewport content | HIGH |
-| `sub_viewport.hpp` | `SubViewport` | Editor viewports (2D/3D) | HIGH |
-| `image.hpp` | `Image` | save_png_to_buffer, resize, get_width/height | HIGH |
-| `marshalls.hpp` | `Marshalls` | raw_to_base64 for encoding PNG data to string | HIGH |
+The only protocol-layer change is declaring `resources` capability in `create_initialize_response()` and handling `resources/templates/list`.
 
 ---
 
-## Detailed API Surface Per Feature Area
+## Recommended Stack
 
-### 1. UI System Tools
+### Core Technologies (Unchanged)
 
-**What the existing tools already cover:** `create_node` can create Control subclasses (Button, Label, VBoxContainer, etc.). `set_node_property` can set any property including Control properties (custom_minimum_size, size_flags_horizontal, etc.) via the variant parser. `get_scene_tree` already reports node types.
+| Technology | Version | Purpose | Status |
+|------------|---------|---------|--------|
+| C++17 | -- | Language standard | Unchanged, already in use |
+| godot-cpp | v10+ (Godot 4.3+) | GDExtension bindings | Unchanged, already in use |
+| nlohmann/json | 3.12.0 | JSON handling | Unchanged, already latest (released 2025-04-11) |
+| SCons | -- | Build system | Unchanged |
+| GoogleTest | -- | Unit testing | Unchanged |
 
-**What NEW tools need to add:**
+### New godot-cpp Headers Required
 
-#### A. Control Inspector Tool (get_control_info)
+No new godot-cpp headers are needed for v1.5. All features build on top of classes already included by existing tool modules. The composite tools call existing functions from `scene_mutation.h`, `script_tools.h`, `ui_tools.h`, `physics_tools.h`, etc.
 
-Read UI-specific properties in structured form. Uses `Control` class API.
+### Supporting Libraries
 
+**None new.** This is explicitly a strength -- v1.5 maintains the zero-external-dependency differentiator.
+
+| Library Considered | Why NOT Added | Alternative |
+|-------------------|---------------|-------------|
+| URI template library (RFC 6570) | Our `godot://` URI scheme uses trivial `{variable}` patterns. A full RFC 6570 implementation would add ~1000 LOC dependency for features we don't need (expression operators, reserved expansion). | Hand-rolled string matching: `godot://node/{node_path}` parsed via `std::string::find()` + `substr()`. ~30 LOC. |
+| Error catalog framework | Over-engineering. We have ~50 tools with predictable failure modes. | Static error catalog as `std::unordered_map<std::string, ErrorInfo>` keyed by error code. ~200 LOC. |
+| Template engine (for prompts) | Prompts are simple text with `{argument}` substitution. | Existing lambda-based `PromptDef::generate` pattern already handles this. |
+
+---
+
+## Detailed Technical Decisions Per Feature Area
+
+### 1. Composite Tools
+
+**Decision: Internal composition via C++ function calls, NOT a new dispatch layer.**
+
+Composite tools like `create_character` or `create_ui_panel` will be implemented as regular C++ functions that internally call the same underlying functions used by atomic tools (e.g., `create_node()`, `set_node_property()`, `attach_script()`, `create_collision_shape()`).
+
+**Why internal composition (not tool-calling-tool):**
+- No JSON serialization/deserialization overhead between steps
+- Atomic UndoRedo -- wrap the entire composite operation in a single `undo_redo->create_action()` so Ctrl+Z undoes the whole thing
+- Error handling at each step with short-circuit on failure
+- Same thread safety guarantees as existing tools (all run on main thread)
+
+**Implementation pattern:**
 ```cpp
-#include <godot_cpp/classes/control.hpp>
-
-// Key methods to call on Control* nodes:
-Control* ctrl = Object::cast_to<Control>(node);
-ctrl->get_anchor(SIDE_LEFT);     // float
-ctrl->get_anchor(SIDE_TOP);      // float
-ctrl->get_anchor(SIDE_RIGHT);    // float
-ctrl->get_anchor(SIDE_BOTTOM);   // float
-ctrl->get_offset(SIDE_LEFT);     // float - renamed from "margin" in Godot 4
-ctrl->get_size();                 // Vector2
-ctrl->get_custom_minimum_size(); // Vector2
-ctrl->get_focus_mode();          // FocusMode enum
-ctrl->get_h_size_flags();        // int (bitfield)
-ctrl->get_v_size_flags();        // int (bitfield)
-ctrl->get_tooltip_text();        // String
-```
-
-**Why needed:** `get_scene_tree` only returns basic node info (name, type, path, transform, visibility, script). UI nodes need anchor/offset/size_flags data for the AI to understand and manipulate layouts.
-
-#### B. Theme Override Tool (set_theme_override)
-
-Apply per-control theme overrides. Uses `Control` class theme methods.
-
-```cpp
-#include <godot_cpp/classes/control.hpp>
-#include <godot_cpp/classes/style_box_flat.hpp>
-
-Control* ctrl = Object::cast_to<Control>(node);
-
-// Six override categories:
-ctrl->add_theme_color_override("font_color", Color(1, 0, 0, 1));
-ctrl->add_theme_constant_override("separation", 10);
-ctrl->add_theme_font_size_override("font_size", 16);
-ctrl->add_theme_stylebox_override("panel", stylebox_ref);
-ctrl->add_theme_font_override("font", font_ref);
-ctrl->add_theme_icon_override("icon", texture_ref);
-
-// Query overrides:
-ctrl->has_theme_color_override("font_color");  // bool
-ctrl->get_theme_color("font_color");            // Color
-
-// Remove overrides:
-ctrl->remove_theme_color_override("font_color");
-```
-
-**Why needed:** While `set_node_property` can set simple properties, theme overrides use a different API surface (not regular properties). The AI needs dedicated tools to set override colors, fonts, and styleboxes per-control.
-
-#### C. StyleBox Creation Tool (create_stylebox)
-
-Create StyleBoxFlat resources. This is a **resource creation** action, not a property set.
-
-```cpp
-#include <godot_cpp/classes/style_box_flat.hpp>
-
-Ref<StyleBoxFlat> sb;
-sb.instantiate();
-sb->set_bg_color(Color(0.2, 0.2, 0.2, 1.0));
-sb->set_border_color(Color(1.0, 1.0, 1.0, 1.0));
-sb->set_border_width_all(2);
-sb->set_corner_radius_all(4);
-sb->set_shadow_color(Color(0, 0, 0, 0.3));
-sb->set_shadow_size(4);
-sb->set_content_margin_all(8);  // Inherited from StyleBox base
-sb->set_expand_margin_all(0);   // StyleBoxFlat-specific
-
-// Apply to a control:
-ctrl->add_theme_stylebox_override("panel", sb);
-```
-
-**StyleBoxFlat properties (verified):**
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `bg_color` | Color | Background fill color |
-| `border_color` | Color | Border stroke color |
-| `border_width_top/bottom/left/right` | int | Per-side border widths |
-| `corner_radius_top_left/top_right/bottom_left/bottom_right` | int | Per-corner radii |
-| `shadow_color` | Color | Drop shadow color |
-| `shadow_size` | int | Shadow blur size in pixels |
-| `shadow_offset` | Vector2 | Shadow offset |
-| `content_margin_top/bottom/left/right` | float | Inherited from StyleBox base |
-| `expand_margin_top/bottom/left/right` | float | StyleBoxFlat-specific expand |
-
-**Convenience methods:** `set_border_width_all(int)`, `set_corner_radius_all(int)`, `set_expand_margin_all(float)`, `set_content_margin_all(float)`.
-
-**Why needed:** StyleBoxFlat is the most common StyleBox type. Creating one requires instantiating a Resource, setting multiple properties, and attaching it to a Control -- a multi-step operation that warrants a dedicated tool.
-
-#### D. Anchor/Layout Preset Tool (set_control_layout)
-
-```cpp
-#include <godot_cpp/classes/control.hpp>
-
-// Preset-based layout (most common):
-ctrl->set_anchors_preset(Control::PRESET_FULL_RECT);      // Fill parent
-ctrl->set_anchors_preset(Control::PRESET_CENTER);          // Center
-ctrl->set_anchors_preset(Control::PRESET_TOP_LEFT);        // Top-left corner
-// ... 16 presets available
-
-// Manual anchors:
-ctrl->set_anchor(SIDE_LEFT, 0.0);
-ctrl->set_anchor(SIDE_TOP, 0.0);
-ctrl->set_anchor(SIDE_RIGHT, 1.0);
-ctrl->set_anchor(SIDE_BOTTOM, 1.0);
-ctrl->set_offset(SIDE_LEFT, 10);  // Margin from anchor
-
-// Combined anchor + offset:
-ctrl->set_anchors_and_offsets_preset(
-    Control::PRESET_CENTER,         // preset
-    Control::PRESET_MODE_KEEP_SIZE, // resize mode
-    0                               // margin
+// New file: src/composite_tools.h / .cpp
+nlohmann::json create_character_body(
+    const std::string& type,           // "2d" or "3d"
+    const std::string& parent_path,
+    const std::string& name,
+    const nlohmann::json& options,     // sprite, collision_shape, script, etc.
+    EditorUndoRedoManager* undo_redo
 );
 ```
 
-**LayoutPreset enum values (verified in Godot 4.3):**
+Each composite tool:
+1. Opens a single UndoRedo action
+2. Calls existing functions sequentially
+3. Returns a result JSON with `created_nodes[]` array listing all created paths
+4. On any step failure, returns error with `step_failed` and `partial_results` for AI recovery
 
-| Value | Name | Effect |
-|-------|------|--------|
-| 0 | PRESET_TOP_LEFT | Top-left corner |
-| 1 | PRESET_TOP_RIGHT | Top-right corner |
-| 2 | PRESET_BOTTOM_LEFT | Bottom-left corner |
-| 3 | PRESET_BOTTOM_RIGHT | Bottom-right corner |
-| 4 | PRESET_CENTER_LEFT | Center of left edge |
-| 5 | PRESET_CENTER_TOP | Center of top edge |
-| 6 | PRESET_CENTER_RIGHT | Center of right edge |
-| 7 | PRESET_CENTER_BOTTOM | Center of bottom edge |
-| 8 | PRESET_CENTER | Centered in parent |
-| 9 | PRESET_LEFT_WIDE | Full left column |
-| 10 | PRESET_TOP_WIDE | Full top row |
-| 11 | PRESET_RIGHT_WIDE | Full right column |
-| 12 | PRESET_BOTTOM_WIDE | Full bottom row |
-| 13 | PRESET_VCENTER_WIDE | Vertically centered, full width |
-| 14 | PRESET_HCENTER_WIDE | Horizontally centered, full height |
-| 15 | PRESET_FULL_RECT | Fill entire parent |
+**Registration:** Standard `ToolDef` entries in `mcp_tool_registry.cpp` with `min_version: {4, 3, 0}`. Dispatch in `mcp_server.cpp::handle_request()` same as all other tools.
 
-**Why needed:** Layout presets are the standard way to position Controls. The AI needs to set "full rect", "center", "top wide" etc. rather than computing raw anchor values.
+**Tool count impact:** ~5-8 new composite tools. Total will grow from 50 to ~55-58.
 
-### 2. Animation Tools
+### 2. Enriched MCP Resources
 
-**What existing tools cover:** `create_node` can create AnimationPlayer nodes. `set_node_property` can set simple animation properties. `get_resource_info` can read .tres animation resources.
+**Decision: Extend existing inline `resources/list` and `resources/read` handlers. Add `resources/templates/list` method handler. Declare `resources` capability in initialize response.**
 
-**What NEW tools need to add:**
+**Current state (v1.4):**
+- 2 static resources: `godot://scene_tree`, `godot://project_files`
+- Resources capability NOT declared in initialize response (resources work but are not advertised)
+- No resource templates, no subscriptions
 
-#### A. Animation Track Management
+**v1.5 additions:**
 
-```cpp
-#include <godot_cpp/classes/animation.hpp>
-#include <godot_cpp/classes/animation_player.hpp>
-#include <godot_cpp/classes/animation_mixer.hpp>
-#include <godot_cpp/classes/animation_library.hpp>
+| Resource URI | Type | Content | Purpose |
+|-------------|------|---------|---------|
+| `godot://scene_tree` | Static | Scene tree JSON (existing) | Unchanged |
+| `godot://project_files` | Static | File listing (existing) | Unchanged |
+| `godot://scene_scripts` | Static | All scripts attached to nodes in current scene + their content | AI gets full code context without per-file read_script calls |
+| `godot://signal_connections` | Static | All signal connections in current scene | AI understands event flow without per-node get_node_signals calls |
+| `godot://node/{node_path}` | Template | Full node details: properties, signals, script, children | On-demand deep inspection of any node |
+| `godot://script/{script_path}` | Template | Script content + metadata | On-demand script access via resources protocol |
 
-// Finding the AnimationPlayer from node tree:
-AnimationPlayer* player = Object::cast_to<AnimationPlayer>(node);
-
-// Get existing animation:
-Ref<Animation> anim = player->get_animation("idle");  // inherited from AnimationMixer
-
-// Create a new animation:
-Ref<Animation> anim;
-anim.instantiate();
-anim->set_length(1.0);
-anim->set_loop_mode(Animation::LOOP_LINEAR);
-
-// Add a track:
-int idx = anim->add_track(Animation::TYPE_VALUE);
-anim->track_set_path(idx, NodePath("Sprite2D:modulate"));
-
-// Insert keyframes:
-anim->track_insert_key(idx, 0.0, Variant(Color(1,1,1,1)));
-anim->track_insert_key(idx, 0.5, Variant(Color(1,0,0,1)));
-anim->track_insert_key(idx, 1.0, Variant(Color(1,1,1,1)));
-
-// Add to library:
-Ref<AnimationLibrary> lib;
-if (player->has_animation_library("")) {
-    lib = player->get_animation_library("");
-} else {
-    lib.instantiate();
-    player->add_animation_library("", lib);
-}
-lib->add_animation("flash_red", anim);
-
-// For position/rotation/scale, use dedicated track types:
-int pos_idx = anim->add_track(Animation::TYPE_POSITION_3D);
-anim->track_set_path(pos_idx, NodePath("Character"));
-anim->track_insert_key(pos_idx, 0.0, Variant(Vector3(0,0,0)));
-anim->track_insert_key(pos_idx, 1.0, Variant(Vector3(10,0,0)));
-
-// Method call tracks require Dictionary:
-int method_idx = anim->add_track(Animation::TYPE_METHOD);
-anim->track_set_path(method_idx, NodePath("."));
-Dictionary method_dict;
-method_dict["method"] = "emit_particles";
-method_dict["args"] = Array();
-anim->track_insert_key(method_idx, 0.5, method_dict);
-```
-
-**TrackType enum (verified in Godot 4.3):**
-
-| Value | Name | Key Type |
-|-------|------|----------|
-| 0 | TYPE_VALUE | Variant (any interpolatable value) |
-| 1 | TYPE_POSITION_3D | Vector3 |
-| 2 | TYPE_ROTATION_3D | Quaternion |
-| 3 | TYPE_SCALE_3D | Vector3 |
-| 4 | TYPE_BLEND_SHAPE | float |
-| 5 | TYPE_METHOD | Dictionary {"method": String, "args": Array} |
-| 6 | TYPE_BEZIER | float (with custom curves) |
-| 7 | TYPE_AUDIO | AudioStream reference |
-| 8 | TYPE_ANIMATION | StringName (nested animation) |
-
-**Key Animation class methods (verified):**
-
-| Method | Signature | Purpose |
-|--------|-----------|---------|
-| `add_track` | `int add_track(TrackType type)` | Add new track, returns index |
-| `remove_track` | `void remove_track(int track_idx)` | Remove track by index |
-| `get_track_count` | `int get_track_count()` | Number of tracks |
-| `track_get_type` | `TrackType track_get_type(int track_idx)` | Track type enum |
-| `track_set_path` | `void track_set_path(int track_idx, NodePath path)` | Set target node path |
-| `track_get_path` | `NodePath track_get_path(int track_idx)` | Get target node path |
-| `track_insert_key` | `int track_insert_key(int track_idx, float time, Variant key, float transition=1)` | Insert keyframe |
-| `track_remove_key` | `void track_remove_key(int track_idx, int key_idx)` | Remove keyframe |
-| `track_get_key_count` | `int track_get_key_count(int track_idx)` | Key count on track |
-| `track_get_key_time` | `float track_get_key_time(int track_idx, int key_idx)` | Key timestamp |
-| `track_get_key_value` | `Variant track_get_key_value(int track_idx, int key_idx)` | Key value |
-| `set_length` | `void set_length(float sec)` | Set animation duration |
-| `set_loop_mode` | `void set_loop_mode(LoopMode mode)` | Set loop behavior |
-
-**Key AnimationMixer methods (inherited by AnimationPlayer):**
-
-| Method | Signature | Purpose |
-|--------|-----------|---------|
-| `add_animation_library` | `Error add_animation_library(StringName name, AnimationLibrary lib)` | Add library |
-| `get_animation_library` | `AnimationLibrary get_animation_library(StringName name)` | Get library |
-| `has_animation_library` | `bool has_animation_library(StringName name)` | Check library exists |
-| `get_animation_library_list` | `StringName[] get_animation_library_list()` | List all library names |
-| `get_animation` | `Animation get_animation(StringName name)` | Get animation by name |
-| `has_animation` | `bool has_animation(StringName name)` | Check animation exists |
-
-**Key AnimationLibrary methods:**
-
-| Method | Signature | Purpose |
-|--------|-----------|---------|
-| `add_animation` | `Error add_animation(StringName name, Animation anim)` | Add to library |
-| `remove_animation` | `void remove_animation(StringName name)` | Remove from library |
-| `has_animation` | `bool has_animation(StringName name)` | Check exists |
-| `get_animation` | `Animation get_animation(StringName name)` | Get by name |
-| `get_animation_list` | `StringName[] get_animation_list()` | List all |
-
-**Why needed:** Animation creation is inherently multi-step: create Animation resource, add tracks, set paths, insert keys, attach to library, attach to player. This cannot be done with `set_node_property` alone.
-
-#### B. Animation Playback Control
+**Resource templates implementation (MCP spec 2025-03-26 `resources/templates/list`):**
 
 ```cpp
-AnimationPlayer* player = Object::cast_to<AnimationPlayer>(node);
-
-player->play("idle");                    // Play by name
-player->play("idle", -1, 2.0);          // Play at 2x speed
-player->play_backwards("idle");          // Play reversed
-player->stop();                          // Stop
-player->pause();                         // Pause
-player->seek(0.5, true);                // Seek to 0.5s, update immediately
-player->is_playing();                    // bool
-player->get_current_animation();         // StringName
-player->get_current_animation_position();// float
-```
-
-**Why needed:** Playback control is needed for the AI to test animations during runtime, combined with screenshot capture for visual feedback.
-
-#### C. Animation Query
-
-```cpp
-// List all animations:
-TypedArray<StringName> lib_list = player->get_animation_library_list();
-for (int i = 0; i < lib_list.size(); i++) {
-    StringName lib_name = lib_list[i];
-    Ref<AnimationLibrary> lib = player->get_animation_library(lib_name);
-    TypedArray<StringName> anim_list = lib->get_animation_list();
-    // ...
-}
-
-// Query tracks:
-Ref<Animation> anim = player->get_animation("idle");
-int track_count = anim->get_track_count();
-for (int t = 0; t < track_count; t++) {
-    Animation::TrackType type = anim->track_get_type(t);
-    NodePath path = anim->track_get_path(t);
-    int key_count = anim->track_get_key_count(t);
-    for (int k = 0; k < key_count; k++) {
-        double time = anim->track_get_key_time(t, k);
-        Variant value = anim->track_get_key_value(t, k);
-    }
+// In mcp_server.cpp handle_request():
+if (method == "resources/templates/list") {
+    nlohmann::json templates = nlohmann::json::array();
+    templates.push_back({
+        {"uriTemplate", "godot://node/{node_path}"},
+        {"name", "Node Details"},
+        {"description", "Full details for a specific node: all properties, signals, script, children"},
+        {"mimeType", "application/json"}
+    });
+    templates.push_back({
+        {"uriTemplate", "godot://script/{script_path}"},
+        {"name", "Script Content"},
+        {"description", "GDScript source code and metadata"},
+        {"mimeType", "text/plain"}
+    });
+    return create_resource_templates_list_response(id, templates);
 }
 ```
 
-**Why needed:** The AI needs to inspect existing animations before modifying them, similar to how `get_scene_tree` is used before `create_node` / `set_node_property`.
-
-### 3. Scene File Management
-
-**All methods available on EditorInterface singleton, already accessed in existing code via `EditorInterface::get_singleton()`.**
-
+**URI template matching (no library needed):**
 ```cpp
-#include <godot_cpp/classes/editor_interface.hpp>
-
-EditorInterface* ei = EditorInterface::get_singleton();
-
-// Save current scene:
-Error err = ei->save_scene();  // Returns OK or ERR_CANT_CREATE
-
-// Save as new path:
-ei->save_scene_as("res://levels/level_02.tscn", true);  // with_preview=true
-
-// Save all open scenes:
-ei->save_all_scenes();
-
-// Open a different scene:
-ei->open_scene_from_path("res://scenes/main_menu.tscn");
-
-// Reload current scene from disk:
-ei->reload_scene_from_path("res://scenes/main.tscn");
-
-// Query open scenes:
-PackedStringArray open = ei->get_open_scenes();  // All open scene paths
-
-// Get current scene root:
-Node* root = ei->get_edited_scene_root();  // Already used in existing code
-
-// Switch editor main screen:
-ei->set_main_screen_editor("2D");  // or "3D", "Script", "AssetLib"
+// Simple prefix matching for godot://node/{path} and godot://script/{path}
+if (uri.rfind("godot://node/", 0) == 0) {
+    std::string node_path = uri.substr(13); // after "godot://node/"
+    // ... resolve and return node details
+}
 ```
 
-**Verified EditorInterface scene methods (Godot 4.3):**
+**Protocol layer changes:**
+1. Add `resources` capability to `create_initialize_response()`:
+   ```json
+   "capabilities": {
+       "tools": {"listChanged": false},
+       "resources": {},
+       "prompts": {"listChanged": false}
+   }
+   ```
+2. Add `create_resource_templates_list_response()` to `mcp_protocol.h/.cpp`
+3. Add handler for `resources/templates/list` in `mcp_server.cpp`
 
-| Method | Signature | Purpose |
-|--------|-----------|---------|
-| `save_scene` | `Error save_scene()` | Save current scene |
-| `save_scene_as` | `void save_scene_as(String path, bool with_preview=true)` | Save to new path |
-| `save_all_scenes` | `void save_all_scenes()` | Save all open scenes |
-| `open_scene_from_path` | `void open_scene_from_path(String scene_filepath)` | Open/switch scene |
-| `reload_scene_from_path` | `void reload_scene_from_path(String scene_filepath)` | Reload from disk |
-| `get_open_scenes` | `PackedStringArray get_open_scenes()` | List open scene paths |
-| `get_edited_scene_root` | `Node get_edited_scene_root()` | Current scene root |
-| `set_main_screen_editor` | `void set_main_screen_editor(String name)` | Switch 2D/3D/Script |
-| `edit_node` | `void edit_node(Node node)` | Select node in editor |
-| `select_file` | `void select_file(String file)` | Select in FileSystem dock |
+**NOT implementing (too complex for v1.5, low client support):**
+- Resource subscriptions (`resources/subscribe`) -- requires change notification infrastructure
+- `resources/list` pagination -- resource count is small (<10)
 
-**Why needed:** Current tools can read/modify the currently open scene, but cannot save, open a different scene, or query which scenes are open. Scene file management is essential for multi-scene workflows.
+### 3. Smart Error Handling
 
-**Known limitation (verified):** There is NO `close_scene` method in Godot 4.3. An active proposal exists (godotengine/godot-proposals#8806) but it has not been implemented. We cannot close individual scene tabs programmatically.
+**Decision: Structured error responses using MCP `isError: true` tool results with diagnostic fields. NOT protocol-level JSON-RPC errors for tool execution failures.**
 
-### 4. Input Injection
+**Why `isError: true` tool results instead of JSON-RPC errors:**
+- JSON-RPC errors are caught by MCP clients and surfaced as notifications, then discarded
+- Tool results with `isError: true` are injected back into the LLM context window
+- The AI sees the error message and can self-correct
+- This is the MCP-recommended pattern (spec 2025-03-26, section on Error Handling)
 
-**Requires a running game.** Input is injected via the `Input` singleton, which affects the running game process.
-
-```cpp
-#include <godot_cpp/classes/input.hpp>
-#include <godot_cpp/classes/input_event_key.hpp>
-#include <godot_cpp/classes/input_event_mouse_button.hpp>
-#include <godot_cpp/classes/input_event_mouse_motion.hpp>
-#include <godot_cpp/classes/input_event_action.hpp>
-
-Input* input = Input::get_singleton();
-
-// Method 1: Named action (preferred -- works with input map):
-input->action_press("ui_accept", 1.0);  // Simulate press
-input->action_release("ui_accept");      // Simulate release
-
-// Method 2: Simulate a specific key:
-Ref<InputEventKey> key_event;
-key_event.instantiate();
-key_event->set_keycode(Key::KEY_SPACE);
-key_event->set_pressed(true);
-input->parse_input_event(key_event);
-
-// Method 3: Simulate mouse click:
-Ref<InputEventMouseButton> mouse_event;
-mouse_event.instantiate();
-mouse_event->set_button_index(MouseButton::MOUSE_BUTTON_LEFT);
-mouse_event->set_position(Vector2(400, 300));
-mouse_event->set_pressed(true);
-input->parse_input_event(mouse_event);
-
-// Method 4: Simulate mouse movement:
-Ref<InputEventMouseMotion> motion;
-motion.instantiate();
-motion->set_position(Vector2(500, 400));
-motion->set_relative(Vector2(100, 100));
-input->parse_input_event(motion);
-
-// Warp mouse directly:
-input->warp_mouse(Vector2(960, 540));
-
-// Query available actions from InputMap:
-InputMap* imap = InputMap::get_singleton();
-TypedArray<StringName> actions = imap->get_actions();
+**Current error handling (v1.4):**
+```json
+{"error": "Parent not found: BadPath"}
 ```
+Simple string error in the tool result JSON. `isError` is always `false`. The AI gets the error text but no diagnostic context.
 
-**CRITICAL DESIGN CONSTRAINT:** Input injection from the editor plugin process (GDExtension) affects the **editor's** Input singleton, NOT the running game's. The game runs as a separate process (spawned via `EditorInterface::play_main_scene()` etc.). Two viable approaches:
-
-1. **Editor viewport input (works now):** `Viewport::push_input(InputEvent event, bool in_local_coords=false)` can push events into the editor's 2D/3D viewport SubViewport. This lets the AI interact with editor-side preview but does NOT reach a running game.
-
-2. **Running game input (requires IPC):** The game runs as a child process. To inject input, we need communication. The recommended approach is a **thin GDScript autoload** injected into the game project that:
-   - Reads input commands from a file (e.g., `user://mcp_input_commands.json`) or listens on a UDP port
-   - Calls `Input.parse_input_event()` inside the game process
-   - This is simpler and more reliable than trying to use the editor-side Input singleton
-
-**Recommendation for v1.1:** Implement BOTH:
-- **Editor-side:** `Input.action_press`/`action_release` and `Input.parse_input_event` via the editor's Input singleton (useful for tools that trigger actions in the editor process itself)
-- **Game-side (stretch goal):** GDScript autoload with file-based IPC for true game input injection
-
-**Confidence:** MEDIUM for game-side injection (needs prototyping). HIGH for editor-side input API.
-
-### 5. Viewport Screenshot
-
-**Two distinct capture modes:**
-
-#### A. Editor Viewport Screenshot (no game running needed)
-
-```cpp
-#include <godot_cpp/classes/editor_interface.hpp>
-#include <godot_cpp/classes/sub_viewport.hpp>
-#include <godot_cpp/classes/viewport_texture.hpp>
-#include <godot_cpp/classes/image.hpp>
-#include <godot_cpp/classes/marshalls.hpp>
-
-EditorInterface* ei = EditorInterface::get_singleton();
-
-// Capture 2D editor viewport:
-SubViewport* vp2d = ei->get_editor_viewport_2d();
-Ref<ViewportTexture> tex = vp2d->get_texture();
-Ref<Image> image = tex->get_image();
-
-// Capture 3D editor viewport (index 0-3 for split views):
-SubViewport* vp3d = ei->get_editor_viewport_3d(0);
-Ref<ViewportTexture> tex3d = vp3d->get_texture();
-Ref<Image> image3d = tex3d->get_image();
-
-// Convert to PNG bytes:
-PackedByteArray png_data = image->save_png_to_buffer();
-
-// Encode as base64 for MCP protocol transmission:
-String base64_str = Marshalls::get_singleton()->raw_to_base64(png_data);
-
-// Or save to disk:
-image->save_png("user://screenshot.png");
-
-// Optional: resize before encoding (for large viewports):
-image->resize(960, 540, Image::INTERPOLATE_BILINEAR);
-```
-
-**Verified Image save methods:**
-
-| Method | Signature | Returns |
-|--------|-----------|---------|
-| `save_png` | `Error save_png(String path)` | Error code |
-| `save_png_to_buffer` | `PackedByteArray save_png_to_buffer()` | PNG bytes |
-| `save_jpg_to_buffer` | `PackedByteArray save_jpg_to_buffer(float quality=0.75)` | JPEG bytes |
-| `save_webp_to_buffer` | `PackedByteArray save_webp_to_buffer(bool lossy=false, float quality=0.75)` | WebP bytes |
-| `resize` | `void resize(int width, int height, Interpolation interp=1)` | void |
-| `get_width` | `int get_width()` | Width in pixels |
-| `get_height` | `int get_height()` | Height in pixels |
-
-**Viewport access methods (verified, available since Godot 4.2):**
-
-| Method | Signature | Notes |
-|--------|-----------|-------|
-| `get_editor_viewport_2d` | `SubViewport get_editor_viewport_2d()` | No camera; use global_canvas_transform |
-| `get_editor_viewport_3d` | `SubViewport get_editor_viewport_3d(int idx=0)` | 4 split views (0-3) |
-| `get_texture` | `ViewportTexture get_texture()` | On any Viewport |
-| `get_image` | `Image get_image()` | On ViewportTexture (Ref<Image>) |
-
-**Base64 encoding chain:**
-```
-Image -> save_png_to_buffer() -> PackedByteArray -> Marshalls::raw_to_base64() -> String -> std::string -> nlohmann::json
-```
-
-#### B. Running Game Viewport Screenshot (game must be running)
-
-The game runs in a separate process. The editor cannot directly access the game's viewport. Same approach as input injection:
-
-**Recommended:** GDScript autoload in game project captures via `get_viewport().get_texture().get_image().save_png("user://mcp_screenshot.png")`, MCP server reads the file from disk.
-
-**Known pitfall (verified):** `get_image()` can return blank images if called before the frame is fully rendered. In GDScript, use `await RenderingServer.frame_post_draw` before capturing. In editor context (C++), the viewport is continuously rendering so this is less of an issue.
-
-#### MCP Protocol Integration for Images
-
-MCP supports returning images as base64-encoded content with MIME type. The tool result JSON should include:
-
+**v1.5 error handling:**
 ```json
 {
-  "content": [
-    {
-      "type": "image",
-      "data": "<base64 PNG data>",
-      "mimeType": "image/png"
-    }
-  ]
+  "error": "Parent not found: BadPath",
+  "error_code": "NODE_NOT_FOUND",
+  "diagnosis": "The node path 'BadPath' does not exist in the current scene tree.",
+  "suggestions": [
+    "Use get_scene_tree to see available node paths",
+    "Check if the parent node was recently renamed or deleted",
+    "Use '' or '.' for the scene root node"
+  ],
+  "context": {
+    "scene_root": "Main",
+    "available_children": ["Player", "World", "UI"]
+  }
 }
 ```
 
-This requires a small extension to the existing `mcp::create_tool_result()` function to support image content alongside text content. The protocol layer change is minimal.
+And the MCP response wrapper uses `isError: true`:
+```json
+{
+  "result": {
+    "content": [{"type": "text", "text": "<above JSON>"}],
+    "isError": true
+  }
+}
+```
+
+**Implementation approach:**
+
+A. **Error catalog** (`src/error_catalog.h`):
+```cpp
+struct ErrorInfo {
+    std::string code;          // "NODE_NOT_FOUND", "INVALID_TYPE", etc.
+    std::string diagnosis;     // Human-readable explanation
+    std::vector<std::string> suggestions; // Recovery actions
+};
+
+// Maps error patterns to diagnostic info
+const ErrorInfo& get_error_info(const std::string& error_code);
+```
+
+B. **Modified `create_tool_result`** (`mcp_protocol.h`):
+```cpp
+// Existing (unchanged):
+nlohmann::json create_tool_result(const nlohmann::json& id, const nlohmann::json& content_data);
+
+// New overload for error results:
+nlohmann::json create_tool_error_result(const nlohmann::json& id, const nlohmann::json& error_data);
+```
+
+The `create_tool_error_result` function produces:
+```cpp
+return {
+    {"jsonrpc", "2.0"},
+    {"id", id},
+    {"result", {
+        {"content", {{{"type", "text"}, {"text", error_data.dump()}}}},
+        {"isError", true}
+    }}
+};
+```
+
+C. **Helper for enriching errors** in tool functions:
+```cpp
+// In each tool module, wrap error returns:
+nlohmann::json enrich_error(const std::string& error_code,
+                             const std::string& raw_error,
+                             const nlohmann::json& context = {});
+```
+
+**Error codes catalog (~15-20 codes covering all 50+ tools):**
+
+| Error Code | Applies To | Diagnosis Pattern |
+|------------|-----------|-------------------|
+| `NODE_NOT_FOUND` | Any tool taking node_path | "Node 'X' not found. Available: [...]" |
+| `NO_SCENE_OPEN` | All scene tools | "No scene is open. Use create_scene or open_scene first." |
+| `INVALID_NODE_TYPE` | create_node | "Unknown class 'X'. Did you mean 'Y'?" (fuzzy match) |
+| `NOT_A_NODE_TYPE` | create_node | "'Resource' is not a Node subclass." |
+| `SCRIPT_NOT_FOUND` | read_script, attach_script | "File 'X' not found. Check the path starts with res://" |
+| `SCRIPT_ALREADY_EXISTS` | write_script | "File already exists. Use edit_script to modify." |
+| `INVALID_PROPERTY` | set_node_property | "Property 'X' not found on Y. Available: [...]" |
+| `INVALID_VALUE_FORMAT` | set_node_property | "Cannot parse 'X' as Vector2. Expected format: 'Vector2(x,y)'" |
+| `UNDO_REDO_UNAVAILABLE` | Mutating tools | "UndoRedo manager not available." |
+| `GAME_NOT_RUNNING` | Runtime tools | "Game is not running. Use run_game first." |
+| `BRIDGE_NOT_CONNECTED` | Bridge tools | "Game bridge not connected. Run game with wait_for_bridge: true." |
+| `ANIMATION_NOT_FOUND` | Animation tools | "Animation 'X' not found on player 'Y'." |
+| `SHAPE_TYPE_UNKNOWN` | create_collision_shape | "Unknown shape_type 'X'. Valid: [...]" |
+| `COMPOSITE_STEP_FAILED` | Composite tools | "Step N failed: <detail>. Completed steps: [...]" |
+
+### 4. Expanded Prompt Templates
+
+**Decision: Add more entries to the existing `PromptDef` vector. Same architecture, same lambda-based generation pattern.**
+
+**Current state (v1.4):** 7 prompts using the `PromptDef` struct with `std::function<nlohmann::json(const nlohmann::json&)> generate` lambda.
+
+**v1.5 additions (~5-8 new prompts) focusing on workflow orchestration:**
+
+| Prompt Name | Purpose | Key Arguments |
+|-------------|---------|---------------|
+| `create_2d_game` | End-to-end workflow for creating a basic 2D game | `game_type`: platformer/top_down/puzzle |
+| `create_3d_game` | End-to-end workflow for creating a basic 3D game | `game_type`: fps/third_person/exploration |
+| `debug_game_issue` | Systematic debugging workflow using runtime tools | `issue_type`: crash/visual_bug/input_not_working/performance |
+| `refactor_scene` | Workflow for restructuring an existing scene tree | `strategy`: extract_subscene/flatten/regroup |
+| `optimize_scene` | Performance optimization checklist and actions | `focus`: rendering/physics/scripting |
+| `add_feature` | Step-by-step workflow for adding a common game feature | `feature`: save_load/inventory/dialog/particles |
+
+**Prompt design principles for v1.5 (based on MCP prompts best practices):**
+1. Embed resource references in prompt messages (link to `godot://scene_tree` etc.)
+2. Include explicit tool call sequences with parameter templates
+3. Add verification steps ("after creating X, use get_scene_tree to confirm")
+4. Include error recovery guidance ("if create_node fails with NODE_NOT_FOUND, use get_scene_tree first")
+
+**No new files needed.** All prompts go in `mcp_prompts.cpp` in the existing `get_prompt_defs()` vector.
 
 ---
 
 ## New Source Files
 
-Following the existing architecture pattern (one .h + one .cpp per feature area):
+| File | Purpose | LOC Estimate |
+|------|---------|-------------|
+| `src/composite_tools.h` / `.cpp` | Composite tool implementations (create_character, create_ui_panel, etc.) | ~500-800 |
+| `src/error_catalog.h` / `.cpp` | Error code definitions, diagnostic info, suggestion templates | ~200-300 |
 
-| File | Purpose | New godot-cpp Includes |
-|------|---------|----------------------|
-| `src/ui_tools.h` / `.cpp` | Control inspection, theme overrides, StyleBox creation, layout presets | control.hpp, theme.hpp, style_box_flat.hpp, container.hpp, box_container.hpp, grid_container.hpp, margin_container.hpp |
-| `src/animation_tools.h` / `.cpp` | Animation/track/keyframe CRUD, playback control, animation query | animation.hpp, animation_player.hpp, animation_mixer.hpp, animation_library.hpp |
-| `src/editor_tools.h` / `.cpp` | Scene save/load/switch, editor viewport access, main screen switch | editor_interface.hpp (already available) |
-| `src/input_tools.h` / `.cpp` | Input injection (action_press/release, parse_input_event) | input.hpp, input_event_key.hpp, input_event_mouse_button.hpp, input_event_mouse_motion.hpp, input_event_action.hpp, input_map.hpp |
-| `src/screenshot_tools.h` / `.cpp` | Editor viewport capture, PNG encoding, base64 conversion | sub_viewport.hpp, viewport_texture.hpp, image.hpp, marshalls.hpp |
+**Modified existing files:**
 
-**Integration points (same pattern as existing tools):**
-1. Each new module adds ToolDef entries in `mcp_tool_registry.cpp`
-2. Each new module adds dispatch branches in `mcp_server.cpp::handle_request()` under `tools/call`
-3. New `#include` lines added to `mcp_server.cpp`
-4. No changes needed to bridge, TCP/IO thread, or MCP protocol layer (except image content type for screenshots)
+| File | Changes |
+|------|---------|
+| `src/mcp_protocol.h` / `.cpp` | Add `create_tool_error_result()`, `create_resource_templates_list_response()`. Modify `create_initialize_response()` to declare resources capability. |
+| `src/mcp_server.cpp` | Add `resources/templates/list` handler. Add new resource URIs to `resources/list` and `resources/read`. Add composite tool dispatch. Wire error enrichment into existing tool dispatch. |
+| `src/mcp_tool_registry.cpp` | Add ~5-8 composite tool ToolDef entries. |
+| `src/mcp_prompts.cpp` | Add ~5-8 new PromptDef entries. |
+| Multiple tool files (scene_mutation, script_tools, etc.) | Modify error returns to use `enrich_error()` helper. |
 
 ---
 
-## What NOT to Add (Already Covered by Existing v1.0 Tools)
+## Build System Impact
 
-| Capability | Existing Tool | Why New Tool Unnecessary |
-|------------|---------------|--------------------------|
-| Create Control nodes (Button, Label, etc.) | `create_node` | Pass `type: "Button"` -- works for all node types |
-| Set Control properties (position, size, visible) | `set_node_property` | Variant parser handles all property types |
-| Create AnimationPlayer nodes | `create_node` | Pass `type: "AnimationPlayer"` |
-| Read .tres resource properties | `get_resource_info` | Already reads resource properties |
-| Set simple properties (autoplay, text, etc.) | `set_node_property` | Works for any property |
-| Run/stop game | `run_game` / `stop_game` | Already implemented |
-| Read project files | `list_project_files` | Already implemented |
-| Node signals | `get_node_signals` / `connect_signal` | Already implemented |
-| Script management | `read_script` / `write_script` / `edit_script` | Already implemented |
+**SCons changes:** None. New .cpp files in `src/` are auto-detected by `Glob("src/*.cpp")`.
+
+**CMake changes (tests):** Add test files for composite tools and error catalog to `CMakeLists.txt`.
+
+**Compilation impact:** ~2 new .cpp files, ~700-1100 lines. Build time increase: negligible (~2-3s).
 
 ---
 
@@ -626,97 +315,89 @@ Following the existing architecture pattern (one .h + one .cpp per feature area)
 
 | Category | Recommended | Alternative | Why Not |
 |----------|-------------|-------------|---------|
-| Theme application | Per-control override methods | Create full Theme resource | Overrides are more common for AI-driven adjustments; full themes are complex multi-type resources |
-| StyleBox creation | StyleBoxFlat primarily | StyleBoxTexture, StyleBoxLine | StyleBoxFlat covers 95% of UI styling use cases; texture-based needs image assets |
-| Input injection (game) | GDScript autoload + file IPC | TCP from editor to game process | File-based is simpler, no port conflicts, cross-platform |
-| Input injection (game) | GDScript autoload + file IPC | Editor-side Input singleton | Editor Input does not reach game process (separate OS processes) |
-| Screenshot format | PNG via save_png_to_buffer | JPEG via save_jpg_to_buffer | PNG is lossless, better for AI visual analysis; size acceptable for single frames |
-| Screenshot encoding | base64 via Marshalls | Save to disk + return path | base64 inline is standard MCP image content; disk requires client file access |
-| Animation track format | Variant-based (Godot native) | Custom JSON intermediate | Direct Godot Variant is simpler; JSON would require unnecessary conversion |
-| Animation library naming | Default library ("") | Named libraries | Most projects use default; named libraries add complexity without benefit for basic use |
+| Composite tools | Internal C++ composition | Tool-calling-tool (JSON dispatch) | JSON overhead, no atomic UndoRedo, complexity |
+| Composite tools | Single UndoRedo action | One UndoRedo per sub-step | Users expect Ctrl+Z to undo the whole "create character" |
+| URI template matching | Simple string prefix matching | RFC 6570 library (e.g., Tinkoff/uri-template) | Only 2 template patterns, all Level 1 (simple {var}). Library adds ~1000 LOC dependency for zero benefit. |
+| Error handling | `isError: true` tool results | JSON-RPC error codes | JSON-RPC errors are discarded by clients, never reach the LLM context window |
+| Error handling | Static error catalog | ML-based error classification | Over-engineering. 50 tools with ~15 error categories is tractable with a static map. |
+| Error diagnostics | Include available nodes/properties in error | Only include error message | Context helps AI self-correct. Cost is one extra tree traversal on error path only. |
+| Resource templates | `godot://` custom scheme | `file://` scheme | Custom scheme is cleaner for non-filesystem resources, per MCP spec guidance |
+| Prompt architecture | Same PromptDef lambdas | External prompt files (.md/.txt) | Compiled-in prompts have zero I/O, are version-consistent, and match existing pattern |
+| Prompt content | Tool-sequence workflows | General game dev advice | Prompts should guide specific MCP tool usage, not duplicate Godot docs |
 
 ---
 
-## Variant Parser Extensions
+## What NOT to Add
 
-The existing `variant_parser.cpp` handles all new property types without modification:
-
-1. **Vector2/Vector3/Color** -- Already handled via `UtilityFunctions::str_to_var()`
-2. **Rect2** (for container rects) -- Also handled by `str_to_var("Rect2(0,0,100,100)")`
-3. **NodePath** (for animation track paths) -- Passed as strings, converted in tool code
-4. **Enums** (FocusMode, SizeFlags, TrackType, LayoutPreset) -- Passed as integers, handled by int parsing
-
-**No variant parser changes needed.** New tool functions do domain-specific parameter parsing (e.g., converting track type string "value" to `Animation::TYPE_VALUE` integer).
+| Don't Add | Why Not | What To Do Instead |
+|-----------|---------|-------------------|
+| New external C++ libraries | Zero-dependency is the core differentiator | Implement all features with existing nlohmann/json + godot-cpp + STL |
+| Resource subscriptions | Low client support (Claude Desktop doesn't use them), high implementation complexity | Start with static resources + templates. Add subscriptions in a future version if demand exists. |
+| Resource pagination | <10 resources total | Return all in one response |
+| Structured output schemas (MCP `outputSchema` / `structuredContent`) | Spec 2025-06-18 feature, we target 2025-03-26. Not supported by most clients yet. | Stick with TextContent JSON strings. Consider for future spec upgrade. |
+| Tool annotations (`readOnlyHint`, `destructiveHint`) | Spec 2025-06-18 feature | Consider for future spec upgrade |
+| `listChanged` notifications for tools/resources | Requires notification infrastructure, tools/resources are static at runtime | Declare `listChanged: false` |
+| Mega-tool pattern (better-godot-mcp style "18 tools with action parameter") | Reduces discoverability for AI. AI works better with explicit tool names than action-within-tool dispatch. Our 50+ named tools perform better with Claude than 18 mega-tools. | Keep granular atomic tools + add targeted composite tools for genuinely multi-step operations |
 
 ---
 
-## Build System Impact
+## Version Compatibility
 
-**SCons changes:** None needed. New .cpp files in `src/` are auto-detected by the existing glob pattern in SConstruct.
-
-**CMake changes (tests):** Add new test files for the new tool modules to CMakeLists.txt.
-
-**Compilation impact:** ~5 new .cpp files, ~2000-3000 lines estimated. Build time increase: negligible (~5s on typical machine).
+| Component | Compatible With | Notes |
+|-----------|-----------------|-------|
+| nlohmann/json 3.12.0 | C++17, godot-cpp v10+ | Already latest release, no update needed |
+| MCP spec 2025-03-26 | Claude Desktop, Cursor, VS Code MCP | Resource templates added in this spec version |
+| `resources/templates/list` | Claude Desktop (confirmed) | Supported in spec 2025-03-26, widely adopted |
+| `isError: true` tool results | All MCP clients | Part of core spec since inception |
+| godot-cpp v10 | Godot 4.3+ | Unchanged minimum requirement |
 
 ---
 
 ## Installation
 
-No new package installations. No new dependencies. Just new source files using existing godot-cpp headers.
+No new packages or dependencies. Existing build commands:
 
 ```bash
-# No new commands needed. Existing build:
+# Core build (unchanged):
 scons platform=<platform> target=template_debug
 
-# For tests:
+# Bridge build (unchanged):
+scons bridge
+
+# Tests (unchanged):
 cd tests && cmake -B build && cmake --build build
+ctest --test-dir build
 ```
 
 ---
 
 ## Sources
 
-### Official Documentation (Godot 4.3) -- HIGH Confidence
-- [EditorInterface class (4.3)](https://docs.godotengine.org/en/4.3/classes/class_editorinterface.html)
-- [Animation class](https://docs.godotengine.org/en/stable/classes/class_animation.html)
-- [AnimationPlayer class](https://docs.godotengine.org/en/stable/classes/class_animationplayer.html)
-- [Control class](https://docs.godotengine.org/en/stable/classes/class_control.html)
-- [StyleBox class](https://docs.godotengine.org/en/stable/classes/class_stylebox.html)
-- [Theme class](https://docs.godotengine.org/en/stable/classes/class_theme.html)
-- [Container class (4.3)](https://docs.godotengine.org/en/4.3/classes/class_container.html)
-- [Using InputEvent](https://docs.godotengine.org/en/stable/tutorials/inputs/inputevent.html)
-- [InputEventAction class](https://docs.godotengine.org/en/stable/classes/class_inputeventaction.html)
-- [Image class](https://docs.godotengine.org/en/4.4/classes/class_image.html)
-- [Marshalls class](https://docs.godotengine.org/en/stable/classes/class_marshalls.html)
-- [Using Containers](https://docs.godotengine.org/en/stable/tutorials/ui/gui_containers.html)
+### MCP Specification (2025-03-26) -- HIGH Confidence
+- [MCP Resources Specification](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/resources/) -- resource templates, URI templates, capabilities
+- [MCP Tools Specification (2025-06-18)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools) -- isError, tool result structure, error handling patterns
+- [MCP Prompts for Automation Blog](http://blog.modelcontextprotocol.io/posts/2025-07-29-prompts-for-automation/) -- prompt design patterns, resource-prompt integration
 
-### godot-cpp Headers (Verified Locally) -- HIGH Confidence
-- All 30+ required headers confirmed present in `godot-cpp/gen/include/godot_cpp/classes/`
+### MCP Error Handling Best Practices -- MEDIUM Confidence
+- [Better MCP tool/call Error Responses (Alpic AI)](https://dev.to/alpic/better-mcp-toolscall-error-responses-help-your-ai-recover-gracefully-15c7) -- isError vs protocol errors, three error patterns
+- [MCP Server Best Practices (MCPcat)](https://mcpcat.io/blog/mcp-server-best-practices/) -- tool composition, batch patterns
+- [54 Patterns for Better MCP Tools (Arcade)](https://arcade.dev/blog/mcp-tool-patterns) -- tool design patterns, composition
 
-### Godot Engine Source (API Implementation) -- HIGH Confidence
-- [control.cpp](https://github.com/godotengine/godot/blob/master/scene/gui/control.cpp) -- theme override implementation
-- [animation.cpp](https://github.com/godotengine/godot/blob/master/scene/resources/animation.cpp) -- track/key implementation
-- [box_container.h](https://github.com/godotengine/godot/blob/master/scene/gui/box_container.h) -- BoxContainer binding
-- [box_container.cpp](https://github.com/godotengine/godot/blob/master/scene/gui/box_container.cpp) -- alignment, separation
-- [grid_container.cpp](https://github.com/godotengine/godot/blob/master/scene/gui/grid_container.cpp) -- columns property
+### Competitive Landscape -- MEDIUM Confidence
+- [better-godot-mcp (18 composite mega-tools)](https://github.com/n24q02m/better-godot-mcp) -- composite tool design reference, Node.js implementation
+- [Godot MCP Pro](https://gdaimcp.com/) -- 162 tools, commercial reference
 
-### Rokojori API Mirror (Cross-Verified) -- HIGH Confidence
-- [EditorInterface](https://rokojori.com/en/labs/godot/docs/4.3/editorinterface-class)
-- [Animation](https://rokojori.com/en/labs/godot/docs/4.3/animation-class)
-- [AnimationMixer](https://rokojori.com/en/labs/godot/docs/4.3/animationmixer-class)
-- [AnimationLibrary](https://rokojori.com/en/labs/godot/docs/4.3/animationlibrary-class)
-- [Control](https://rokojori.com/en/labs/godot/docs/4.3/control-class)
-- [Input](https://rokojori.com/en/labs/godot/docs/4.3/input-class)
-- [Image](https://rokojori.com/en/labs/godot/docs/4.3/image-class)
-- [StyleBoxFlat](https://rokojori.com/en/labs/godot/docs/4.3/styleboxflat-class)
-- [StyleBox](https://rokojori.com/en/labs/godot/docs/4.3/stylebox-class)
-- [Theme](https://rokojori.com/en/labs/godot/docs/4.3/theme-class)
-- [Viewport](https://rokojori.com/en/labs/godot/docs/4.3/viewport-class)
+### nlohmann/json -- HIGH Confidence
+- [nlohmann/json GitHub Releases](https://github.com/nlohmann/json/releases) -- confirmed 3.12.0 is latest (2025-04-11)
 
-### Known Issues & Limitations -- MEDIUM Confidence
-- [SubViewport get_image() blank issue (#106957)](https://github.com/godotengine/godot/issues/106957)
-- [No close_scene API (proposal #8806)](https://github.com/godotengine/godot-proposals/issues/8806) -- confirmed limitation
-- [SubViewport get_image() stutter (#75877)](https://github.com/godotengine/godot/issues/75877) -- perf consideration
-- [Expose editor viewports PR (#68696)](https://github.com/godotengine/godot/pull/68696) -- confirms API since 4.2
-- [scene_changed signal bug (#97427)](https://github.com/godotengine/godot/issues/97427) -- edge case with empty scenes
-- [Container fitting behavior proposal (#9616)](https://github.com/godotengine/godot-proposals/issues/9616)
+### Codebase Analysis (Local) -- HIGH Confidence
+- `src/mcp_server.cpp` -- current tool dispatch, resource handling, error patterns
+- `src/mcp_protocol.h/.cpp` -- current protocol builders, initialize response
+- `src/mcp_prompts.cpp` -- current prompt architecture (PromptDef + lambdas)
+- `src/mcp_tool_registry.h/.cpp` -- current ToolDef registration pattern
+- `src/scene_mutation.cpp` -- error return pattern, UndoRedo integration
+- `src/physics_tools.cpp` -- composite-like pattern (create CollisionShape + Shape resource in one call)
+
+---
+*Stack research for: v1.5 AI Workflow Enhancement*
+*Researched: 2026-03-23*

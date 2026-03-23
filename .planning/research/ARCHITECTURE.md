@@ -1,12 +1,10 @@
-# Architecture Patterns: v1.1 Integration
+# Architecture Patterns: v1.5 AI Workflow Enhancement Integration
 
-**Domain:** Godot GDExtension MCP Server Plugin -- v1.1 UI & Editor Expansion
-**Researched:** 2026-03-18
-**Scope:** How new features integrate with the existing v1.0 architecture
+**Domain:** Godot GDExtension MCP Server Plugin -- v1.5 AI Workflow Enhancement
+**Researched:** 2026-03-23
+**Scope:** How composite tools, enriched MCP Resources, smart error handling, and expanded prompt templates integrate with the existing v1.0-v1.4 architecture
 
-## Existing Architecture Summary
-
-The v1.0 codebase follows a clear pattern:
+## Existing Architecture Summary (v1.4)
 
 ```
 AI Client <--stdio--> Bridge (~50KB) <--TCP--> GDExtension (MCPServer)
@@ -18,6 +16,11 @@ AI Client <--stdio--> Bridge (~50KB) <--TCP--> GDExtension (MCPServer)
                                     IO thread    Main thread (poll)
                                    (TCP r/w)     (Godot API calls)
                                                     |
+                                          +--- handle_request() ---+
+                                          |    giant if/else chain |
+                                          |    ~1060 lines         |
+                                          +------------------------+
+                                                    |
                                             Tool modules (free functions)
                                             - scene_tools.h/.cpp
                                             - scene_mutation.h/.cpp
@@ -25,617 +28,736 @@ AI Client <--stdio--> Bridge (~50KB) <--TCP--> GDExtension (MCPServer)
                                             - project_tools.h/.cpp
                                             - runtime_tools.h/.cpp
                                             - signal_tools.h/.cpp
+                                            - scene_file_tools.h/.cpp
+                                            - ui_tools.h/.cpp
+                                            - animation_tools.h/.cpp
+                                            - viewport_tools.h/.cpp
+                                            - tilemap_tools.h/.cpp
+                                            - physics_tools.h/.cpp
+
+                                            Registry (Godot-free, unit-testable)
+                                            - mcp_tool_registry.h/.cpp (ToolDef array)
+                                            - mcp_protocol.h/.cpp (~180 LOC)
+                                            - mcp_prompts.h/.cpp (PromptDef array)
+                                            - variant_parser.h/.cpp (string -> Godot types)
+
+                                            Game Bridge (runtime tools)
+                                            - game_bridge.h/.cpp (EditorDebuggerPlugin)
 ```
 
-**Key patterns in existing code:**
+**Key architectural patterns in existing code:**
 
-1. **Tool modules are free functions** -- not classes. Each module is a `.h`/`.cpp` pair exporting functions like `nlohmann::json get_scene_tree(...)`.
-2. **MEOW_GODOT_MCP_GODOT_ENABLED ifdef** guards Godot-dependent code, allowing headers to be included in unit tests.
-3. **Tool registration** is a static vector in `mcp_tool_registry.cpp` -- ToolDef structs with name, description, input_schema, min_version.
-4. **Tool dispatch** is an if-else chain in `MCPServer::handle_request()` inside `mcp_server.cpp`.
-5. **All tool calls execute on the main thread** via `MCPServer::poll()` called from `MCPPlugin::_process()`.
-6. **Tool results** are always `nlohmann::json` objects returned as `type: "text"` MCP content blocks via `mcp::create_tool_result()`.
-7. **UndoRedo** is passed as a raw pointer from MCPServer to tool functions that need mutation support.
+1. **Tool modules are free functions** returning `nlohmann::json`. Signature: `json tool_func(args..., UndoRedo*)`. No classes, no inheritance. Each module has a `.h` (Godot-free interface when possible, `#ifdef MEOW_GODOT_MCP_GODOT_ENABLED` for Godot-dependent functions) and a `.cpp`.
 
-## New Modules Required
+2. **Tool dispatch is a monolithic if/else chain** in `MCPServer::handle_request()`. Each tool name maps to argument extraction + function call. Currently ~660 lines of dispatch code for 50 tools.
 
-### 1. `ui_tools.h` / `ui_tools.cpp` -- NEW MODULE
+3. **Error handling is ad-hoc**: tool functions return `{"error": "message"}` on failure, `{"success": true, ...}` on success. `mcp_server.cpp` returns `mcp::create_error_response()` for missing/invalid params. No structured diagnostics, no fix suggestions, no error categorization.
 
-**Responsibility:** Control node hierarchy queries, theme/stylebox management, container layout operations.
+4. **MCP Resources are hardcoded**: exactly two resources (`godot://scene_tree`, `godot://project_files`), handled inline in `handle_request()` with no resource template support. No `resources/templates/list` handler exists.
 
-**Why separate module:** UI (Control) nodes have a fundamentally different property surface than Node2D/Node3D. They have anchors, offsets, size flags, theme overrides, layout presets -- concepts that do not exist for spatial nodes. Grouping these together is the clean boundary.
+5. **MCP Prompts are static generators**: `PromptDef` struct with name/description/arguments/generate lambda. `get_prompt_messages()` does argument substitution and returns message arrays. Currently 7 prompts.
 
-**Functions:**
+6. **Threading model**: IO thread handles TCP+JSON-RPC parsing, queues `PendingRequest` to main thread. Main thread `poll()` dequeues, calls `handle_request()`, queues `PendingResponse` back. Some requests use `__deferred` marker for async operations (viewport capture, bridge wait).
 
-```cpp
-#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
+7. **Registry is Godot-free**: `mcp_tool_registry.h`, `mcp_protocol.h`, `mcp_prompts.h` use pure C++17 + nlohmann/json. This enables GoogleTest unit testing without godot-cpp linkage.
 
-// Query Control-specific properties for a node (anchors, offsets, size_flags, theme overrides)
-nlohmann::json get_control_properties(const std::string& node_path);
+## Feature 1: Composite Tools
 
-// Set layout preset on a Control node (PRESET_TOP_LEFT, PRESET_FULL_RECT, etc.)
-nlohmann::json set_layout_preset(const std::string& node_path, const std::string& preset,
-                                  godot::EditorUndoRedoManager* undo_redo);
+### What It Is
 
-// Set/remove theme override on a Control node
-// override_type: "color" | "constant" | "font" | "font_size" | "stylebox" | "icon"
-nlohmann::json set_theme_override(const std::string& node_path, const std::string& override_type,
-                                   const std::string& name, const std::string& value,
-                                   godot::EditorUndoRedoManager* undo_redo);
+Multi-step operations bundled into a single MCP tool call. Examples:
+- `create_character`: Creates CharacterBody2D + CollisionShape2D + Sprite2D + script in one call
+- `create_ui_panel`: Creates PanelContainer + layout + label + buttons + styling
+- `create_tilemap_level`: Creates TileMapLayer + TileSet + paints initial tiles
 
-nlohmann::json remove_theme_override(const std::string& node_path, const std::string& override_type,
-                                      const std::string& name,
-                                      godot::EditorUndoRedoManager* undo_redo);
+### Integration Points
 
-#endif
-```
+**New files (CREATE):**
+- `src/composite_tools.h` -- function declarations
+- `src/composite_tools.cpp` -- implementations
 
-**Godot APIs used:**
-- `Control::set_anchors_preset()`, `Control::set_offsets_preset()`, `Control::set_anchors_and_offsets_preset()`
-- `Control::set_anchor()`, `Control::get_anchor()`, `Control::set_offset()`, `Control::get_offset()`
-- `Control::set_h_size_flags()`, `Control::set_v_size_flags()`
-- `Control::add_theme_color_override()`, `Control::add_theme_stylebox_override()`, etc.
-- `Control::get_theme_stylebox()`, `Control::has_theme_stylebox_override()`
-- `Control::set_custom_minimum_size()`
+**Modified files (MODIFY):**
+- `src/mcp_tool_registry.cpp` -- add ToolDef entries for each composite tool
+- `src/mcp_server.cpp` -- add dispatch branches in `handle_request()`
 
-**Confidence:** HIGH -- all APIs confirmed present in godot-cpp headers.
+### Architecture Decision: Composition Strategy
 
-### 2. `animation_tools.h` / `animation_tools.cpp` -- NEW MODULE
-
-**Responsibility:** AnimationPlayer/AnimationLibrary management, track editing, keyframe operations.
-
-**Why separate module:** Animation is a complex subsystem with its own resource hierarchy (AnimationPlayer -> AnimationLibrary -> Animation -> Track -> Key). It warrants isolation to contain the complexity.
-
-**Functions:**
+Composite tools should call existing tool functions directly (internal function calls), NOT go through the MCP dispatch layer. Rationale:
 
 ```cpp
-#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
+// GOOD: Direct internal composition
+nlohmann::json create_character(const std::string& char_type, ..., EditorUndoRedoManager* undo_redo) {
+    // Step 1: Create root node
+    auto root_result = create_node("CharacterBody2D", parent_path, name, {}, undo_redo);
+    if (root_result.contains("error")) return root_result;
 
-// List animations on an AnimationPlayer node
-nlohmann::json get_animations(const std::string& node_path);
+    // Step 2: Create collision shape
+    auto col_result = create_collision_shape(root_result["path"], "capsule", {...}, "", undo_redo);
+    if (col_result.contains("error")) {
+        // Partial failure: undo step 1
+        delete_node(root_result["path"], undo_redo);
+        return {{"error", "Failed to create collision shape: " + col_result["error"].get<std::string>()}};
+    }
 
-// Get detailed animation info including tracks and keyframes
-nlohmann::json get_animation_info(const std::string& node_path, const std::string& animation_name);
-
-// Create a new animation on an AnimationPlayer
-nlohmann::json create_animation(const std::string& node_path, const std::string& animation_name,
-                                 float length, const std::string& loop_mode);
-
-// Add a track to an animation
-nlohmann::json add_track(const std::string& node_path, const std::string& animation_name,
-                          const std::string& track_type, const std::string& track_path);
-
-// Insert a keyframe into a track
-nlohmann::json insert_keyframe(const std::string& node_path, const std::string& animation_name,
-                                int track_index, float time, const std::string& value);
-
-// Remove a keyframe from a track
-nlohmann::json remove_keyframe(const std::string& node_path, const std::string& animation_name,
-                                int track_index, int key_index);
-
-#endif
-```
-
-**Godot APIs used:**
-- `AnimationMixer::get_animation_library_list()`, `AnimationMixer::get_animation()`, `AnimationMixer::has_animation()`
-- `AnimationLibrary::add_animation()`, `AnimationLibrary::get_animation()`, `AnimationLibrary::get_animation_list()`
-- `Animation::add_track()`, `Animation::get_track_count()`, `Animation::track_get_type()`, `Animation::track_get_path()`
-- `Animation::track_insert_key()`, `Animation::track_get_key_count()`, `Animation::track_get_key_value()`, `Animation::track_get_key_time()`
-- `Animation::track_remove_key()`, `Animation::set_length()`, `Animation::set_loop_mode()`
-- `AnimationPlayer::get_current_animation()`, `AnimationPlayer::is_playing()`
-
-**Confidence:** HIGH -- all APIs confirmed present in godot-cpp headers. The Animation class has a rich API surface for programmatic track/keyframe manipulation.
-
-### 3. `editor_tools.h` / `editor_tools.cpp` -- NEW MODULE
-
-**Responsibility:** Scene file management (save/load/switch), viewport screenshots, and input injection to running game.
-
-**Why one module (not three):** These are all "editor-level operations" that use `EditorInterface` and `Input` singletons rather than node-level APIs. They share the same dependency surface and are conceptually "editor control" features. However, screenshot capture has binary data handling that is unique. If the module grows beyond ~400 lines, splitting `screenshot_tools` out is warranted.
-
-**Functions:**
-
-```cpp
-#ifdef MEOW_GODOT_MCP_GODOT_ENABLED
-
-// --- Scene File Management ---
-
-// Save the currently edited scene
-nlohmann::json save_scene();
-
-// Save the currently edited scene to a new path
-nlohmann::json save_scene_as(const std::string& path);
-
-// Open a scene file in the editor
-nlohmann::json open_scene(const std::string& scene_filepath);
-
-// List currently open scenes in the editor
-nlohmann::json get_open_scenes();
-
-// --- Viewport Screenshot ---
-
-// Capture the editor viewport (2D or 3D) and return base64-encoded PNG
-// Returns MCP ImageContent-compatible JSON, NOT text content
-nlohmann::json capture_viewport(const std::string& viewport_type, int max_width = 0);
-
-// --- Input Injection ---
-
-// Inject a keyboard input event into the running game
-nlohmann::json inject_key_input(const std::string& key, bool pressed, bool shift, bool ctrl, bool alt);
-
-// Inject a mouse button event
-nlohmann::json inject_mouse_button(const std::string& button, bool pressed, float x, float y);
-
-// Inject a mouse motion event
-nlohmann::json inject_mouse_motion(float x, float y, float rel_x, float rel_y);
-
-#endif
-```
-
-**Godot APIs used:**
-- Scene: `EditorInterface::save_scene()`, `EditorInterface::save_scene_as()`, `EditorInterface::open_scene_from_path()`, `EditorInterface::get_open_scenes()`
-- Screenshot: `EditorInterface::get_editor_viewport_2d()`, `EditorInterface::get_editor_viewport_3d()`, `SubViewport` -> `Viewport::get_texture()` -> `Texture2D::get_image()` -> `Image::save_png_to_buffer()`, `Marshalls::raw_to_base64()`
-- Input: `Input::parse_input_event()`, `InputEventKey`, `InputEventMouseButton`, `InputEventMouseMotion` constructors and setters
-
-**Confidence:** HIGH for scene management and input injection (well-documented, stable APIs). MEDIUM for viewport screenshots -- `get_editor_viewport_2d()`/`get_editor_viewport_3d()` return SubViewport which has `get_texture()`, but the screenshot capture from the *running game* (as opposed to the editor viewport) requires the game's own viewport, which the editor plugin cannot directly access. The editor can only capture the *editor's* 2D/3D viewports. For the running game, the screenshot must be taken within the game process itself or via an alternative approach (detailed in Pitfalls section below).
-
-## Existing Modules That Need Modification
-
-### 1. `mcp_tool_registry.cpp` -- MODIFICATION (additive only)
-
-**What changes:** Add new ToolDef entries to the static `tools` vector for all new tools.
-
-**Estimated additions:** ~12-15 new ToolDef entries (3-4 UI tools, 4-6 animation tools, 3-4 editor tools, 1-2 screenshot/input tools).
-
-**Pattern:** Identical to existing entries. No structural changes needed.
-
-```cpp
-// Example new entry
-{
-    "get_control_properties",
-    "Get Control-node-specific properties including anchors, offsets, size flags, and theme overrides",
-    {
-        {"type", "object"},
-        {"properties", {
-            {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root"}}}
-        }},
-        {"required", {"node_path"}}
-    },
-    {4, 3, 0}  // Available in all supported versions
-},
-```
-
-### 2. `mcp_server.cpp` -- MODIFICATION (additive only)
-
-**What changes:** Add new `#include` directives for new tool headers, and add new `if (tool_name == "...")` blocks inside `handle_request()`.
-
-**Current state:** The dispatch chain has 18 tool entries. Adding 12-15 more is manageable but makes the file longer (~700+ lines). The if-else chain pattern is straightforward and grep-friendly. No refactoring to a map-based dispatch is needed at this scale (30-35 tools), but it should be considered if tools exceed 50.
-
-**Pattern:** Identical to existing dispatch. Each new tool gets its own `if` block with parameter extraction and delegation to the tool module function.
-
-### 3. `mcp_protocol.h` / `mcp_protocol.cpp` -- MODIFICATION (new function)
-
-**What changes:** Add a new `create_image_tool_result()` function to handle screenshot responses, because the current `create_tool_result()` always wraps results as `type: "text"` content blocks.
-
-**New function:**
-
-```cpp
-// In mcp_protocol.h:
-nlohmann::json create_image_tool_result(const nlohmann::json& id,
-                                         const std::string& base64_data,
-                                         const std::string& mime_type);
-
-// Alternatively, a multi-content result builder:
-nlohmann::json create_multi_content_tool_result(const nlohmann::json& id,
-                                                  const nlohmann::json& content_array);
-```
-
-**Implementation:**
-
-```cpp
-nlohmann::json create_image_tool_result(const nlohmann::json& id,
-                                         const std::string& base64_data,
-                                         const std::string& mime_type) {
+    // Step 3: Create sprite, write script, attach script...
     return {
-        {"jsonrpc", "2.0"},
-        {"id", id},
-        {"result", {
-            {"content", {
-                {
-                    {"type", "image"},
-                    {"data", base64_data},
-                    {"mimeType", mime_type}
-                }
-            }},
-            {"isError", false}
-        }}
+        {"success", true},
+        {"nodes_created", nlohmann::json::array({...})},
+        {"steps_completed", 5}
     };
 }
 ```
 
-This is required because MCP spec 2025-06-18 defines `ImageContent` as `{"type": "image", "data": "base64...", "mimeType": "image/png"}` -- fundamentally different from the `TextContent` that `create_tool_result` currently produces.
-
-**Alternative approach:** The screenshot tool could return text JSON containing a base64 string, but this defeats the purpose -- MCP-aware clients (Claude, Cursor) render `ImageContent` blocks as actual images. Using the proper content type enables visual feedback in the AI chat.
-
-### 4. `mcp_prompts.h` / `mcp_prompts.cpp` -- MODIFICATION (additive)
-
-**What changes:** Add new prompt templates for UI building and animation workflows. The existing pattern (static prompt definitions with argument substitution) requires no structural changes.
-
-### 5. `scene_tools.h` / `scene_tools.cpp` -- POSSIBLE MODIFICATION
-
-**What might change:** The `serialize_node()` function currently inspects Node2D and Node3D for transform/visibility. For UI tools to work well, the scene tree serialization should also report Control-specific properties when a node is a Control subclass. This could mean adding a `Control* control = Object::cast_to<Control>(node)` branch that includes anchors, size, and size_flags in the serialized output.
-
-**Decision:** This is optional. The dedicated `get_control_properties` tool provides the full detail. Adding a lightweight summary (size, anchors_preset) to `serialize_node` output improves AI context quality without bloating the tree response. Recommend adding it as a small enhancement.
-
-## Component Boundary Diagram (v1.1)
-
-```
-src/
-+-- mcp_server.h/.cpp          [MODIFY: add includes + dispatch for new tools]
-+-- mcp_protocol.h/.cpp        [MODIFY: add create_image_tool_result()]
-+-- mcp_tool_registry.h/.cpp   [MODIFY: add ~12-15 ToolDef entries]
-+-- mcp_plugin.h/.cpp          [NO CHANGE]
-+-- mcp_dock.h/.cpp             [NO CHANGE -- or update tool count display]
-+-- mcp_prompts.h/.cpp          [MODIFY: add UI/animation prompt templates]
-+-- register_types.h/.cpp       [NO CHANGE]
-|
-+-- scene_tools.h/.cpp          [MINOR MODIFY: Control info in serialize_node]
-+-- scene_mutation.h/.cpp       [NO CHANGE]
-+-- script_tools.h/.cpp         [NO CHANGE]
-+-- project_tools.h/.cpp        [NO CHANGE]
-+-- runtime_tools.h/.cpp        [NO CHANGE]
-+-- signal_tools.h/.cpp         [NO CHANGE]
-+-- variant_parser.h/.cpp       [NO CHANGE]
-|
-+-- ui_tools.h/.cpp             [NEW: Control properties, theme, layout]
-+-- animation_tools.h/.cpp      [NEW: AnimationPlayer, tracks, keyframes]
-+-- editor_tools.h/.cpp         [NEW: scene file mgmt, screenshots, input]
-```
-
-## Data Flow Changes
-
-### Standard Tools (UI, Animation, Scene Management, Input)
-
-No change to the data flow. These tools follow the exact same pattern as existing tools:
-
-```
-IO thread receives JSON-RPC
-  -> process_message_io queues PendingRequest
-  -> Main thread poll() dequeues
-  -> handle_request() dispatches to tool function
-  -> Tool function calls Godot API, returns nlohmann::json
-  -> create_tool_result() wraps as TextContent
-  -> PendingResponse queued
-  -> IO thread sends response
-```
-
-### Screenshot Tool (New Data Flow)
-
-The screenshot tool introduces a new content type in the response:
-
-```
-IO thread receives JSON-RPC (tools/call capture_viewport)
-  -> Main thread poll() dispatches
-  -> editor_tools::capture_viewport()
-     -> EditorInterface::get_editor_viewport_2d() or get_editor_viewport_3d()
-     -> SubViewport::get_texture() -> Texture2D::get_image()
-     -> Image::save_png_to_buffer() -> PackedByteArray
-     -> Marshalls::raw_to_base64() -> String
-     -> Convert to std::string
-     -> Return as {base64_data, mime_type} pair
-  -> mcp_server.cpp uses create_image_tool_result() instead of create_tool_result()
-  -> PendingResponse with ImageContent
-  -> IO thread sends response
-```
-
-**Key difference:** The dispatch logic in `mcp_server.cpp` must know that `capture_viewport` returns image content and call `create_image_tool_result()` instead of `create_tool_result()`. Two approaches:
-
-**Approach A (Recommended):** Tool function returns a struct/tagged-union indicating content type:
-
 ```cpp
-// In mcp_server.cpp handle_request():
-if (tool_name == "capture_viewport") {
-    // ... extract args ...
-    auto result = capture_viewport(viewport_type, max_width);
-    if (result.contains("error")) {
-        return mcp::create_tool_result(id, result);  // error as text
-    }
-    return mcp::create_image_tool_result(id,
-        result["data"].get<std::string>(),
-        result["mimeType"].get<std::string>());
+// BAD: Re-dispatching through MCP (unnecessary overhead, breaks error reporting)
+nlohmann::json create_character(...) {
+    auto result1 = handle_request("tools/call", id, {{"name", "create_node"}, ...});
+    // Now you have a JSON-RPC response wrapper to unwrap... messy.
 }
 ```
 
-**Approach B:** Tool function returns a pre-built content array that mcp_server wraps directly. More flexible but breaks the pattern where tool functions return "just data."
+**Why direct calls:** Composite tools ARE internal orchestrators. They need:
+- Direct access to `undo_redo` for transactional grouping (wrap all steps in one UndoRedo action)
+- Ability to pass `Node*` pointers between steps (avoid redundant lookups)
+- Clean error propagation without JSON-RPC wrapper noise
+- The ability to undo partial work on failure
 
-Approach A is simpler, maintains the existing pattern, and only adds special handling for the one tool that needs it.
+### UndoRedo Grouping
 
-### Input Injection Data Flow
+Critical: each composite tool must use a SINGLE UndoRedo action so Ctrl+Z undoes the entire composite operation, not individual steps. Current tool functions each create their own action. For composites, we need to either:
 
-Input injection targets the **running game**, not the editor scene tree. This is important because:
-
-1. `Input::parse_input_event()` injects into the **global Input singleton** which is shared between editor and game.
-2. When `EditorInterface::is_playing_scene()` is true, input events injected via `Input::parse_input_event()` will be processed by the running game's viewport.
-3. The tool should verify the game is running before injecting.
-
-```
-IO thread receives JSON-RPC (tools/call inject_key_input)
-  -> Main thread poll() dispatches
-  -> editor_tools::inject_key_input()
-     -> Check: EditorInterface::is_playing_scene()? If not, return error
-     -> Construct InputEventKey with keycode, pressed state, modifiers
-     -> Input::get_singleton()->parse_input_event(event)
-     -> Return success JSON
-  -> Normal text content response
-```
-
-## Suggested Build Order (Phase Dependencies)
-
-The v1.1 features have the following dependency graph:
-
-```
-Scene File Management -----> (no deps, uses EditorInterface)
-UI System Tools -----------> (no deps, uses Control API)
-Animation Tools -----------> (no deps, uses Animation API)
-Viewport Screenshots ------> (needs mcp_protocol.cpp change for ImageContent)
-Input Injection -----------> (no deps, uses Input API, but needs game running)
-Prompt Templates ----------> (depends on all tools being defined)
-```
-
-**Recommended build order:**
-
-### Phase 1: Scene File Management (editor_tools -- partial)
-**Rationale:** Simplest new feature. Only 3-4 tools. Uses well-known EditorInterface methods that already exist in the codebase. Low risk. Immediately useful -- AI can now save work.
-
-Tools: `save_scene`, `save_scene_as`, `open_scene`, `get_open_scenes`
-
-**Dependencies:** None. **Estimated effort:** Small.
-
-### Phase 2: UI System Tools (ui_tools)
-**Rationale:** Next in complexity. Control node APIs are well-documented and stable. Theme overrides follow the same set/get pattern as existing property tools. The variant_parser may need minor extensions for theme types.
-
-Tools: `get_control_properties`, `set_layout_preset`, `set_theme_override`, `remove_theme_override`
-
-**Dependencies:** None, but benefits from Phase 1's `serialize_node` enhancement. **Estimated effort:** Medium.
-
-### Phase 3: Animation Tools (animation_tools)
-**Rationale:** Most complex new module. The Animation API has a deep hierarchy (Player -> Library -> Animation -> Track -> Key) with many track types and value formats. Build incrementally: read-only tools first, then mutation.
-
-Tools: `get_animations`, `get_animation_info`, `create_animation`, `add_track`, `insert_keyframe`, `remove_keyframe`
-
-**Dependencies:** None. **Estimated effort:** Large.
-
-### Phase 4: Viewport Screenshots (editor_tools -- partial)
-**Rationale:** Requires the `create_image_tool_result()` addition to mcp_protocol.cpp. Binary data handling is a new pattern. Build after text-only tools are solid.
-
-Tools: `capture_viewport`
-
-**Dependencies:** mcp_protocol.cpp change. **Estimated effort:** Medium (mostly the protocol change and base64 encoding pipeline).
-
-### Phase 5: Input Injection (editor_tools -- partial)
-**Rationale:** Requires a running game to test, which makes development/testing slower. Input event construction is straightforward but the interaction with the running game process has edge cases. Build last.
-
-Tools: `inject_key_input`, `inject_mouse_button`, `inject_mouse_motion`
-
-**Dependencies:** `runtime_tools` (game must be running). **Estimated effort:** Medium.
-
-### Phase 6: Prompt Templates
-**Rationale:** Depends on all tools being defined. Pure text, no API risk.
-
-New prompts: `build_ui_layout`, `setup_animation`, `debug_game` (or similar)
-
-**Dependencies:** All tool definitions finalized. **Estimated effort:** Small.
-
-## Patterns to Follow
-
-### Pattern 1: Tool Module Convention (existing pattern, apply to new modules)
-
-Every new tool module follows the same structure:
+**Option A (recommended):** Create a new UndoRedo action in the composite function, call lower-level helpers that accept the existing action instead of creating new ones. This requires extracting the "meat" of create_node/set_node_property into helpers that DON'T create their own action.
 
 ```cpp
-// ui_tools.h
-#ifndef MEOW_GODOT_MCP_UI_TOOLS_H
-#define MEOW_GODOT_MCP_UI_TOOLS_H
+// In composite_tools.cpp:
+nlohmann::json create_character(..., EditorUndoRedoManager* undo_redo) {
+    undo_redo->create_action("MCP: Create Character");
 
+    // Lower-level helpers that add to existing action
+    auto root = create_node_raw(type, parent, name, props, undo_redo); // no create_action inside
+    auto col = add_collision_shape_raw(..., undo_redo);
+    auto script = create_and_attach_script_raw(..., undo_redo);
+
+    undo_redo->commit_action();
+    return {{"success", true}, ...};
+}
+```
+
+**Option B (pragmatic fallback):** Call existing functions as-is. Each sub-step creates its own UndoRedo action. Ctrl+Z undoes one step at a time. Less elegant but zero refactoring of existing code.
+
+**Recommendation:** Start with Option B for speed. Refactor to Option A in a later polish phase if UX testing reveals that multi-step undo is confusing. The existing functions work and are battle-tested; introducing `_raw` variants is refactoring risk.
+
+### Return Format for Composites
+
+Composite tools should return a structured summary:
+
+```json
+{
+    "success": true,
+    "nodes_created": [
+        {"path": "Player", "type": "CharacterBody2D"},
+        {"path": "Player/CollisionShape2D", "type": "CollisionShape2D"},
+        {"path": "Player/Sprite2D", "type": "Sprite2D"}
+    ],
+    "script_created": "res://scripts/player.gd",
+    "steps_completed": 5,
+    "steps_total": 5
+}
+```
+
+On partial failure:
+
+```json
+{
+    "error": "Failed at step 3/5: Could not create script",
+    "partial_results": {
+        "nodes_created": [
+            {"path": "Player", "type": "CharacterBody2D"},
+            {"path": "Player/CollisionShape2D", "type": "CollisionShape2D"}
+        ],
+        "steps_completed": 2,
+        "steps_total": 5,
+        "failed_step": "write_script"
+    }
+}
+```
+
+### Impact on Dispatch Chain
+
+Each composite tool adds one more `if (tool_name == "...")` branch in `handle_request()`. With 50 existing tools and ~5-8 composite tools, the chain grows to ~58 branches. This is manageable but the function is already ~1060 lines. See "Architecture Concern: Dispatch Growth" below.
+
+## Feature 2: Enriched MCP Resources
+
+### What It Is
+
+Expand from 2 static resources to a richer set that gives AI full context about the project:
+
+| Current Resource | Enriched Resources |
+|---|---|
+| `godot://scene_tree` | Keep as-is |
+| `godot://project_files` | Keep as-is |
+| (none) | `godot://node/{path}` -- detailed node info (all properties, signals, connections) |
+| (none) | `godot://script/{path}` -- script source + metadata |
+| (none) | `godot://signal_map` -- full signal connection graph |
+| (none) | `godot://scene_scripts` -- all scripts in current scene |
+
+### Integration Points
+
+**New files (CREATE):**
+- `src/resource_providers.h` -- resource provider function declarations
+- `src/resource_providers.cpp` -- implementations
+
+**Modified files (MODIFY):**
+- `src/mcp_server.cpp` -- extend `resources/list` and `resources/read` handlers
+- `src/mcp_protocol.h/.cpp` -- add `create_resource_templates_list_response()` builder
+
+### Static vs Template Resources
+
+The MCP spec (2025-03-26) supports **resource templates** via `resources/templates/list`. Parameterized resources like `godot://node/{path}` and `godot://script/{path}` should be exposed as templates:
+
+```json
+{
+    "resourceTemplates": [
+        {
+            "uriTemplate": "godot://node/{node_path}",
+            "name": "Node Details",
+            "description": "Detailed information about a specific node: all properties, signals, connections, children",
+            "mimeType": "application/json"
+        },
+        {
+            "uriTemplate": "godot://script/{script_path}",
+            "name": "Script Content",
+            "description": "GDScript source code and metadata for a script file",
+            "mimeType": "application/json"
+        }
+    ]
+}
+```
+
+Non-parameterized enriched resources go in `resources/list`:
+
+```json
+{
+    "resources": [
+        {"uri": "godot://scene_tree", "name": "Scene Tree", ...},
+        {"uri": "godot://project_files", "name": "Project Files", ...},
+        {"uri": "godot://signal_map", "name": "Signal Connection Map", ...},
+        {"uri": "godot://scene_scripts", "name": "Scene Scripts", ...}
+    ]
+}
+```
+
+### Resource Implementation Pattern
+
+Each enriched resource is a free function returning `nlohmann::json`, following the tool module pattern:
+
+```cpp
+// resource_providers.h
 #include <nlohmann/json.hpp>
 #include <string>
 
 #ifdef MEOW_GODOT_MCP_GODOT_ENABLED
-
-namespace godot { class EditorUndoRedoManager; }
-
-nlohmann::json get_control_properties(const std::string& node_path);
-// ... more functions ...
-
-#endif
+nlohmann::json get_node_details(const std::string& node_path);
+nlohmann::json get_script_content(const std::string& script_path);
+nlohmann::json get_signal_map();
+nlohmann::json get_scene_scripts();
 #endif
 ```
 
+### Resource Read Dispatch
+
+The `resources/read` handler in `mcp_server.cpp` currently does exact URI matching. For template resources, it needs prefix matching + parameter extraction:
+
 ```cpp
-// ui_tools.cpp
-#include "ui_tools.h"
+// In handle_request, resources/read section:
+if (uri.rfind("godot://node/", 0) == 0) {
+    std::string node_path = uri.substr(13); // len("godot://node/") = 13
+    auto details = get_node_details(node_path);
+    // ... wrap in resource_read_response
+}
+if (uri.rfind("godot://script/", 0) == 0) {
+    std::string script_path = uri.substr(15);
+    // ...
+}
+```
+
+### Resources Capability Declaration
+
+The `create_initialize_response()` in `mcp_protocol.cpp` must be updated to declare the `resources` capability:
+
+```cpp
+// Currently missing from capabilities:
+{"capabilities", {
+    {"tools", {{"listChanged", false}}},
+    {"prompts", {{"listChanged", false}}},
+    {"resources", {}}  // ADD THIS -- no subscribe or listChanged needed for now
+}}
+```
+
+### What `get_node_details` Returns
+
+More detail than `get_scene_tree` provides for a single node. Includes ALL properties, not just transform/visible/script:
+
+```json
+{
+    "name": "Player",
+    "type": "CharacterBody2D",
+    "path": "Player",
+    "properties": {
+        "position": "Vector2(100, 200)",
+        "rotation": 0.0,
+        "scale": "Vector2(1, 1)",
+        "velocity": "Vector2(0, 0)",
+        "floor_max_angle": 0.785398,
+        "collision_layer": 1,
+        "collision_mask": 1
+    },
+    "signals": {
+        "defined": ["ready", "tree_entered", "tree_exiting", ...],
+        "connections": [
+            {"signal": "body_entered", "target": "HitBox", "method": "_on_body_entered"}
+        ]
+    },
+    "script": {
+        "path": "res://scripts/player.gd",
+        "source_preview": "extends CharacterBody2D\n\nconst SPEED = 300.0\n..."
+    },
+    "children": ["CollisionShape2D", "Sprite2D", "AnimationPlayer"],
+    "groups": ["players"]
+}
+```
+
+### What `get_signal_map` Returns
+
+Full signal connection graph for the current scene:
+
+```json
+{
+    "connections": [
+        {
+            "source": "Player/HurtBox",
+            "signal": "area_entered",
+            "target": "Player",
+            "method": "_on_hurt_box_area_entered",
+            "flags": 0
+        }
+    ],
+    "node_count": 15,
+    "connection_count": 3
+}
+```
+
+This reuses logic from `signal_tools.cpp::get_node_signals()` but iterates all nodes.
+
+## Feature 3: Smart Error Handling
+
+### What It Is
+
+Transform bare `{"error": "Node not found: BadPath"}` into diagnostic-rich responses:
+
+```json
+{
+    "error": "Node not found: BadPath",
+    "diagnostics": {
+        "category": "node_not_found",
+        "searched_path": "BadPath",
+        "scene_root": "Main",
+        "available_nodes": ["Player", "World", "UI"],
+        "did_you_mean": "Player"
+    },
+    "suggestions": [
+        "Check if the node path is relative to the scene root (not absolute)",
+        "Use get_scene_tree to see all available node paths",
+        "Node paths are case-sensitive in Godot"
+    ]
+}
+```
+
+### Integration Strategy: Wrapper, Not Rewrite
+
+Do NOT modify every existing tool function. Instead, create an error enrichment layer that wraps tool results:
+
+**New files (CREATE):**
+- `src/error_diagnostics.h` -- error enrichment function declarations
+- `src/error_diagnostics.cpp` -- implementations
+
+**Modified files (MODIFY):**
+- `src/mcp_server.cpp` -- wrap tool results through enrichment before returning
+
+### Error Enrichment Pipeline
+
+```cpp
+// error_diagnostics.h
+
+// Enrich a tool result if it contains an error
+// Returns the original result unchanged if no error
+nlohmann::json enrich_error(const nlohmann::json& result,
+                            const std::string& tool_name,
+                            const nlohmann::json& args);
+```
+
+Applied in `mcp_server.cpp` dispatch:
+
+```cpp
+// Current pattern (unchanged):
+if (tool_name == "create_node") {
+    // ... extract args ...
+    auto result = create_node(type, parent_path, node_name, properties, undo_redo);
+    return mcp::create_tool_result(id, enrich_error(result, "create_node", args));
+    //                                  ^^^^^^^^^^^^ NEW: wrap result
+}
+```
+
+This is minimally invasive. Each dispatch branch adds one `enrich_error()` call wrapping the tool result. No tool function changes needed.
+
+### Error Categories and Diagnostics
+
+```cpp
+// error_diagnostics.cpp
+
+struct ErrorPattern {
+    std::string category;        // "node_not_found", "invalid_type", "no_scene", etc.
+    std::string pattern;         // regex or prefix to match in error message
+    std::function<nlohmann::json(const nlohmann::json& result, const std::string& tool, const nlohmann::json& args)> diagnose;
+};
+```
+
+Key error categories to handle:
+
+| Category | Error Message Pattern | Diagnostics |
+|---|---|---|
+| `node_not_found` | "Node not found: X" | List available nodes, suggest closest match |
+| `no_scene` | "No scene open" | Tell AI to use create_scene or open_scene first |
+| `invalid_type` | "Unknown class: X" | List similar class names, check 2D/3D suffix |
+| `parent_not_found` | "Parent not found: X" | List available parent paths |
+| `script_not_found` | "File not found" | Check res:// prefix, list available scripts |
+| `property_invalid` | Property-related errors | List valid properties for the node type |
+| `bridge_not_connected` | "Game bridge not initialized" | Tell AI to run_game with wait_for_bridge first |
+
+### "Did You Mean" Implementation
+
+For `node_not_found` and `parent_not_found`, compute Levenshtein distance against actual scene tree paths:
+
+```cpp
+// Simple Levenshtein distance for suggestion generation
+// Only compute against shallow scene tree (depth 2-3) to keep it fast
+std::string find_closest_node(const std::string& attempted_path);
+```
+
+This requires calling `get_scene_tree()` within the diagnostics layer -- acceptable because errors are the slow path and scene tree queries are fast.
+
+### Godot-Free vs Godot-Dependent Diagnostics
+
+Some diagnostics need Godot API access (listing nodes, checking classes). The `enrich_error` function lives in Godot-dependent code (`#ifdef MEOW_GODOT_MCP_GODOT_ENABLED`). This is fine because it runs on the main thread inside `handle_request()`.
+
+For unit-testable error pattern matching, the pattern registry itself can be Godot-free:
+
+```cpp
+// error_diagnostics.h (Godot-free part)
+struct ErrorCategory {
+    std::string category;
+    std::vector<std::string> suggestions;
+};
+
+// Match an error message to a category (pure C++, unit-testable)
+ErrorCategory categorize_error(const std::string& error_message, const std::string& tool_name);
 
 #ifdef MEOW_GODOT_MCP_GODOT_ENABLED
-
-#include <godot_cpp/classes/editor_interface.hpp>
-#include <godot_cpp/classes/control.hpp>
-// ... Godot headers ...
-
-// Helper: resolve a node path from scene root and cast to Control
-static godot::Control* resolve_control(const std::string& node_path) {
-    auto* ei = godot::EditorInterface::get_singleton();
-    if (!ei) return nullptr;
-    godot::Node* root = ei->get_edited_scene_root();
-    if (!root) return nullptr;
-    godot::Node* node = root->get_node_or_null(
-        godot::NodePath(godot::String(node_path.c_str())));
-    return godot::Object::cast_to<godot::Control>(node);
-}
-
-nlohmann::json get_control_properties(const std::string& node_path) {
-    godot::Control* ctrl = resolve_control(node_path);
-    if (!ctrl) {
-        return {{"success", false}, {"error", "Control node not found: " + node_path}};
-    }
-    // ... extract properties ...
-}
-
+// Full enrichment with Godot API access (node listing, class checking)
+nlohmann::json enrich_error(const nlohmann::json& result, const std::string& tool_name, const nlohmann::json& args);
 #endif
 ```
 
-### Pattern 2: Resolve-and-Cast Helper (new for typed node access)
+### Performance Consideration
 
-The existing `signal_tools.cpp` has `resolve_node()`. New modules need type-specific variants:
+Error enrichment does extra work (scene tree traversal, string matching). This is acceptable because:
+1. Errors are the minority case (success path has zero overhead)
+2. `get_scene_tree()` is already fast (used by tools/call every day)
+3. Levenshtein on ~50-200 node names is microseconds
 
-```cpp
-// Resolve and cast to specific type. Returns nullptr if not found or wrong type.
-static godot::Control* resolve_control(const std::string& node_path);
-static godot::AnimationPlayer* resolve_animation_player(const std::string& node_path);
+## Feature 4: Expanded Prompt Templates
+
+### What It Is
+
+More workflow-oriented prompts that guide AI through multi-step game development tasks. Currently 7 prompts; target ~12-15.
+
+### Integration Points
+
+**Modified files (MODIFY):**
+- `src/mcp_prompts.cpp` -- add new PromptDef entries to the `defs` vector
+
+No new files needed. No structural changes. The existing `PromptDef` struct and dispatch are sufficient.
+
+### New Prompt Categories
+
+| Prompt Name | Description | Arguments |
+|---|---|---|
+| `debug_scene` | Debug scene tree issues (missing nodes, wrong types) | `symptom` (string) |
+| `optimize_performance` | Performance optimization workflow | `area` (rendering/physics/scripting) |
+| `setup_collision_layers` | Configure collision layer/mask strategy | `game_type` |
+| `create_state_machine` | Create a state machine pattern | `entity_type` (player/enemy/npc) |
+| `setup_autoloads` | Configure autoload singletons | `features` (save/audio/events) |
+| `test_game_feature` | Test a game feature end-to-end | `feature_description` |
+| `debug_error` | Diagnose a specific error message | `error_text` |
+| `refactor_scene` | Refactor scene structure | `issue` (deep_nesting/large_script/...) |
+
+### Prompt Design Pattern
+
+New prompts should reference specific MCP tools and show exact parameter formats. This is the pattern established by `build_ui_layout`:
+
+```
+Step 1: [What to do]
+  Tool: [tool_name]
+  Parameters: { ... }
+  Result: [Expected outcome]
 ```
 
-This avoids repeating the EditorInterface -> scene root -> get_node_or_null -> cast_to chain in every function.
+Prompts that reference composite tools should be written AFTER composite tools are implemented, to ensure tool names and parameters are accurate.
 
-### Pattern 3: Error Response Convention (existing, follow exactly)
+### Context-Aware Prompts (Future Consideration)
 
-All tool functions return `{"success": false, "error": "message"}` on failure and `{"success": true, ...data...}` on success. This is consistent across all v1.0 modules and must continue in v1.1.
+Currently, prompts are static text templates. A future enhancement could make prompts context-aware by reading the current scene tree and tailoring guidance. This would require:
+- Passing scene context into `get_prompt_messages()`
+- Changing the PromptDef generate signature to accept additional context
 
-### Pattern 4: ImageContent Response (NEW pattern for screenshots)
+This is out of scope for v1.5 but worth noting as a v2.0 direction.
 
-For the screenshot tool only, the response format differs from standard text content:
+## Architecture Concern: Dispatch Growth
+
+The `MCPServer::handle_request()` function is already 1060 lines with 50 tool branches. Adding composite tools will push it further. Two mitigation options:
+
+### Option A: Tool Dispatch Table (Recommended for v1.5)
+
+Replace the if/else chain with a function pointer map:
 
 ```cpp
-// In mcp_server.cpp, special-case the screenshot tool:
-if (tool_name == "capture_viewport") {
-    auto result = capture_viewport(viewport_type, max_width);
-    if (!result["success"].get<bool>()) {
-        return mcp::create_tool_result(id, result);  // Error as text
-    }
-    // Success: return as MCP ImageContent
-    return mcp::create_image_tool_result(
-        id,
-        result["data"].get<std::string>(),
-        "image/png"
-    );
+// In mcp_server.h or a new mcp_dispatch.h:
+using ToolHandler = std::function<nlohmann::json(const nlohmann::json& id,
+                                                  const nlohmann::json& args,
+                                                  MCPServer* server)>;
+
+// In mcp_server.cpp:
+static const std::unordered_map<std::string, ToolHandler>& get_tool_handlers() {
+    static const std::unordered_map<std::string, ToolHandler> handlers = {
+        {"get_scene_tree", [](auto& id, auto& args, auto* s) {
+            int max_depth = get_int(args, "max_depth", -1);
+            bool include_properties = get_bool(args, "include_properties", true);
+            std::string root_path = get_string(args, "root_path");
+            return mcp::create_tool_result(id, get_scene_tree(max_depth, include_properties, root_path));
+        }},
+        {"create_node", [](auto& id, auto& args, auto* s) {
+            // ...
+        }},
+        // ... all 50+ tools
+    };
+    return handlers;
 }
 ```
+
+**Pros:** O(1) lookup vs O(n) if/else, cleaner code, easier to add new tools.
+**Cons:** Requires passing MCPServer context (undo_redo, game_bridge) through the handler. Each handler needs access to server state.
+
+**However, this is a refactoring task, not a feature task.** Recommendation: do NOT refactor the dispatch in v1.5. The if/else chain works, is easy to understand, and adding 5-8 more branches is not a crisis. Flag this as tech debt for v2.0.
+
+### Option B: Keep If/Else, Add Comments (Pragmatic for v1.5)
+
+Keep the current pattern. Add section comments for tool groups:
+
+```cpp
+// === Composite Tools ===
+if (tool_name == "create_character") { ... }
+if (tool_name == "create_ui_panel") { ... }
+```
+
+**Recommendation:** Option B for v1.5. The dispatch table refactor is a separate concern and should not gate v1.5 features.
+
+## Component Boundaries (v1.5)
+
+### New Components
+
+```
+src/
+  composite_tools.h/.cpp      -- NEW: multi-step tool orchestrators
+  resource_providers.h/.cpp   -- NEW: enriched resource data providers
+  error_diagnostics.h/.cpp    -- NEW: error categorization + enrichment
+```
+
+### Modified Components
+
+```
+src/
+  mcp_server.cpp              -- MODIFY: add composite dispatch, enrich errors,
+                                  extend resources/read, add resources/templates/list
+  mcp_tool_registry.cpp       -- MODIFY: add ToolDef entries for composite tools
+  mcp_protocol.h/.cpp         -- MODIFY: add resources capability, template list builder
+  mcp_prompts.cpp             -- MODIFY: add new prompt templates
+```
+
+### Untouched Components (validate no changes needed)
+
+```
+src/
+  mcp_server.h                -- No new public API needed
+  mcp_dock.h/.cpp             -- No UI changes for v1.5
+  mcp_plugin.h/.cpp           -- No lifecycle changes
+  game_bridge.h/.cpp          -- No new bridge capabilities
+  register_types.h/.cpp       -- No new Godot classes
+  variant_parser.h/.cpp       -- No new type conversions
+  scene_tools.h/.cpp          -- Existing, called by composite_tools
+  scene_mutation.h/.cpp       -- Existing, called by composite_tools
+  script_tools.h/.cpp         -- Existing, called by composite_tools
+  signal_tools.h/.cpp         -- Existing, called by resource_providers
+  ui_tools.h/.cpp             -- Existing, called by composite_tools
+  physics_tools.h/.cpp        -- Existing, called by composite_tools
+  tilemap_tools.h/.cpp        -- Existing, not directly relevant
+  animation_tools.h/.cpp      -- Existing, not directly relevant
+  viewport_tools.h/.cpp       -- Existing, not directly relevant
+  scene_file_tools.h/.cpp     -- Existing, not directly relevant
+  project_tools.h/.cpp        -- Existing, called by resource_providers
+  runtime_tools.h/.cpp        -- Existing, not directly relevant
+```
+
+### Data Flow for Each Feature
+
+**Composite Tools data flow:**
+```
+MCP Client -> tools/call "create_character"
+  -> MCPServer::handle_request() dispatch
+    -> composite_tools::create_character()
+      -> scene_mutation::create_node()      (step 1)
+      -> physics_tools::create_collision_shape()  (step 2)
+      -> script_tools::write_script()       (step 3)
+      -> script_tools::attach_script()      (step 4)
+    -> enrich_error() (if error)
+  -> mcp::create_tool_result()
+-> MCP Client
+```
+
+**Enriched Resources data flow:**
+```
+MCP Client -> resources/read { uri: "godot://node/Player" }
+  -> MCPServer::handle_request()
+    -> URI prefix match "godot://node/"
+    -> resource_providers::get_node_details("Player")
+      -> scene_tools::get_scene_tree() (reuse)
+      -> signal_tools::get_node_signals() (reuse)
+      -> script_tools::read_script() (reuse)
+    -> mcp::create_resource_read_response()
+-> MCP Client
+```
+
+**Smart Error data flow:**
+```
+MCP Client -> tools/call "set_node_property" { node_path: "Playe" }
+  -> MCPServer::handle_request() dispatch
+    -> scene_mutation::set_node_property()
+    <- {"error": "Node not found: Playe"}
+    -> error_diagnostics::enrich_error(result, "set_node_property", args)
+      -> categorize_error() -> "node_not_found"
+      -> get_scene_tree() to find available nodes
+      -> levenshtein("Playe", ["Player", "World", ...]) -> "Player"
+    <- {"error": "...", "diagnostics": {...}, "suggestions": [...]}
+  -> mcp::create_tool_result()
+-> MCP Client
+```
+
+## Build Order (Dependency-Based)
+
+### Phase 1: Error Diagnostics (no dependencies, enables testing other features)
+1. Create `error_diagnostics.h/.cpp` with `categorize_error()` (Godot-free, unit-testable)
+2. Add `enrich_error()` with Godot-dependent diagnostics
+3. Wire into `mcp_server.cpp` dispatch (wrap existing tool results)
+4. Add GoogleTest unit tests for `categorize_error()`
+
+**Why first:** Error enrichment is a passive wrapper. Adding it early means all subsequent tools (including composites) automatically get smart errors. Zero risk to existing functionality.
+
+### Phase 2: Enriched Resources (depends on existing tool functions only)
+1. Create `resource_providers.h/.cpp`
+2. Add `resources/templates/list` handler to `mcp_server.cpp`
+3. Add static resources (`signal_map`, `scene_scripts`) to `resources/list`
+4. Add template resources (`node/{path}`, `script/{path}`) to `resources/read`
+5. Update `create_initialize_response()` to declare resources capability
+
+**Why second:** Resources are read-only queries that reuse existing tool module functions. No mutation, minimal risk. Validates that resource providers work before composite tools need them.
+
+### Phase 3: Composite Tools (depends on error diagnostics being in place)
+1. Create `composite_tools.h/.cpp`
+2. Implement 2-3 composite tools (start with `create_character`, `create_ui_panel`)
+3. Add ToolDef entries to `mcp_tool_registry.cpp`
+4. Add dispatch branches to `mcp_server.cpp`
+5. Error enrichment automatically applies (from Phase 1)
+6. Add UAT tests
+
+**Why third:** Composite tools are the most complex feature. They call multiple existing functions and benefit from error diagnostics being in place. Most likely to surface edge cases.
+
+### Phase 4: Expanded Prompts (depends on composite tools existing)
+1. Add new PromptDef entries to `mcp_prompts.cpp`
+2. Reference composite tool names and parameters in prompt text
+3. Add prompts for debugging workflows that leverage smart errors
+
+**Why last:** Prompts reference tool names and parameters. They must be written after composite tools have settled names. Also the lowest-risk feature -- purely additive text content.
+
+## Testing Strategy
+
+### Unit Tests (GoogleTest, no Godot)
+- `test_error_diagnostics.cpp` -- error categorization, suggestion generation, Levenshtein
+- `test_tool_registry.cpp` -- existing, extend to verify composite tool ToolDef entries
+- `test_protocol.cpp` -- existing, extend for resource template response format
+
+### UAT Tests (Python, live Godot)
+- `tests/uat_composite_tools.py` -- create_character, verify nodes exist, undo
+- `tests/uat_enriched_resources.py` -- resources/list, resources/read, template resources
+- `tests/uat_smart_errors.py` -- trigger known errors, verify diagnostics present
+
+### Manual Testing Checklist
+- [ ] Composite tool creates all expected nodes
+- [ ] Ctrl+Z undoes composite operation (all or stepwise, document which)
+- [ ] Resource templates list includes new entries
+- [ ] Reading `godot://node/Player` returns full property set
+- [ ] Error for misspelled node path includes "did you mean"
+- [ ] New prompts display correctly in AI client
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Over-Abstracting the Dispatch
+### Anti-Pattern 1: Over-Engineering Composite Tool Framework
+**What:** Creating a generic "pipeline" or "recipe" system for defining composite tools via data.
+**Why bad:** Each composite tool has unique logic (different node types, different validation, different script templates). A generic framework adds complexity without reducing code.
+**Instead:** Each composite tool is a plain function. Repetition is OK -- these are orchestration functions, not library code.
 
-**What:** Creating a generic tool dispatch system (e.g., `std::map<std::string, std::function<json(json)>>`) to replace the if-else chain.
+### Anti-Pattern 2: Breaking the Godot-Free Boundary
+**What:** Adding Godot headers to `mcp_tool_registry.h` or `mcp_protocol.h` for new features.
+**Why bad:** Breaks unit test compilation. The Godot-free boundary is a core architecture invariant.
+**Instead:** Keep registry/protocol pure C++. All Godot-dependent logic goes in `.cpp` files behind `#ifdef MEOW_GODOT_MCP_GODOT_ENABLED`.
 
-**Why avoid:** The if-else chain works. Each tool has different parameter extraction logic. A generic dispatch would need parameter validation/extraction to be either generic (complex) or still per-tool (just moved elsewhere). At 30-35 tools, the if-else chain is readable and grep-friendly. Refactor only if tools exceed 50.
+### Anti-Pattern 3: Modifying Existing Tool Function Signatures
+**What:** Changing `create_node()` signature to support composite tools.
+**Why bad:** Breaks all existing call sites and tests. High regression risk.
+**Instead:** Composite tools call existing functions as-is. If lower-level control is needed, add NEW helper functions alongside existing ones.
 
-### Anti-Pattern 2: Capturing Running Game Viewport Directly from Editor
+### Anti-Pattern 4: Eager Error Enrichment
+**What:** Running expensive diagnostics (scene tree traversal) on EVERY tool result, including successes.
+**Why bad:** Performance hit on the happy path.
+**Instead:** `enrich_error()` checks for `result.contains("error")` first. Success results pass through with zero overhead.
 
-**What:** Trying to call `get_viewport().get_texture()` on the running game's viewport from the editor process.
-
-**Why it fails:** The running game is a separate process launched by `EditorInterface::play_main_scene()`. The editor and game do not share a viewport. The editor's viewports (`get_editor_viewport_2d()`, `get_editor_viewport_3d()`) show the *editor* view, not the game's rendered output.
-
-**Instead:** Capture the editor's viewport (which shows the game preview when the game is running in embedded mode on Godot 4.4+), or document that screenshot capture is for editor viewports only. If game-viewport screenshots are needed, that requires injecting a screenshot command into the running game via a debug protocol -- far more complex and out of scope for v1.1.
-
-### Anti-Pattern 3: Blocking Main Thread with Image Encoding
-
-**What:** Encoding a large viewport image to PNG and then to base64 on the main thread.
-
-**Why risky:** `Image::save_png_to_buffer()` and `Marshalls::raw_to_base64()` are CPU-bound. For a 1920x1080 viewport, the PNG encoding could take 50-200ms, which blocks the editor. For typical editor viewports (often smaller), this is acceptable.
-
-**Mitigation:** Add an optional `max_width` parameter to `capture_viewport` that downscales the image before encoding. Default to a reasonable size (e.g., 800px width). Document that large screenshots may cause a brief editor pause.
-
-### Anti-Pattern 4: Assuming Theme Overrides are Simple String Values
-
-**What:** Treating theme override values the same as `set_node_property` string values.
-
-**Why it fails:** Theme overrides have typed APIs:
-- `add_theme_color_override(name, Color)` -- needs Color parsing
-- `add_theme_constant_override(name, int)` -- needs int parsing
-- `add_theme_font_size_override(name, int)` -- needs int parsing
-- `add_theme_stylebox_override(name, Ref<StyleBox>)` -- needs StyleBox construction
-
-**Instead:** The `set_theme_override` tool should accept the override type as a parameter and parse the value accordingly. For simple types (color, constant, font_size), reuse `variant_parser`. For StyleBox, support creating a `StyleBoxFlat` with common properties (bg_color, border_width, corner_radius) via a JSON object parameter.
-
-### Anti-Pattern 5: Animation Keyframe Values Without Type Context
-
-**What:** Accepting keyframe values as plain strings without knowing the track type.
-
-**Why it fails:** Different track types have fundamentally different key value formats:
-- TYPE_VALUE: Variant (could be anything -- Vector2, float, Color, bool)
-- TYPE_POSITION_3D: Vector3
-- TYPE_ROTATION_3D: Quaternion
-- TYPE_SCALE_3D: Vector3
-- TYPE_BEZIER: float + in/out handles
-- TYPE_METHOD: Dictionary with method name + args
-
-**Instead:** The `insert_keyframe` tool should either infer the expected type from the track type (recommended), or require the caller to specify. For TYPE_VALUE tracks, the existing `variant_parser` can handle string-to-Variant conversion. For specialized tracks (position, rotation, scale), parse the value as the expected vector/quaternion type.
+### Anti-Pattern 5: Resource Providers That Mutate State
+**What:** Making `resources/read` handlers that modify the scene.
+**Why bad:** MCP Resources are defined as read-only context. Mutation violates the spec's intent.
+**Instead:** Resources are pure queries. Use `tools/call` for any mutations.
 
 ## Scalability Considerations
 
-| Concern | v1.0 (18 tools) | v1.1 (~30 tools) | Future (50+ tools) |
-|---------|-----------------|-------------------|---------------------|
-| Tool dispatch | if-else chain | if-else chain (still manageable) | Consider map-based dispatch |
-| Tool registry | Static vector, ~250 lines | ~400 lines | Consider per-module registration |
-| Binary responses | Not supported | 1 tool (screenshot) | May need generic binary content support |
-| mcp_server.cpp size | ~570 lines | ~800-900 lines | Consider splitting dispatch into handler files |
-| Test surface | 132 unit tests | Add ~50 for new modules | Per-module test files |
-
-## Key Technical Decisions
-
-### Decision 1: Editor Viewport Screenshots, NOT Game Viewport
-
-**What:** The `capture_viewport` tool captures the editor's 2D or 3D viewport using `EditorInterface::get_editor_viewport_2d()`/`get_editor_viewport_3d()`.
-
-**Why:** The running game is a separate OS process. The editor cannot directly read its framebuffer. The editor viewports are accessible via SubViewport objects. When the game runs in embedded mode (Godot 4.4+), the editor's game preview viewport may show the running game, but this is not guaranteed across versions.
-
-**Implication:** The tool description should clearly state it captures the "editor viewport" not the "game screen."
-
-### Decision 2: MCP ImageContent for Screenshots
-
-**What:** Return screenshots as MCP `ImageContent` blocks (`type: "image"`, base64 data, mime type) rather than as text containing a base64 string.
-
-**Why:** MCP-aware clients (Claude Desktop, Cursor) render ImageContent as actual images in the chat. Returning base64 in a text block loses this capability. The MCP spec (2025-06-18) explicitly defines ImageContent for this purpose.
-
-**Implication:** Requires adding `create_image_tool_result()` to `mcp_protocol.cpp`.
-
-### Decision 3: Input Injection via `Input::parse_input_event()`
-
-**What:** Use Godot's `Input::parse_input_event()` to inject synthetic input events.
-
-**Why:** This is the standard Godot API for programmatic input. It feeds events into the same input processing pipeline as real hardware input. Available in godot-cpp.
-
-**Limitation:** This injects into the *editor process*, not the game process. When the game runs as a separate process (which is the default), the injected input does not reach the game. Input injection only works when the game runs in the editor's embedded game preview. This is a significant limitation that should be clearly documented.
-
-**Alternative consideration:** For out-of-process games, input injection would require OS-level input simulation (SendInput on Windows, xdotool on Linux) or a separate mechanism. This is out of scope for v1.1.
-
-### Decision 4: No UndoRedo for Animation Track/Key Operations
-
-**What:** Animation track and keyframe operations will NOT use EditorUndoRedoManager initially.
-
-**Why:** Animation resources are modified through the Animation class API directly, not through the scene tree node property system. Implementing UndoRedo for animation operations requires recording the old state (all keyframes on a track), setting the new state, and providing a reverse operation -- significantly more complex than node property changes. The editor's built-in animation editor does handle undo/redo, but through internal mechanisms not exposed via EditorUndoRedoManager in a clean way for external callers.
-
-**Mitigation:** Mark animation tools as "direct mutation, no undo support" in their tool descriptions. Revisit in v1.2 if users request it.
-
-### Decision 5: Theme Override Types as Explicit Parameter
-
-**What:** The `set_theme_override` tool takes an explicit `override_type` parameter rather than auto-detecting the type.
-
-**Why:** Theme override APIs are type-specific (`add_theme_color_override`, `add_theme_constant_override`, etc.). Auto-detection would require querying the theme for the expected type of a given name, which is fragile -- the same name could be a color in one control type and a constant in another. Explicit typing is unambiguous.
+| Concern | Current (v1.4) | After v1.5 | Notes |
+|---|---|---|---|
+| Tool count | 50 | ~58 (8 composites) | Still manageable in if/else chain |
+| Resource count | 2 | ~6 static + 2 templates | Minimal overhead |
+| Prompt count | 7 | ~15 | Static text, no runtime cost |
+| Dispatch function LOC | ~1060 | ~1250 | Consider table dispatch at v2.0 |
+| New source files | 0 | 3 pairs (6 files) | Clean module boundaries |
+| New test files | 0 | 1 unit + 3 UAT | Good coverage |
 
 ## Sources
 
-- [EditorInterface -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/classes/class_editorinterface.html) -- Scene management, viewport access
-- [EditorInterface -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/classes/class_editorinterface.html) -- Version-specific API
-- [Animation -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/classes/class_animation.html) -- Track and keyframe API
-- [AnimationPlayer -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/classes/class_animationplayer.html) -- Playback and library management
-- [Animation Track Types -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/tutorials/animation/animation_track_types.html) -- Track type reference
-- [Animation System DeepWiki](https://deepwiki.com/godotengine/godot/4.7-animation-system) -- Internal architecture
-- [Control -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/classes/class_control.html) -- UI node properties, theme overrides
-- [StyleBox -- Godot Engine (stable)](https://docs.godotengine.org/en/stable/classes/class_stylebox.html) -- StyleBox resource API
-- [Using the Theme Editor -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/tutorials/ui/gui_using_theme_editor.html) -- Theme system overview
-- [MCP Tools Specification (2025-06-18)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools) -- ImageContent, TextContent response types
-- [InputEventKey -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/classes/class_inputeventkey.html) -- Key input construction
-- [Using InputEvent -- Godot Engine (4.4)](https://docs.godotengine.org/en/4.4/tutorials/inputs/inputevent.html) -- Input injection via parse_input_event
-- [In-Engine Screenshots (2025)](https://shaggydev.com/2025/02/05/godot-screenshots/) -- Viewport screenshot pattern
-- [Expose Editor Viewports PR #68696](https://github.com/godotengine/godot/pull/68696) -- get_editor_viewport_2d/3d introduction
-- [close_scene proposal #8806](https://github.com/godotengine/godot-proposals/issues/8806) -- Missing close_scene API
-- [GDExtension Input Handling](https://godotforums.org/d/32909-input-handling-in-godot-40-using-gdextension) -- C++ input event handling in GDExtension
-- godot-cpp headers verified: `animation.hpp`, `animation_player.hpp`, `animation_mixer.hpp`, `animation_library.hpp`, `control.hpp`, `viewport.hpp`, `sub_viewport.hpp`, `image.hpp`, `marshalls.hpp`, `input.hpp`, `input_event_key.hpp`, `input_event_mouse_button.hpp`, `input_event_mouse_motion.hpp`, `editor_interface.hpp`
+- MCP Spec 2025-03-26 Resources: https://modelcontextprotocol.io/specification/2025-03-26/server/resources
+- MCP Spec Resource Templates: RFC 6570 URI Templates referenced in spec
+- Existing codebase analysis: direct code review of all source files (HIGH confidence)
+- Architecture decisions: from PROJECT.md and MEMORY.md context (HIGH confidence)
