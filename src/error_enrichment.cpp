@@ -471,7 +471,7 @@ ScriptErrorInfo check_gdscript_syntax(const std::string& source_code) {
 
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/node.hpp>
-#include <godot_cpp/classes/class_db.hpp>
+#include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/packed_string_array.hpp>
 
 std::string enrich_error_with_context(const std::string& error_msg, const std::string& tool_name) {
