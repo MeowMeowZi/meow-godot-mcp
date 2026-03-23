@@ -41,7 +41,7 @@ public:
     MCPServer();
     ~MCPServer();
 
-    void start(int port = 6800);
+    int start(int port = 6800);  // Returns actual port used, or 0 on failure
     void stop();
     void poll();  // Called from _process on main thread
     bool is_running() const;

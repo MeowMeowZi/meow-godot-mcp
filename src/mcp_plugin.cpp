@@ -49,11 +49,52 @@ void MCPPlugin::_enter_tree() {
     // Compute available tool count for detected version
     tool_count = get_tool_count(detected_version);
 
+    // Read port from ProjectSettings (per-project configurable)
+    {
+        auto* ps = ProjectSettings::get_singleton();
+        if (ps) {
+            // Register setting with default value if not exists
+            if (!ps->has_setting("meow_mcp/server/port")) {
+                ps->set_setting("meow_mcp/server/port", 6800);
+            }
+            // Set property info for editor display
+            Dictionary port_info;
+            port_info["name"] = "meow_mcp/server/port";
+            port_info["type"] = Variant::INT;
+            port_info["hint"] = PROPERTY_HINT_RANGE;
+            port_info["hint_string"] = "1024,65535,1";
+            ps->add_property_info(port_info);
+            // Set initial value (makes it appear in ProjectSettings UI)
+            ps->set_initial_value("meow_mcp/server/port", 6800);
+
+            port = ps->get_setting("meow_mcp/server/port");
+        }
+    }
+
     // Create and start server
     server = new MCPServer();
     server->set_undo_redo(get_undo_redo());
     server->set_godot_version(detected_version);
-    server->start(port);
+
+    // Try configured port, auto-increment on conflict (up to +10)
+    int configured_port = port;
+    int actual_port = 0;
+    int max_attempts = 10;
+    for (int i = 0; i < max_attempts; i++) {
+        actual_port = server->start(port + i);
+        if (actual_port > 0) {
+            port = actual_port;
+            break;
+        }
+    }
+    if (actual_port == 0) {
+        UtilityFunctions::printerr("MCP Meow: Failed to start on ports ",
+            configured_port, "-", configured_port + max_attempts - 1);
+    } else if (actual_port != configured_port) {
+        UtilityFunctions::push_warning(
+            String::utf8("MCP Meow: 端口 ") + String::num_int64(configured_port)
+            + String::utf8(" 被占用，自动切换到 ") + String::num_int64(actual_port));
+    }
 
     // Register game bridge debugger plugin
     debugger_plugin.instantiate();
@@ -166,7 +207,16 @@ void MCPPlugin::_on_toggle_pressed() {
     if (server->is_running()) {
         server->stop();
     } else {
-        server->start(port);
+        // Re-read port from settings in case user changed it
+        auto* ps = ProjectSettings::get_singleton();
+        if (ps && ps->has_setting("meow_mcp/server/port")) {
+            port = ps->get_setting("meow_mcp/server/port");
+        }
+        int actual_port = 0;
+        for (int i = 0; i < 10; i++) {
+            actual_port = server->start(port + i);
+            if (actual_port > 0) { port = actual_port; break; }
+        }
     }
 
     // Immediately update dock state
@@ -182,7 +232,17 @@ void MCPPlugin::_on_restart_pressed() {
     if (!server) return;
 
     server->stop();
-    server->start(port);
+
+    // Re-read port from settings in case user changed it
+    auto* ps = ProjectSettings::get_singleton();
+    if (ps && ps->has_setting("meow_mcp/server/port")) {
+        port = ps->get_setting("meow_mcp/server/port");
+    }
+    int actual_port = 0;
+    for (int i = 0; i < 10; i++) {
+        actual_port = server->start(port + i);
+        if (actual_port > 0) { port = actual_port; break; }
+    }
 
     // Immediately update dock state
     if (dock) {
@@ -206,9 +266,9 @@ void MCPPlugin::_on_configure_mcp_pressed() {
     // Normalize to forward slashes
     bridge_abs = bridge_abs.replace("\\", "/");
 
-    // Build the claude mcp add command
+    // Build the claude mcp add command (include --port for multi-instance support)
     String command = String("claude mcp add --transport stdio --scope project godot -- \"")
-        + bridge_abs + String("\"");
+        + bridge_abs + String("\" --port ") + String::num_int64(port);
 
     // Copy to clipboard
     DisplayServer::get_singleton()->clipboard_set(command);

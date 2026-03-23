@@ -109,18 +109,19 @@ bool MCPServer::has_client() const {
     return client_connected.load();
 }
 
-void MCPServer::start(int p_port) {
+int MCPServer::start(int p_port) {
     port = p_port;
     tcp_server.instantiate();
     godot::Error err = tcp_server->listen(port);
     if (err != godot::OK) {
         UtilityFunctions::printerr("MCP Meow: Failed to start TCP server on port ", port, " (error: ", (int)err, ")");
         tcp_server.unref();
-        return;
+        return 0;
     }
     running.store(true);
     io_thread = std::thread(&MCPServer::io_thread_func, this);
     UtilityFunctions::print(String::utf8("MCP Meow: TCP 服务监听端口 "), port, String::utf8(" (IO 线程已启动)"));
+    return port;
 }
 
 void MCPServer::stop() {
