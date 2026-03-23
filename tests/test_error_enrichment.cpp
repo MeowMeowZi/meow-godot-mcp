@@ -228,3 +228,61 @@ TEST(EnrichUnknownClass, SuggestsGetSceneTree) {
     auto result = enrich_unknown_class("Unknown class: Foo", "create_node", classes);
     EXPECT_NE(result.find("get_scene_tree"), std::string::npos);
 }
+
+// ========================================================================
+// enrich_missing_params tests (ERR-04: parameter format hints)
+// ========================================================================
+
+TEST(MissingParams, CreateNodeContainsTypeString) {
+    auto result = enrich_missing_params("Missing required parameter: type", "create_node");
+    EXPECT_NE(result.find("type (string"), std::string::npos);
+}
+
+TEST(MissingParams, CreateNodeContainsExample) {
+    auto result = enrich_missing_params("Missing required parameter: type", "create_node");
+    EXPECT_NE(result.find("e.g."), std::string::npos);
+}
+
+TEST(MissingParams, SetNodePropertyContainsNodePath) {
+    auto result = enrich_missing_params("Missing required parameters: node_path, property, value", "set_node_property");
+    EXPECT_NE(result.find("node_path"), std::string::npos);
+}
+
+TEST(MissingParams, SetNodePropertyContainsValueString) {
+    auto result = enrich_missing_params("Missing required parameters: node_path, property, value", "set_node_property");
+    EXPECT_NE(result.find("value (string"), std::string::npos);
+}
+
+TEST(MissingParams, ReadScriptContainsResPrefix) {
+    auto result = enrich_missing_params("Missing required parameter: path", "read_script");
+    EXPECT_NE(result.find("res://"), std::string::npos);
+}
+
+TEST(MissingParams, PreservesOriginalMessageAsPrefix) {
+    auto result = enrich_missing_params("Missing required parameter: type", "create_node");
+    EXPECT_EQ(result.find("Missing required parameter: type"), 0u);
+}
+
+TEST(MissingParams, CreateNodeMentionsExampleType) {
+    auto result = enrich_missing_params("Missing required parameter: type", "create_node");
+    // Should mention a common Godot node type as example
+    bool has_sprite = result.find("Sprite2D") != std::string::npos;
+    bool has_node2d = result.find("Node2D") != std::string::npos;
+    bool has_charbody = result.find("CharacterBody2D") != std::string::npos;
+    EXPECT_TRUE(has_sprite || has_node2d || has_charbody)
+        << "Expected at least one example node type, got: " << result;
+}
+
+TEST(MissingParams, SetNodePropertyMentionsFormatExample) {
+    auto result = enrich_missing_params("Missing required parameters: node_path, property, value", "set_node_property");
+    // Should mention Vector2 or similar format example
+    bool has_vector = result.find("Vector2") != std::string::npos;
+    bool has_example = result.find("e.g.") != std::string::npos;
+    EXPECT_TRUE(has_vector || has_example)
+        << "Expected format example, got: " << result;
+}
+
+TEST(MissingParams, UnknownToolReturnsOriginalMessageUnchanged) {
+    auto result = enrich_missing_params("Missing required parameter: foo", "nonexistent_tool_xyz");
+    EXPECT_EQ(result, "Missing required parameter: foo");
+}
