@@ -119,6 +119,11 @@ void MCPPlugin::_enter_tree() {
         callable_mp(this, &MCPPlugin::_on_restart_pressed));
     dock->get_configure_mcp_button()->connect("pressed",
         callable_mp(this, &MCPPlugin::_on_configure_mcp_pressed));
+    dock->get_port_spinbox()->connect("value_changed",
+        callable_mp(this, &MCPPlugin::_on_port_changed));
+
+    // Initialize spinbox with configured port
+    dock->get_port_spinbox()->set_value_no_signal(port);
 
     // Add dock to editor (right-bottom panel)
     add_control_to_dock(DOCK_SLOT_RIGHT_BL, dock->get_root());
@@ -250,6 +255,38 @@ void MCPPlugin::_on_restart_pressed() {
         bool connected = server->has_client();
         dock->update_status(running, connected, running ? port : 0, version_string, tool_count);
         dock->update_buttons(running);
+    }
+}
+
+void MCPPlugin::_on_port_changed(double new_port) {
+    int new_port_int = static_cast<int>(new_port);
+
+    // Save to ProjectSettings
+    auto* ps = ProjectSettings::get_singleton();
+    if (ps) {
+        ps->set_setting("meow_mcp/server/port", new_port_int);
+    }
+
+    // Restart server on the new port
+    if (server && server->is_running()) {
+        server->stop();
+        int actual_port = 0;
+        for (int i = 0; i < 10; i++) {
+            actual_port = server->start(new_port_int + i);
+            if (actual_port > 0) { port = actual_port; break; }
+        }
+        if (actual_port == 0) {
+            UtilityFunctions::printerr("MCP Meow: Failed to restart on port ", new_port_int);
+        }
+    } else {
+        port = new_port_int;
+    }
+
+    // Update dock
+    if (dock) {
+        bool running = server && server->is_running();
+        bool connected = server && server->has_client();
+        dock->update_status(running, connected, running ? port : 0, version_string, tool_count);
     }
 }
 

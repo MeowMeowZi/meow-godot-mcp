@@ -7,6 +7,7 @@
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/h_separator.hpp>
 #include <godot_cpp/classes/panel_container.hpp>
+#include <godot_cpp/classes/spin_box.hpp>
 
 #include <string>
 
@@ -25,6 +26,7 @@ public:
     godot::Button* get_toggle_button() const;
     godot::Button* get_restart_button() const;
     godot::Button* get_configure_mcp_button() const;
+    godot::SpinBox* get_port_spinbox() const;
 
     // Update status display (called from MCPPlugin::_process via timer)
     // Only updates UI labels when state actually changes (dirty check)
@@ -52,6 +54,7 @@ private:
     godot::Button* toggle_button = nullptr;
     godot::Button* restart_button = nullptr;
     godot::Button* configure_mcp_button = nullptr;
+    godot::SpinBox* port_spinbox = nullptr;
 
     godot::PanelContainer* autoload_warning = nullptr;
     godot::PanelContainer* configure_feedback = nullptr;

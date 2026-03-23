@@ -17,9 +17,22 @@ MCPDock::MCPDock() {
     status_label->set_text(String::utf8("状态：已停止"));
     root->add_child(status_label);
 
+    // Port row: label + editable spinbox
+    auto* port_row = memnew(HBoxContainer);
+    root->add_child(port_row);
+
     port_label = memnew(Label);
-    port_label->set_text(String::utf8("端口：--"));
-    root->add_child(port_label);
+    port_label->set_text(String::utf8("端口："));
+    port_row->add_child(port_label);
+
+    port_spinbox = memnew(SpinBox);
+    port_spinbox->set_min(1024);
+    port_spinbox->set_max(65535);
+    port_spinbox->set_step(1);
+    port_spinbox->set_value(6800);
+    port_spinbox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+    port_spinbox->set_tooltip_text(String::utf8("MCP 服务监听端口（修改后自动重启）"));
+    port_row->add_child(port_spinbox);
 
     version_label = memnew(Label);
     version_label->set_text(String::utf8("Godot: 检测中..."));
@@ -126,6 +139,10 @@ Button* MCPDock::get_configure_mcp_button() const {
     return configure_mcp_button;
 }
 
+SpinBox* MCPDock::get_port_spinbox() const {
+    return port_spinbox;
+}
+
 void MCPDock::update_status(bool running, bool client_connected, int port,
                             const std::string& version, int tool_count) {
     // Dirty check: only update if state changed
@@ -142,11 +159,9 @@ void MCPDock::update_status(bool running, bool client_connected, int port,
         status_label->set_text(String::utf8("状态：已连接"));
     }
 
-    // Port display
-    if (running) {
-        port_label->set_text(String::utf8("端口：") + String::num_int64(port));
-    } else {
-        port_label->set_text(String::utf8("端口：--"));
+    // Port spinbox: show actual port when running
+    if (running && port_spinbox) {
+        port_spinbox->set_value_no_signal(port);
     }
 
     // Version and tool count
