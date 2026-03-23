@@ -1,6 +1,7 @@
 #include "mcp_server.h"
 #include "mcp_protocol.h"
 #include "mcp_prompts.h"
+#include "error_enrichment.h"
 #include "game_bridge.h"
 #include "scene_tools.h"
 #include "scene_mutation.h"
@@ -65,6 +66,20 @@ static inline double get_double(const nlohmann::json& obj, const char* key, doub
     return default_val;
 }
 
+// Helper: wrap tool result with error enrichment
+// If result contains "error", enriches the message and returns isError:true response.
+// Otherwise returns standard isError:false response.
+static nlohmann::json make_tool_response(const nlohmann::json& id,
+                                          const nlohmann::json& result,
+                                          const std::string& tool_name) {
+    if (result.contains("error")) {
+        std::string error_msg = result["error"].get<std::string>();
+        std::string enriched = enrich_error_with_context(error_msg, tool_name);
+        return mcp::create_tool_error_result(id, enriched);
+    }
+    return mcp::create_tool_result(id, result);
+}
+
 // Helper: serialize JSON and send over TCP peer
 static void send_json(const Ref<StreamPeerTCP>& peer, const nlohmann::json& json_data) {
     std::string json_str = json_data.dump() + "\n";
@@ -100,8 +115,26 @@ void MCPServer::set_game_bridge(MeowDebuggerPlugin* bridge) {
 }
 
 void MCPServer::queue_deferred_response(const nlohmann::json& response) {
+    nlohmann::json enriched_response = response;
+
+    // Check if this is a tool result with an error in the content
+    if (response.contains("result") && response["result"].contains("content")) {
+        auto& content = response["result"]["content"];
+        if (content.is_array() && !content.empty() && content[0].contains("text")) {
+            std::string text = content[0]["text"].get<std::string>();
+            // Try to parse the text as JSON to check for error field
+            auto parsed = nlohmann::json::parse(text, nullptr, false);
+            if (!parsed.is_discarded() && parsed.contains("error")) {
+                std::string error_msg = parsed["error"].get<std::string>();
+                std::string enriched = enrich_error_with_context(error_msg, "game_bridge");
+                enriched_response = mcp::create_tool_error_result(
+                    response["id"], enriched);
+            }
+        }
+    }
+
     std::lock_guard<std::recursive_mutex> lock(queue_mutex);
-    response_queue.push({response});
+    response_queue.push({enriched_response});
     response_cv.notify_one();
 }
 
@@ -402,7 +435,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             bool include_properties = get_bool(args, "include_properties", true);
             std::string root_path = get_string(args, "root_path");
             nlohmann::json result = get_scene_tree(max_depth, include_properties, root_path);
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         if (tool_name == "create_node") {
@@ -416,7 +449,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (type.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: type");
             }
-            return mcp::create_tool_result(id, create_node(type, parent_path, node_name, properties, undo_redo));
+            return make_tool_response(id, create_node(type, parent_path, node_name, properties, undo_redo), tool_name);
         }
 
         if (tool_name == "set_node_property") {
@@ -428,7 +461,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (!has_node_path || property.empty() || value.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: node_path, property, value");
             }
-            return mcp::create_tool_result(id, set_node_property(node_path, property, value, undo_redo));
+            return make_tool_response(id, set_node_property(node_path, property, value, undo_redo), tool_name);
         }
 
         if (tool_name == "delete_node") {
@@ -438,7 +471,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
-            return mcp::create_tool_result(id, delete_node(node_path, undo_redo));
+            return make_tool_response(id, delete_node(node_path, undo_redo), tool_name);
         }
 
         if (tool_name == "read_script") {
@@ -447,7 +480,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
             }
-            return mcp::create_tool_result(id, read_script(path));
+            return make_tool_response(id, read_script(path), tool_name);
         }
 
         if (tool_name == "write_script") {
@@ -457,7 +490,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (path.empty() || content.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: path, content");
             }
-            return mcp::create_tool_result(id, write_script(path, content));
+            return make_tool_response(id, write_script(path, content), tool_name);
         }
 
         if (tool_name == "edit_script") {
@@ -470,7 +503,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (path.empty() || operation.empty() || line == 0) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: path, operation, line");
             }
-            return mcp::create_tool_result(id, edit_script(path, operation, line, content, end_line));
+            return make_tool_response(id, edit_script(path, operation, line, content, end_line), tool_name);
         }
 
         if (tool_name == "attach_script") {
@@ -481,7 +514,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (!has_node_path || script_path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: node_path, script_path");
             }
-            return mcp::create_tool_result(id, attach_script(node_path, script_path, undo_redo));
+            return make_tool_response(id, attach_script(node_path, script_path, undo_redo), tool_name);
         }
 
         if (tool_name == "detach_script") {
@@ -491,17 +524,17 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
-            return mcp::create_tool_result(id, detach_script(node_path, undo_redo));
+            return make_tool_response(id, detach_script(node_path, undo_redo), tool_name);
         }
 
         if (tool_name == "list_project_files") {
-            return mcp::create_tool_result(id, list_project_files());
+            return make_tool_response(id, list_project_files(), tool_name);
         }
 
         if (tool_name == "get_project_settings") {
             auto& args = get_args(params);
             std::string category = get_string(args, "category");
-            return mcp::create_tool_result(id, get_project_settings(category));
+            return make_tool_response(id, get_project_settings(category), tool_name);
         }
 
         if (tool_name == "get_resource_info") {
@@ -510,7 +543,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
             }
-            return mcp::create_tool_result(id, get_resource_info(path));
+            return make_tool_response(id, get_resource_info(path), tool_name);
         }
 
         if (tool_name == "run_game") {
@@ -540,11 +573,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return {{"__deferred", true}};
             }
 
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         if (tool_name == "stop_game") {
-            return mcp::create_tool_result(id, stop_game());
+            return make_tool_response(id, stop_game(), tool_name);
         }
 
         if (tool_name == "get_game_output") {
@@ -558,7 +591,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             // Use debugger-channel buffer when bridge is active (companion forwards log data)
             if (game_bridge && game_bridge->is_game_connected()) {
                 auto result = game_bridge->get_buffered_game_output(clear_after_read, level, since, keyword);
-                return mcp::create_tool_result(id, result);
+                return make_tool_response(id, result, tool_name);
             }
             // File-based fallback only when bridge is not available
             auto file_result = get_game_output(clear_after_read);
@@ -582,7 +615,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             file_result["lines"] = structured;
             file_result["count"] = structured.size();
             file_result["total_buffered"] = file_result.value("count", 0);
-            return mcp::create_tool_result(id, file_result);
+            return make_tool_response(id, file_result, tool_name);
         }
 
         if (tool_name == "get_node_signals") {
@@ -592,7 +625,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (!has_node_path) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: node_path");
             }
-            return mcp::create_tool_result(id, get_node_signals(node_path));
+            return make_tool_response(id, get_node_signals(node_path), tool_name);
         }
 
         if (tool_name == "connect_signal") {
@@ -605,7 +638,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: source_path, signal_name, target_path, method_name");
             }
-            return mcp::create_tool_result(id, connect_signal(source_path, signal_name, target_path, method_name));
+            return make_tool_response(id, connect_signal(source_path, signal_name, target_path, method_name), tool_name);
         }
 
         if (tool_name == "disconnect_signal") {
@@ -618,13 +651,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: source_path, signal_name, target_path, method_name");
             }
-            return mcp::create_tool_result(id, disconnect_signal(source_path, signal_name, target_path, method_name));
+            return make_tool_response(id, disconnect_signal(source_path, signal_name, target_path, method_name), tool_name);
         }
 
         if (tool_name == "save_scene") {
             auto& args = get_args(params);
             std::string path = get_string(args, "path");
-            return mcp::create_tool_result(id, save_scene(path));
+            return make_tool_response(id, save_scene(path), tool_name);
         }
 
         if (tool_name == "open_scene") {
@@ -633,11 +666,11 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: path");
             }
-            return mcp::create_tool_result(id, open_scene(path));
+            return make_tool_response(id, open_scene(path), tool_name);
         }
 
         if (tool_name == "list_open_scenes") {
-            return mcp::create_tool_result(id, list_open_scenes());
+            return make_tool_response(id, list_open_scenes(), tool_name);
         }
 
         if (tool_name == "create_scene") {
@@ -648,7 +681,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (root_type.empty() || path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameters: root_type, path");
             }
-            return mcp::create_tool_result(id, create_scene(root_type, path, root_name));
+            return make_tool_response(id, create_scene(root_type, path, root_name), tool_name);
         }
 
         if (tool_name == "instantiate_scene") {
@@ -659,7 +692,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             if (scene_path.empty()) {
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Missing required parameter: scene_path");
             }
-            return mcp::create_tool_result(id, instantiate_scene(scene_path, parent_path, name, undo_redo));
+            return make_tool_response(id, instantiate_scene(scene_path, parent_path, name, undo_redo), tool_name);
         }
 
         // --- Phase 7: UI System tools ---
@@ -673,7 +706,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, preset");
             }
-            return mcp::create_tool_result(id, set_layout_preset(node_path, preset, undo_redo));
+            return make_tool_response(id, set_layout_preset(node_path, preset, undo_redo), tool_name);
         }
 
         if (tool_name == "set_theme_override") {
@@ -687,7 +720,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, overrides");
             }
-            return mcp::create_tool_result(id, set_theme_override(node_path, overrides, undo_redo));
+            return make_tool_response(id, set_theme_override(node_path, overrides, undo_redo), tool_name);
         }
 
         if (tool_name == "create_stylebox") {
@@ -701,7 +734,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, override_name");
             }
-            return mcp::create_tool_result(id, create_stylebox(node_path, override_name, properties, undo_redo));
+            return make_tool_response(id, create_stylebox(node_path, override_name, properties, undo_redo), tool_name);
         }
 
         if (tool_name == "get_ui_properties") {
@@ -712,7 +745,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }
-            return mcp::create_tool_result(id, get_ui_properties(node_path));
+            return make_tool_response(id, get_ui_properties(node_path), tool_name);
         }
 
         if (tool_name == "set_container_layout") {
@@ -724,7 +757,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }
-            return mcp::create_tool_result(id, set_container_layout(node_path, layout_params, undo_redo));
+            return make_tool_response(id, set_container_layout(node_path, layout_params, undo_redo), tool_name);
         }
 
         if (tool_name == "get_theme_overrides") {
@@ -735,7 +768,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }
-            return mcp::create_tool_result(id, get_theme_overrides(node_path));
+            return make_tool_response(id, get_theme_overrides(node_path), tool_name);
         }
 
         // --- Phase 8: Animation System tools ---
@@ -750,7 +783,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: animation_name");
             }
-            return mcp::create_tool_result(id, create_animation(animation_name, player_path, parent_path, node_name, undo_redo));
+            return make_tool_response(id, create_animation(animation_name, player_path, parent_path, node_name, undo_redo), tool_name);
         }
 
         if (tool_name == "add_animation_track") {
@@ -763,7 +796,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: player_path, animation_name, track_type, track_path");
             }
-            return mcp::create_tool_result(id, add_animation_track(player_path, animation_name, track_type, track_path));
+            return make_tool_response(id, add_animation_track(player_path, animation_name, track_type, track_path), tool_name);
         }
 
         if (tool_name == "set_keyframe") {
@@ -779,7 +812,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: player_path, animation_name, track_index, time, action");
             }
-            return mcp::create_tool_result(id, set_keyframe(player_path, animation_name, track_index, time, action_str, value_str, transition));
+            return make_tool_response(id, set_keyframe(player_path, animation_name, track_index, time, action_str, value_str, transition), tool_name);
         }
 
         if (tool_name == "get_animation_info") {
@@ -790,7 +823,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: player_path");
             }
-            return mcp::create_tool_result(id, get_animation_info(player_path, animation_name));
+            return make_tool_response(id, get_animation_info(player_path, animation_name), tool_name);
         }
 
         if (tool_name == "set_animation_properties") {
@@ -802,7 +835,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: player_path, animation_name");
             }
-            return mcp::create_tool_result(id, set_animation_properties(player_path, animation_name, props, undo_redo));
+            return make_tool_response(id, set_animation_properties(player_path, animation_name, props, undo_redo), tool_name);
         }
 
         // --- Phase 9: Viewport Screenshot tools ---
@@ -814,9 +847,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             int width = get_int(args, "width");
             int height = get_int(args, "height");
             auto result = capture_viewport(viewport_type, width, height);
-            // If error, return as regular TextContent
+            // If error, return as enriched error with isError:true
             if (result.contains("error")) {
-                return mcp::create_tool_result(id, result);
+                return make_tool_response(id, result, tool_name);
             }
             // Success: return as MCP ImageContent
             return mcp::create_image_tool_result(id,
@@ -834,9 +867,9 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameter: type");
             }
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
             }
-            return mcp::create_tool_result(id, game_bridge->inject_input_tool(args));
+            return make_tool_response(id, game_bridge->inject_input_tool(args), tool_name);
         }
 
         if (tool_name == "capture_game_viewport") {
@@ -844,7 +877,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             int width = get_int(args, "width");
             int height = get_int(args, "height");
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
             }
             auto result = game_bridge->request_game_viewport_capture(id, width, height);
             // If deferred, do NOT send response now -- it will come via _capture callback
@@ -852,14 +885,14 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return result;  // Special marker
             }
             // Error case (not connected, already pending)
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         if (tool_name == "get_game_bridge_status") {
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"connected", false}, {"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"connected", false}, {"error", "Game bridge not initialized"}}, tool_name);
             }
-            return mcp::create_tool_result(id, game_bridge->get_bridge_status_tool());
+            return make_tool_response(id, game_bridge->get_bridge_status_tool(), tool_name);
         }
 
         // --- Phase 12: Input Injection Enhancement tools ---
@@ -873,13 +906,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameter: node_path");
             }
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
             }
             auto result = game_bridge->click_node_tool(id, node_path);
             if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
                 return result;
             }
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         if (tool_name == "get_node_rect") {
@@ -891,13 +924,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameter: node_path");
             }
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
             }
             auto result = game_bridge->get_node_rect_tool(id, node_path);
             if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
                 return result;
             }
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         // --- Phase 13: Runtime State Query tools ---
@@ -911,13 +944,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameter: property");
             }
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
             }
             auto result = game_bridge->get_game_node_property_tool(id, node_path, property);
             if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
                 return result;
             }
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         if (tool_name == "eval_in_game") {
@@ -928,26 +961,26 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameter: expression");
             }
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
             }
             auto result = game_bridge->eval_in_game_tool(id, expression);
             if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
                 return result;
             }
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         if (tool_name == "get_game_scene_tree") {
             auto& args = get_args(params);
             int max_depth = get_int(args, "max_depth", -1);
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
             }
             auto result = game_bridge->get_game_scene_tree_tool(id, max_depth);
             if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
                 return result;
             }
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         // --- Phase 15: Integration Testing Toolkit ---
@@ -962,13 +995,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameter: steps (must be a non-empty array)");
             }
             if (!game_bridge) {
-                return mcp::create_tool_result(id, {{"error", "Game bridge not initialized"}});
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
             }
             auto result = game_bridge->run_test_sequence_tool(id, steps);
             if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
                 return result;
             }
-            return mcp::create_tool_result(id, result);
+            return make_tool_response(id, result, tool_name);
         }
 
         // --- Phase 20: TileMap Operations ---
@@ -984,7 +1017,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, cells");
             }
-            return mcp::create_tool_result(id, set_tilemap_cells(node_path, cells, undo_redo));
+            return make_tool_response(id, set_tilemap_cells(node_path, cells, undo_redo), tool_name);
         }
 
         if (tool_name == "erase_tilemap_cells") {
@@ -998,7 +1031,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, coords");
             }
-            return mcp::create_tool_result(id, erase_tilemap_cells(node_path, coords, undo_redo));
+            return make_tool_response(id, erase_tilemap_cells(node_path, coords, undo_redo), tool_name);
         }
 
         if (tool_name == "get_tilemap_cell_info") {
@@ -1012,7 +1045,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: node_path, coords");
             }
-            return mcp::create_tool_result(id, get_tilemap_cell_info(node_path, coords));
+            return make_tool_response(id, get_tilemap_cell_info(node_path, coords), tool_name);
         }
 
         if (tool_name == "get_tilemap_info") {
@@ -1023,7 +1056,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameter: node_path");
             }
-            return mcp::create_tool_result(id, get_tilemap_info(node_path));
+            return make_tool_response(id, get_tilemap_info(node_path), tool_name);
         }
 
         // --- Phase 21: Collision Shape Quick-Create ---
@@ -1042,7 +1075,7 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return mcp::create_error_response(id, mcp::INVALID_PARAMS,
                     "Missing required parameters: parent_path, shape_type");
             }
-            return mcp::create_tool_result(id, create_collision_shape(parent_path, shape_type, shape_params, name, undo_redo));
+            return make_tool_response(id, create_collision_shape(parent_path, shape_type, shape_params, name, undo_redo), tool_name);
         }
 
         if (tool_name == "restart_editor") {
