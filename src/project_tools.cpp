@@ -100,14 +100,14 @@ nlohmann::json get_project_settings(const std::string& category) {
         if (return_all) {
             // "all": no filtering
         } else if (filter_by_category) {
-            if (name_str.substr(0, category.size()) != category) {
+            if (name_str.compare(0, category.size(), category) != 0) {
                 continue;
             }
         } else {
             // No category: only include default categories
             bool in_defaults = false;
             for (const auto& prefix : default_categories) {
-                if (name_str.substr(0, prefix.size()) == prefix) {
+                if (name_str.compare(0, prefix.size(), prefix) == 0) {
                     in_defaults = true;
                     break;
                 }

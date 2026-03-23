@@ -82,12 +82,12 @@ nlohmann::json parse_variant_hint(const std::string& value_str, const std::strin
     }
 
     // a2. Resource path: starts with "res://"
-    if (value_str.size() >= 6 && value_str.substr(0, 6) == "res://") {
+    if (value_str.size() >= 6 && value_str.compare(0, 6, "res://") == 0) {
         return {{"type", "resource_path"}, {"raw", value_str}};
     }
 
     // a3. Inline resource creation: starts with "new:"
-    if (value_str.size() >= 4 && value_str.substr(0, 4) == "new:") {
+    if (value_str.size() >= 4 && value_str.compare(0, 4, "new:") == 0) {
         return {{"type", "resource_new"}, {"raw", value_str}};
     }
 
@@ -202,7 +202,7 @@ godot::Variant parse_variant(const std::string& value_str, godot::Node* node, co
     godot::String godot_str(value_str.c_str());
 
     // 1. Resource path: "res://..." -> load via ResourceLoader
-    if (value_str.size() >= 6 && value_str.substr(0, 6) == "res://") {
+    if (value_str.size() >= 6 && value_str.compare(0, 6, "res://") == 0) {
         if (godot::ResourceLoader::get_singleton()->exists(godot_str)) {
             godot::Ref<godot::Resource> res = godot::ResourceLoader::get_singleton()->load(godot_str);
             if (res.is_valid()) {
@@ -210,11 +210,12 @@ godot::Variant parse_variant(const std::string& value_str, godot::Node* node, co
             }
         }
         // Return nil with error context (caller will see property unchanged)
+        godot::UtilityFunctions::push_warning(godot::String(("MCP Meow: Resource not found: " + value_str).c_str()));
         return godot::Variant();
     }
 
     // 2. Inline resource creation: "new:ClassName(prop=val, ...)"
-    if (value_str.size() >= 4 && value_str.substr(0, 4) == "new:") {
+    if (value_str.size() >= 4 && value_str.compare(0, 4, "new:") == 0) {
         std::string spec = value_str.substr(4); // "ClassName(prop=val, ...)"
 
         // Extract class name and properties content
@@ -233,9 +234,11 @@ godot::Variant parse_variant(const std::string& value_str, godot::Node* node, co
         // Validate class exists and is a Resource subclass
         godot::StringName gd_class(class_name.c_str());
         if (!godot::ClassDB::class_exists(gd_class)) {
+            godot::UtilityFunctions::push_warning(godot::String(("MCP Meow: Inline resource creation failed - unknown class: " + class_name).c_str()));
             return godot::Variant(); // Unknown class
         }
         if (!godot::ClassDB::is_parent_class(gd_class, godot::StringName("Resource"))) {
+            godot::UtilityFunctions::push_warning(godot::String(("MCP Meow: Inline resource creation failed - " + class_name + " is not a Resource subclass").c_str()));
             return godot::Variant(); // Not a Resource
         }
 
@@ -243,6 +246,7 @@ godot::Variant parse_variant(const std::string& value_str, godot::Node* node, co
         godot::Variant instance = godot::ClassDB::instantiate(gd_class);
         godot::Object* obj = instance.operator godot::Object*();
         if (!obj) {
+            godot::UtilityFunctions::push_warning(godot::String(("MCP Meow: Failed to instantiate resource: " + class_name).c_str()));
             return godot::Variant();
         }
 
@@ -305,7 +309,7 @@ godot::Variant parse_variant(const std::string& value_str, godot::Node* node, co
             }
             case godot::Variant::OBJECT: {
                 // Target property is a Resource — try loading from path or inline creation
-                if (value_str.size() >= 6 && value_str.substr(0, 6) == "res://") {
+                if (value_str.size() >= 6 && value_str.compare(0, 6, "res://") == 0) {
                     if (godot::ResourceLoader::get_singleton()->exists(godot_str)) {
                         godot::Ref<godot::Resource> res = godot::ResourceLoader::get_singleton()->load(godot_str);
                         if (res.is_valid()) return godot::Variant(res);
