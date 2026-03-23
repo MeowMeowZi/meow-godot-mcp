@@ -38,6 +38,10 @@ std::string enrich_node_not_found(const std::string& error_msg, const std::strin
 std::string enrich_unknown_class(const std::string& error_msg, const std::string& tool_name,
                                   const std::vector<std::string>& known_classes);
 
+// Missing-parameter enrichment: appends tool-specific parameter format examples
+// to INVALID_PARAMS error messages (ERR-04)
+std::string enrich_missing_params(const std::string& error_msg, const std::string& tool_name);
+
 #ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 // Godot-dependent overload: fetches sibling names / class list from live editor
 // Falls back to pure C++ enrich_error for categories that don't need Godot context

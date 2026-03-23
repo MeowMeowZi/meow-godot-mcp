@@ -273,6 +273,59 @@ std::string enrich_error(const std::string& error_msg, const std::string& tool_n
     }
 }
 
+// --- Tool parameter format hints (ERR-04) ---
+
+static const std::unordered_map<std::string, std::string> TOOL_PARAM_HINTS = {
+    {"create_node", "Parameters: type (string, e.g. 'Sprite2D', 'CharacterBody2D'), parent_path (string, path to parent node, e.g. 'Player'), name (string, optional node name)"},
+    {"set_node_property", "Parameters: node_path (string, e.g. 'Player/Sprite2D'), property (string, e.g. 'position', 'visible', 'modulate'), value (string, e.g. 'Vector2(100, 200)', 'true', '#ff0000')"},
+    {"delete_node", "Parameters: node_path (string, e.g. 'Player/Sprite2D')"},
+    {"read_script", "Parameters: path (string, must start with res://, e.g. 'res://scripts/player.gd')"},
+    {"write_script", "Parameters: path (string, must start with res://, e.g. 'res://scripts/player.gd'), content (string, GDScript source code)"},
+    {"edit_script", "Parameters: path (string, e.g. 'res://scripts/player.gd'), operation (string: 'insert', 'replace', 'delete'), line (integer, 1-based line number), content (string, new line content), end_line (integer, optional for replace/delete range)"},
+    {"attach_script", "Parameters: node_path (string, e.g. 'Player'), script_path (string, e.g. 'res://scripts/player.gd')"},
+    {"detach_script", "Parameters: node_path (string, e.g. 'Player')"},
+    {"open_scene", "Parameters: path (string, must start with res://, e.g. 'res://scenes/main.tscn')"},
+    {"create_scene", "Parameters: root_type (string, e.g. 'Node2D', 'Control'), path (string, e.g. 'res://scenes/level.tscn'), root_name (string, optional)"},
+    {"instantiate_scene", "Parameters: scene_path (string, e.g. 'res://scenes/enemy.tscn'), parent_path (string, optional), name (string, optional)"},
+    {"connect_signal", "Parameters: source_path (string), signal_name (string, e.g. 'pressed', 'body_entered'), target_path (string), method_name (string, e.g. '_on_button_pressed')"},
+    {"disconnect_signal", "Parameters: source_path (string), signal_name (string), target_path (string), method_name (string)"},
+    {"get_node_signals", "Parameters: node_path (string, e.g. 'Player')"},
+    {"set_layout_preset", "Parameters: node_path (string), preset (string: 'full_rect', 'center', 'top_left', 'top_right', 'bottom_left', 'bottom_right', 'center_left', 'center_right', 'center_top', 'center_bottom', 'top_wide', 'bottom_wide', 'left_wide', 'right_wide')"},
+    {"set_theme_override", "Parameters: node_path (string), overrides (object, e.g. {\"font_size\": 24, \"font_color\": \"#ffffff\"})"},
+    {"create_stylebox", "Parameters: node_path (string), override_name (string, e.g. 'panel'), bg_color (string, optional), corner_radius (int, optional), border_width (int, optional), border_color (string, optional)"},
+    {"create_animation", "Parameters: animation_name (string, e.g. 'idle'), player_path (string, optional), parent_path (string, optional), node_name (string, optional)"},
+    {"add_animation_track", "Parameters: player_path (string), animation_name (string), track_type (string: 'value', 'method', 'bezier', 'audio', 'animation'), track_path (string, e.g. 'Sprite2D:position')"},
+    {"set_keyframe", "Parameters: player_path (string), animation_name (string), track_index (integer), time (number, in seconds), action (string: 'insert', 'remove'), value (string, optional), transition (number, optional, default 1.0)"},
+    {"get_animation_info", "Parameters: player_path (string), animation_name (string, optional to list all)"},
+    {"set_animation_properties", "Parameters: player_path (string), animation_name (string), duration (number, optional), loop_mode (string, optional: 'none', 'linear', 'pingpong'), step (number, optional)"},
+    {"run_game", "Parameters: mode (string: 'main', 'current', 'custom'), scene_path (string, required when mode='custom'), wait_for_bridge (boolean, optional), timeout (integer, ms, optional)"},
+    {"inject_input", "Parameters: type (string: 'key', 'mouse', 'action'). For key: keycode (string). For mouse: mouse_action (string: 'click', 'move', 'scroll'), x/y (number). For action: action_name (string), pressed (boolean)."},
+    {"get_game_node_property", "Parameters: node_path (string, runtime scene path), property (string, e.g. 'position', 'health')"},
+    {"eval_in_game", "Parameters: expression (string, GDScript expression, e.g. 'get_tree().current_scene.name')"},
+    {"get_resource_info", "Parameters: path (string, e.g. 'res://icon.svg')"},
+    {"set_tilemap_cells", "Parameters: node_path (string, path to TileMapLayer), cells (array of {x, y, source_id, atlas_x, atlas_y})"},
+    {"erase_tilemap_cells", "Parameters: node_path (string), coords (array of {x, y})"},
+    {"get_tilemap_cell_info", "Parameters: node_path (string), coords (array of {x, y})"},
+    {"get_tilemap_info", "Parameters: node_path (string, path to TileMapLayer)"},
+    {"create_collision_shape", "Parameters: parent_path (string, e.g. 'Player'), shape_type (string: 'rectangle', 'circle', 'capsule', 'segment', 'polygon'), shape_params (object, optional, e.g. {\"size\": \"Vector2(32, 64)\"}), name (string, optional)"},
+    {"capture_viewport", "Parameters: viewport_type (string: '2d', '3d', optional, default '2d'), width (int, optional), height (int, optional)"},
+    {"capture_game_viewport", "Parameters: width (int, optional), height (int, optional)"},
+    {"click_node", "Parameters: node_path (string, runtime scene path to clickable node)"},
+    {"get_node_rect", "Parameters: node_path (string, runtime scene path)"},
+    {"run_test_sequence", "Parameters: steps (array of {action, ...params}, e.g. [{\"action\": \"click_node\", \"node_path\": \"Button\"}])"},
+    {"get_ui_properties", "Parameters: node_path (string, e.g. 'Panel/Label')"},
+    {"set_container_layout", "Parameters: node_path (string), alignment (string, optional), separation (int, optional), columns (int, optional for GridContainer)"},
+    {"get_theme_overrides", "Parameters: node_path (string, e.g. 'Panel/Label')"},
+};
+
+std::string enrich_missing_params(const std::string& error_msg, const std::string& tool_name) {
+    auto it = TOOL_PARAM_HINTS.find(tool_name);
+    if (it != TOOL_PARAM_HINTS.end()) {
+        return error_msg + " " + it->second;
+    }
+    return error_msg;
+}
+
 // --- Godot-dependent section ---
 
 #ifdef MEOW_GODOT_MCP_GODOT_ENABLED
