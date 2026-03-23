@@ -1,5 +1,19 @@
 # Milestones
 
+## v1.4 2D Game Development Core (Shipped: 2026-03-22)
+
+**Phases completed:** 3 phases (19-21), direct commit (no GSD planning)
+
+**Key accomplishments:**
+
+- Resource property support: res:// path loading, new:ClassName() inline creation
+- TileMap operations: batch place/erase tiles, query tile data
+- Collision shape quick-create: one-step CollisionShape2D/3D with configured shape
+- restart_editor tool for DLL recompilation workflow
+- 6 new tools (44 → 50), 82 unit tests + 23 UAT tests
+
+---
+
 ## v1.3 Developer Experience Polish (Shipped: 2026-03-21)
 
 **Phases completed:** 3 phases, 5 plans, 0 tasks
