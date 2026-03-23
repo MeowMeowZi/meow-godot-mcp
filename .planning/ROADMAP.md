@@ -97,7 +97,10 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
   3. When a tool fails due to missing preconditions (no scene open, game not running, missing parameter), the error tells the AI exactly what to do next (which tool to call, what format to use)
   4. Script parse errors include the offending line number and line content so the AI can fix the exact problem
   5. Every error response includes a `suggested_tools` list the AI can use to recover
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 22-01-PLAN.md -- Core error enrichment infrastructure: isError protocol, Levenshtein fuzzy matching, error categorization, dispatch-layer interception
+- [ ] 22-02-PLAN.md -- Parameter format hints for missing-param errors, script parse error line capture
 
 ### Phase 23: Enriched Resources
 **Goal**: AI automatically receives rich scene context (scripts, signals, properties, file metadata) through MCP Resources without calling individual query tools
@@ -158,7 +161,7 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 | 17. Reliable Game Output | v1.3 | 2/2 | Complete | 2026-03-21 |
 | 18. Tool Ergonomics | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 19-21. 2D Game Dev Core | v1.4 | -- | Complete | 2026-03-22 |
-| 22. Smart Error Handling | v1.5 | 0/TBD | Not started | - |
+| 22. Smart Error Handling | v1.5 | 0/2 | In progress | - |
 | 23. Enriched Resources | v1.5 | 0/TBD | Not started | - |
 | 24. Composite Tools | v1.5 | 0/TBD | Not started | - |
 | 25. Prompt Templates | v1.5 | 0/TBD | Not started | - |
