@@ -64,6 +64,13 @@ add_executable(test_tool_registry
 )
 target_link_libraries(test_tool_registry GTest::gtest_main)
 
+# Composite tools tests (pure C++ find_nodes_match_name, no Godot dependency)
+add_executable(test_composite_tools
+    test_composite_tools.cpp
+    ${CMAKE_SOURCE_DIR}/../src/composite_tools.cpp
+)
+target_link_libraries(test_composite_tools GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(test_placeholder)
 gtest_discover_tests(test_protocol)
@@ -72,3 +79,4 @@ gtest_discover_tests(test_variant_parser)
 gtest_discover_tests(test_scene_mutation)
 gtest_discover_tests(test_script_tools)
 gtest_discover_tests(test_tool_registry)
+gtest_discover_tests(test_composite_tools)
