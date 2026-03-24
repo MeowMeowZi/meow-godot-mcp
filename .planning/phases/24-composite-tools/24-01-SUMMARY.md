@@ -74,7 +74,7 @@ Each task was committed atomically:
 2. **Task 1: Implement find_nodes_match_name + Godot functions (TDD GREEN)** - `f23b98a` (feat)
 3. **Task 2: Register tools and wire dispatch** - `1a97b45` (feat)
 
-**Plan metadata:** TBD (docs: complete plan)
+**Plan metadata:** `6b6a864` (docs: complete plan)
 
 _Note: Task 1 used TDD with separate RED/GREEN commits_
 
