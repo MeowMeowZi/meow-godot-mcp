@@ -13,6 +13,7 @@
 #include "ui_tools.h"
 #include "animation_tools.h"
 #include "viewport_tools.h"
+#include "resource_tools.h"
 
 #include <godot_cpp/classes/editor_interface.hpp>
 #include "tilemap_tools.h"
@@ -368,13 +369,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         resources.push_back({
             {"uri", "godot://scene_tree"},
             {"name", "Scene Tree"},
-            {"description", "Current scene tree structure with node names, types, and paths"},
+            {"description", "Scene tree with inline scripts (source code, truncated at 100 lines), signal connections (outgoing + incoming), @export properties, transforms, and visibility. Depth 3, 10KB limit."},
             {"mimeType", "application/json"}
         });
         resources.push_back({
             {"uri", "godot://project_files"},
             {"name", "Project Files"},
-            {"description", "Flat listing of all files in the project (res://)"},
+            {"description", "Project files with size (bytes), type classification (scene/script/resource/image/audio/other), and modification timestamps"},
             {"mimeType", "application/json"}
         });
         return mcp::create_resources_list_response(id, resources);
@@ -386,13 +387,13 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             uri = params["uri"].get<std::string>();
         }
         if (uri == "godot://scene_tree") {
-            nlohmann::json tree = get_scene_tree();
+            nlohmann::json tree = get_enriched_scene_tree();
             nlohmann::json contents = nlohmann::json::array();
             contents.push_back({{"uri", uri}, {"mimeType", "application/json"}, {"text", tree.dump()}});
             return mcp::create_resource_read_response(id, contents);
         }
         if (uri == "godot://project_files") {
-            nlohmann::json files = list_project_files();
+            nlohmann::json files = get_enriched_project_files();
             nlohmann::json contents = nlohmann::json::array();
             contents.push_back({{"uri", uri}, {"mimeType", "application/json"}, {"text", files.dump()}});
             return mcp::create_resource_read_response(id, contents);
