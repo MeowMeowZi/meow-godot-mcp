@@ -30,6 +30,25 @@ nlohmann::json batch_set_property(const nlohmann::json& node_paths, const std::s
                                    const std::string& property_name, const std::string& value_str,
                                    godot::EditorUndoRedoManager* undo_redo);
 
+// COMP-03: Create complete character (CharacterBody + CollisionShape + optional Sprite + optional script)
+// Single UndoRedo action for entire hierarchy. Ctrl+Z undoes everything.
+nlohmann::json create_character(const std::string& name, const std::string& char_type,
+                                 const std::string& shape_type, const std::string& parent_path,
+                                 const std::string& sprite_texture,
+                                 const std::string& script_template,
+                                 godot::EditorUndoRedoManager* undo_redo);
+
+// COMP-04: Create UI panel from declarative JSON spec
+// Creates container + children + StyleBoxFlat styling in single UndoRedo action.
+nlohmann::json create_ui_panel(const nlohmann::json& spec, const std::string& parent_path,
+                                godot::EditorUndoRedoManager* undo_redo);
+
+// COMP-05: Deep-copy node subtree to new parent
+// Uses Godot's Node::duplicate() for deep copy, sets owner recursively.
+nlohmann::json duplicate_node(const std::string& source_path, const std::string& target_parent_path,
+                               const std::string& new_name,
+                               godot::EditorUndoRedoManager* undo_redo);
+
 #endif // MEOW_GODOT_MCP_GODOT_ENABLED
 
 #endif // MEOW_GODOT_MCP_COMPOSITE_TOOLS_H
