@@ -420,12 +420,7 @@ TEST(ToolsListResponse, HasGetResourceInfoTool) {
 }
 
 // --- Initialize response resources capability test ---
-// resources capability removed from initialize response (not supported, was causing null)
-
-TEST(InitializeResponse, DoesNotAdvertiseResources) {
-    auto response = create_initialize_response(1);
-    EXPECT_FALSE(response["result"]["capabilities"].contains("resources"));
-}
+// resources capability now advertised (Phase 23 enriched resources)
 
 // --- Resources protocol builder tests ---
 
@@ -667,4 +662,48 @@ TEST(ToolErrorResult, PreservesStringId) {
 TEST(ToolErrorResult, HasJsonRpc2) {
     auto response = mcp::create_tool_error_result(1, "test");
     EXPECT_EQ(response["jsonrpc"], "2.0");
+}
+
+// --- Resource Templates List response tests ---
+
+TEST(ResourceTemplates, ListResponseStructure) {
+    auto response = mcp::create_resource_templates_list_response(1);
+    EXPECT_EQ(response["jsonrpc"], "2.0");
+    EXPECT_EQ(response["id"], 1);
+    ASSERT_TRUE(response["result"].contains("resourceTemplates"));
+    EXPECT_TRUE(response["result"]["resourceTemplates"].is_array());
+}
+
+TEST(ResourceTemplates, ThreeTemplates) {
+    auto response = mcp::create_resource_templates_list_response(2);
+    auto templates = response["result"]["resourceTemplates"];
+    ASSERT_EQ(templates.size(), 3);
+
+    // Verify uriTemplate values
+    std::vector<std::string> expected_uris = {
+        "godot://node/{path}",
+        "godot://script/{path}",
+        "godot://signals/{path}"
+    };
+    for (size_t i = 0; i < 3; ++i) {
+        EXPECT_EQ(templates[i]["uriTemplate"], expected_uris[i]);
+    }
+}
+
+TEST(ResourceTemplates, TemplateFields) {
+    auto response = mcp::create_resource_templates_list_response(3);
+    auto templates = response["result"]["resourceTemplates"];
+    for (const auto& tmpl : templates) {
+        EXPECT_TRUE(tmpl.contains("uriTemplate")) << "Missing uriTemplate field";
+        EXPECT_TRUE(tmpl.contains("name")) << "Missing name field";
+        EXPECT_TRUE(tmpl.contains("description")) << "Missing description field";
+        EXPECT_TRUE(tmpl.contains("mimeType")) << "Missing mimeType field";
+        EXPECT_EQ(tmpl["mimeType"], "application/json");
+    }
+}
+
+TEST(InitializeResponse, HasResourcesCapability) {
+    auto response = mcp::create_initialize_response(1);
+    ASSERT_TRUE(response["result"]["capabilities"].contains("resources"));
+    EXPECT_EQ(response["result"]["capabilities"]["resources"]["subscribe"], false);
 }
