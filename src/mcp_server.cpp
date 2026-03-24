@@ -1166,6 +1166,47 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return mcp::create_tool_result(id, batch_set_property(node_paths, type_filter, property, value, undo_redo));
         }
 
+        if (tool_name == "create_character") {
+            auto& args = get_args(params);
+            std::string name = get_string(args, "name");
+            std::string char_type = get_string(args, "type");
+            std::string shape_type = get_string(args, "shape_type");
+            std::string parent_path = get_string(args, "parent_path");
+            std::string sprite_texture = get_string(args, "sprite_texture");
+            std::string script_template = get_string(args, "script_template");
+            if (name.empty() || char_type.empty()) {
+                return make_params_error(id, "Missing required parameters: name, type", tool_name);
+            }
+            if (char_type != "2d" && char_type != "3d") {
+                return make_params_error(id, "type must be '2d' or '3d'", tool_name);
+            }
+            return make_tool_response(id, create_character(name, char_type, shape_type, parent_path, sprite_texture, script_template, undo_redo), tool_name);
+        }
+
+        if (tool_name == "create_ui_panel") {
+            auto& args = get_args(params);
+            if (!args.contains("spec") || !args["spec"].is_object()) {
+                return make_params_error(id, "Missing required parameter: spec (object)", tool_name);
+            }
+            nlohmann::json spec = args["spec"];
+            std::string parent_path = get_string(args, "parent_path");
+            if (!spec.contains("root_type") || !spec["root_type"].is_string() || spec["root_type"].get<std::string>().empty()) {
+                return make_params_error(id, "spec.root_type is required (e.g., 'PanelContainer', 'VBoxContainer')", tool_name);
+            }
+            return make_tool_response(id, create_ui_panel(spec, parent_path, undo_redo), tool_name);
+        }
+
+        if (tool_name == "duplicate_node") {
+            auto& args = get_args(params);
+            std::string source_path = get_string(args, "source_path");
+            std::string target_parent_path = get_string(args, "target_parent_path");
+            std::string new_name = get_string(args, "new_name");
+            if (source_path.empty()) {
+                return make_params_error(id, "Missing required parameter: source_path", tool_name);
+            }
+            return make_tool_response(id, duplicate_node(source_path, target_parent_path, new_name, undo_redo), tool_name);
+        }
+
         if (tool_name == "restart_editor") {
             auto& args = get_args(params);
             bool save = get_bool(args, "save", true);

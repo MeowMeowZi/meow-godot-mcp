@@ -97,6 +97,9 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
         "create_collision_shape",
         "find_nodes",
         "batch_set_property",
+        "create_character",
+        "create_ui_panel",
+        "duplicate_node",
         "restart_editor"
     };
     ASSERT_EQ(tools.size(), expected_names.size());
@@ -110,7 +113,7 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 TEST(FilteredTools, Version430Returns38Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 52);
+    EXPECT_EQ(json_tools.size(), 55);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -122,7 +125,7 @@ TEST(FilteredTools, Version420Returns0Tools) {
 TEST(FilteredTools, PermissiveVersionReturns38Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 52);
+    EXPECT_EQ(json_tools.size(), 55);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -146,7 +149,7 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 // --- Tool count tests ---
 
 TEST(ToolCount, Version430Returns38) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 52);
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 55);
 }
 
 TEST(ToolCount, Version420Returns0) {

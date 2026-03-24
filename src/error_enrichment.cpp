@@ -321,6 +321,11 @@ static const std::unordered_map<std::string, std::string> TOOL_PARAM_HINTS = {
     {"get_ui_properties", "Parameters: node_path (string, e.g. 'Panel/Label')"},
     {"set_container_layout", "Parameters: node_path (string), alignment (string, optional), separation (int, optional), columns (int, optional for GridContainer)"},
     {"get_theme_overrides", "Parameters: node_path (string, e.g. 'Panel/Label')"},
+    {"find_nodes", "Parameters: type (string, class name), name_pattern (string, glob with *), property_filter ({name, value}), root_path (string, optional)"},
+    {"batch_set_property", "Parameters: node_paths (array of strings) or type_filter (string), property (string), value (string)"},
+    {"create_character", "Required: name (string), type ('2d' or '3d'). Optional: shape_type ('rectangle', 'circle', 'capsule', 'box', 'sphere'), parent_path, sprite_texture ('res://...'), script_template ('none' or 'basic_movement')"},
+    {"create_ui_panel", "Required: spec ({root_type: 'VBoxContainer', children: [{type: 'Label', text: 'Hi'}], style: {bg_color: '#333333'}}). Optional: parent_path"},
+    {"duplicate_node", "Required: source_path (node path). Optional: target_parent_path, new_name"},
 };
 
 std::string enrich_missing_params(const std::string& error_msg, const std::string& tool_name) {

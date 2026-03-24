@@ -889,6 +889,61 @@ const std::vector<ToolDef>& get_all_tools() {
             },
             {4, 3, 0}
         },
+        {
+            "create_character",
+            "Create a complete game character (CharacterBody + CollisionShape + optional Sprite) in one atomic operation. "
+            "Ctrl+Z undoes the entire creation.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"name", {{"type", "string"}, {"description", "Character name (e.g., 'Player', 'Enemy')"}}},
+                    {"type", {{"type", "string"}, {"enum", {"2d", "3d"}}, {"description", "Character dimension: '2d' for CharacterBody2D, '3d' for CharacterBody3D"}}},
+                    {"shape_type", {{"type", "string"}, {"description", "Collision shape type. 2D: 'rectangle', 'circle', 'capsule'. 3D: 'box', 'sphere', 'capsule_3d'. Default: 'rectangle' (2D) or 'capsule_3d' (3D)"}}},
+                    {"parent_path", {{"type", "string"}, {"description", "Parent node path (default: scene root)"}}},
+                    {"sprite_texture", {{"type", "string"}, {"description", "Texture resource path (e.g., 'res://icon.svg') to create a Sprite2D/3D child"}}},
+                    {"script_template", {{"type", "string"}, {"enum", {"none", "basic_movement"}}, {"description", "Script template to attach. 'basic_movement' adds WASD+jump movement. Default: 'none'"}}}
+                }},
+                {"required", {"name", "type"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "create_ui_panel",
+            "Create a UI panel from a declarative JSON specification. Creates container + children + styling in one atomic operation. "
+            "Ctrl+Z undoes everything.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"spec", {{"type", "object"}, {"description", "UI panel specification with root_type, optional children and style"},
+                        {"properties", {
+                            {"root_type", {{"type", "string"}, {"description", "Container type (e.g., 'PanelContainer', 'VBoxContainer', 'HBoxContainer', 'MarginContainer')"}}},
+                            {"name", {{"type", "string"}, {"description", "Root node name (default: root_type)"}}},
+                            {"children", {{"type", "array"}, {"description", "Child node specs, each: {type, name, text, ...}"}}},
+                            {"style", {{"type", "object"}, {"description", "StyleBoxFlat properties: bg_color, corner_radius, border_width, border_color, content_margin_left/right/top/bottom"}}}
+                        }},
+                        {"required", {"root_type"}}
+                    }},
+                    {"parent_path", {{"type", "string"}, {"description", "Parent node path (default: scene root)"}}}
+                }},
+                {"required", {"spec"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "duplicate_node",
+            "Deep-copy a node and its entire subtree to a new parent. Preserves all children, properties, and script references. "
+            "Single undo step.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"source_path", {{"type", "string"}, {"description", "Path to the node to duplicate"}}},
+                    {"target_parent_path", {{"type", "string"}, {"description", "Path to new parent (default: same parent as source)"}}},
+                    {"new_name", {{"type", "string"}, {"description", "Name for the duplicated node (default: Godot auto-names with suffix)"}}}
+                }},
+                {"required", {"source_path"}}
+            },
+            {4, 3, 0}
+        },
         // --- Restart Editor ---
         {
             "restart_editor",
