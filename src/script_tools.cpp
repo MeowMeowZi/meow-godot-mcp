@@ -101,6 +101,7 @@ EditResult edit_lines(const std::vector<std::string>& lines, const std::string& 
 
 #ifdef MEOW_GODOT_MCP_GODOT_ENABLED
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/gd_script.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
@@ -188,6 +189,12 @@ nlohmann::json write_script(const std::string& path, const std::string& content)
     // Error if file already exists (per user decision -- use edit_script to modify)
     if (FileAccess::file_exists(gd_path)) {
         return {{"error", "File already exists: " + path + ". Use edit_script to modify existing files."}};
+    }
+
+    // Auto-create directory if needed
+    String dir_path = gd_path.get_base_dir();
+    if (!dir_path.is_empty() && !DirAccess::dir_exists_absolute(dir_path)) {
+        DirAccess::make_dir_recursive_absolute(dir_path);
     }
 
     Ref<FileAccess> file = FileAccess::open(gd_path, FileAccess::WRITE);
@@ -369,6 +376,84 @@ nlohmann::json detach_script(const std::string& node_path,
     undo_redo->commit_action();
 
     return {{"success", true}, {"node_path", node_path}};
+}
+
+nlohmann::json validate_scripts() {
+    Ref<DirAccess> dir = DirAccess::open("res://");
+    if (!dir.is_valid()) {
+        return {{"error", "Cannot open project directory"}};
+    }
+
+    nlohmann::json results = nlohmann::json::array();
+    int total = 0;
+    int errors_found = 0;
+
+    // Recursively find all .gd files
+    std::vector<String> gd_files;
+    std::vector<String> dirs_to_scan;
+    dirs_to_scan.push_back("res://");
+
+    while (!dirs_to_scan.empty()) {
+        String scan_dir = dirs_to_scan.back();
+        dirs_to_scan.pop_back();
+
+        Ref<DirAccess> d = DirAccess::open(scan_dir);
+        if (!d.is_valid()) continue;
+
+        d->list_dir_begin();
+        String item = d->get_next();
+        while (!item.is_empty()) {
+            if (d->current_is_dir() && !item.begins_with(".") && item != "addons") {
+                dirs_to_scan.push_back(scan_dir.path_join(item));
+            } else if (item.ends_with(".gd")) {
+                gd_files.push_back(scan_dir.path_join(item));
+            }
+            item = d->get_next();
+        }
+        d->list_dir_end();
+    }
+
+    for (const String& path : gd_files) {
+        total++;
+        // Try loading as GDScript to check for parse errors
+        Ref<GDScript> script;
+        script.instantiate();
+
+        Ref<FileAccess> f = FileAccess::open(path, FileAccess::READ);
+        if (!f.is_valid()) {
+            results.push_back({{"path", std::string(path.utf8().get_data())}, {"status", "unreadable"}});
+            errors_found++;
+            continue;
+        }
+        String source = f->get_as_text();
+        f.unref();
+
+        script->set_source_code(source);
+        script->set_path(path);
+        Error err = script->reload(true);  // keep_state = true
+
+        if (err != OK) {
+            errors_found++;
+            results.push_back({
+                {"path", std::string(path.utf8().get_data())},
+                {"status", "error"},
+                {"error_code", (int)err}
+            });
+        } else {
+            results.push_back({
+                {"path", std::string(path.utf8().get_data())},
+                {"status", "ok"}
+            });
+        }
+    }
+
+    return {
+        {"success", true},
+        {"total_scripts", total},
+        {"errors", errors_found},
+        {"valid", total - errors_found},
+        {"scripts", results}
+    };
 }
 
 #endif // MEOW_GODOT_MCP_GODOT_ENABLED

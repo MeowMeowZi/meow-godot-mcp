@@ -1241,6 +1241,19 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return make_tool_response(id, duplicate_node(source_path, target_parent_path, new_name, undo_redo), tool_name);
         }
 
+        if (tool_name == "validate_scripts") {
+            return make_tool_response(id, validate_scripts(), tool_name);
+        }
+
+        if (tool_name == "create_node_tree") {
+            auto& args = get_args(params);
+            if (!args.contains("spec") || !args["spec"].is_object()) {
+                return make_params_error(id, "Missing required parameter: spec (object)", tool_name);
+            }
+            std::string parent_path = get_string(args, "parent_path");
+            return make_tool_response(id, create_node_tree(args["spec"], parent_path, undo_redo), tool_name);
+        }
+
         if (tool_name == "restart_editor") {
             auto& args = get_args(params);
             bool save = get_bool(args, "save", true);

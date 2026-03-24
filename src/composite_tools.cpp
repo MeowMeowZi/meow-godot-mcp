@@ -811,4 +811,106 @@ nlohmann::json duplicate_node(const std::string& source_path, const std::string&
     };
 }
 
+// === create_node_tree ===
+
+static Node* _create_tree_node(const nlohmann::json& spec, Node* scene_root,
+                                EditorUndoRedoManager* undo_redo, int& count) {
+    std::string type_str = spec.value("type", "Node");
+    std::string name_str = spec.value("name", type_str);
+
+    Variant instance = ClassDB::instantiate(StringName(type_str.c_str()));
+    Node* node = Object::cast_to<Node>(instance.operator Object*());
+    if (!node) return nullptr;
+
+    node->set_name(String(name_str.c_str()));
+    count++;
+
+    // Set properties
+    if (spec.contains("properties") && spec["properties"].is_object()) {
+        for (auto& [key, val] : spec["properties"].items()) {
+            String prop_name = String(key.c_str());
+            std::string val_s = val.is_string() ? val.get<std::string>() : val.dump();
+            Variant parsed = parse_variant(val_s, node, key);
+            node->set(prop_name, parsed);
+        }
+    }
+
+    // Shorthand: "text" property directly
+    if (spec.contains("text") && spec["text"].is_string()) {
+        node->set("text", String(spec["text"].get<std::string>().c_str()));
+    }
+
+    // Recursively create children
+    if (spec.contains("children") && spec["children"].is_array()) {
+        for (const auto& child_spec : spec["children"]) {
+            Node* child = _create_tree_node(child_spec, scene_root, undo_redo, count);
+            if (child) {
+                node->add_child(child);
+                child->set_owner(scene_root);
+            }
+        }
+    }
+
+    return node;
+}
+
+nlohmann::json create_node_tree(const nlohmann::json& spec, const std::string& parent_path,
+                                 EditorUndoRedoManager* undo_redo) {
+    Node* scene_root = EditorInterface::get_singleton()->get_edited_scene_root();
+    if (!scene_root) {
+        return {{"error", "No scene open. Use create_scene or open_scene first."}};
+    }
+
+    Node* parent = scene_root;
+    if (!parent_path.empty()) {
+        parent = scene_root->get_node_or_null(NodePath(String(parent_path.c_str())));
+        if (!parent) {
+            return {{"error", "Parent not found: " + parent_path}};
+        }
+    }
+
+    if (!spec.contains("type") || !spec["type"].is_string()) {
+        return {{"error", "Root spec must have 'type' field"}};
+    }
+
+    int node_count = 0;
+
+    undo_redo->create_action("MCP: Create Node Tree");
+
+    Node* root_node = _create_tree_node(spec, scene_root, undo_redo, node_count);
+    if (!root_node) {
+        undo_redo->commit_action();
+        return {{"error", "Failed to create root node of type: " + spec.value("type", "?")}};
+    }
+
+    parent->add_child(root_node);
+    root_node->set_owner(scene_root);
+
+    // Set owner for all descendants
+    std::vector<Node*> stack;
+    for (int i = 0; i < root_node->get_child_count(); i++) {
+        stack.push_back(root_node->get_child(i));
+    }
+    while (!stack.empty()) {
+        Node* n = stack.back();
+        stack.pop_back();
+        n->set_owner(scene_root);
+        for (int i = 0; i < n->get_child_count(); i++) {
+            stack.push_back(n->get_child(i));
+        }
+    }
+
+    undo_redo->add_do_reference(root_node);
+    undo_redo->commit_action();
+
+    NodePath np = scene_root->get_path_to(root_node);
+    String np_str = String(np);
+
+    return {
+        {"success", true},
+        {"root_path", std::string(np_str.utf8().get_data())},
+        {"nodes_created", node_count}
+    };
+}
+
 #endif // MEOW_GODOT_MCP_GODOT_ENABLED

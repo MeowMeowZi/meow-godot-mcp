@@ -29,6 +29,7 @@ nlohmann::json attach_script(const std::string& node_path, const std::string& sc
                               godot::EditorUndoRedoManager* undo_redo);
 nlohmann::json detach_script(const std::string& node_path,
                               godot::EditorUndoRedoManager* undo_redo);
+nlohmann::json validate_scripts();
 #endif
 
 #endif // MEOW_GODOT_MCP_SCRIPT_TOOLS_H

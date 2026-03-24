@@ -326,6 +326,8 @@ static const std::unordered_map<std::string, std::string> TOOL_PARAM_HINTS = {
     {"create_character", "Required: name (string), type ('2d' or '3d'). Optional: shape_type ('rectangle', 'circle', 'capsule', 'box', 'sphere'), parent_path, sprite_texture ('res://...'), script_template ('none' or 'basic_movement')"},
     {"create_ui_panel", "Required: spec ({root_type: 'VBoxContainer', children: [{type: 'Label', text: 'Hi'}], style: {bg_color: '#333333'}}). Optional: parent_path"},
     {"duplicate_node", "Required: source_path (node path). Optional: target_parent_path, new_name"},
+    {"validate_scripts", "No parameters required. Scans all .gd files in res:// (excluding addons/)."},
+    {"create_node_tree", "Required: spec (object with 'type', optional 'name', 'properties', 'children'). Optional: parent_path"},
     {"inject_input_sequence", "Required: steps (array). Each step: {\"action\": \"ui_right\", \"duration\": 1000}, {\"key\": \"W\", \"duration\": 500}, {\"mouse\": \"click\", \"position\": {\"x\": 100, \"y\": 200}}, {\"wait\": 300}"},
     {"inject_text", "Required: node_path (string, path to LineEdit/TextEdit), text (string, content to set)"},
 };

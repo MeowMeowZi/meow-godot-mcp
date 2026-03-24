@@ -28,6 +28,7 @@ void MeowDebuggerPlugin::_on_session_started(int32_t p_session_id) {
     active_session_id = p_session_id;
     log_buffer.clear();
     log_buffer_read_pos = 0;
+    last_exit_reason.clear();
     UtilityFunctions::print(String::utf8("MCP Meow: 游戏调试会话已启动 (会话 "), p_session_id, ")");
 }
 
@@ -35,8 +36,15 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
     if (p_session_id == active_session_id) {
         active_session_id = -1;
         game_connected = false;
-        log_buffer.clear();
-        log_buffer_read_pos = 0;
+        // Keep log_buffer for post-mortem — don't clear it
+        // Set exit reason from last error in log buffer
+        last_exit_reason = "Game exited";
+        for (auto it = log_buffer.rbegin(); it != log_buffer.rend(); ++it) {
+            if (it->level == "error") {
+                last_exit_reason = "Game exited with error: " + it->message;
+                break;
+            }
+        }
 
         // If there's a pending deferred request, deliver error via deferred callback
         if (pending_type != PendingType::NONE && deferred_callback) {
@@ -62,6 +70,12 @@ void MeowDebuggerPlugin::_on_session_stopped(int32_t p_session_id) {
                     break;
                 case PendingType::RUN_TEST_SEQUENCE:
                     error_msg = "Game disconnected during test sequence";
+                    break;
+                case PendingType::INPUT_SEQUENCE:
+                    error_msg = "Game disconnected during input sequence";
+                    break;
+                case PendingType::INJECT_TEXT:
+                    error_msg = "Game disconnected during text injection";
                     break;
                 default:
                     error_msg = "Game disconnected during pending operation";
@@ -425,13 +439,18 @@ nlohmann::json MeowDebuggerPlugin::get_buffered_game_output(
         log_buffer_read_pos = static_cast<int64_t>(log_buffer.size());
     }
 
-    return {
+    nlohmann::json result = {
         {"success", true},
         {"lines", lines},
         {"count", lines.size()},
         {"total_buffered", log_buffer.size()},
         {"game_running", game_connected}
     };
+    // Include exit reason if game is not running (post-mortem info)
+    if (!game_connected && !last_exit_reason.empty()) {
+        result["exit_reason"] = last_exit_reason;
+    }
+    return result;
 }
 
 void MeowDebuggerPlugin::clear_log_buffer() {

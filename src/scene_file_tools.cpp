@@ -10,6 +10,7 @@
 #include <godot_cpp/classes/resource_saver.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/string_name.hpp>
@@ -145,8 +146,15 @@ nlohmann::json create_scene(const std::string& root_type,
         return {{"error", "Failed to pack scene (error: " + std::to_string((int)pack_err) + ")"}};
     }
 
+    // Auto-create directory if needed
+    String gd_path = String(path.c_str());
+    String dir_path = gd_path.get_base_dir();
+    if (!dir_path.is_empty() && !DirAccess::dir_exists_absolute(dir_path)) {
+        DirAccess::make_dir_recursive_absolute(dir_path);
+    }
+
     // Save to disk
-    Error save_err = ResourceSaver::get_singleton()->save(packed, String(path.c_str()));
+    Error save_err = ResourceSaver::get_singleton()->save(packed, gd_path);
     if (save_err != OK) {
         return {{"error", "Failed to save scene file (error: " + std::to_string((int)save_err) + ")"}};
     }

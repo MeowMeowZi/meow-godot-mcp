@@ -75,6 +75,7 @@ private:
 
     int active_session_id = -1;
     bool game_connected = false;
+    std::string last_exit_reason;  // Populated when game disconnects unexpectedly
 
     // Phase 14: Log buffer for captured game output
     std::vector<LogEntry> log_buffer;

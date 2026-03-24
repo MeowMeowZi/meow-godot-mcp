@@ -49,6 +49,11 @@ nlohmann::json duplicate_node(const std::string& source_path, const std::string&
                                const std::string& new_name,
                                godot::EditorUndoRedoManager* undo_redo);
 
+// Create arbitrary node tree from JSON spec. Like create_ui_panel but for any node type.
+// Single UndoRedo action for entire hierarchy.
+nlohmann::json create_node_tree(const nlohmann::json& spec, const std::string& parent_path,
+                                 godot::EditorUndoRedoManager* undo_redo);
+
 #endif // MEOW_GODOT_MCP_GODOT_ENABLED
 
 #endif // MEOW_GODOT_MCP_COMPOSITE_TOOLS_H

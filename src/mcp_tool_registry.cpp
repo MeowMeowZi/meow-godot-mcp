@@ -575,6 +575,35 @@ const std::vector<ToolDef>& get_all_tools() {
             {4, 3, 0}
         },
         {
+            "validate_scripts",
+            "Validate all GDScript files in the project for syntax errors. Scans res:// recursively (excluding addons/). Returns per-file status and error count. Use before run_game to catch script errors early.",
+            {
+                {"type", "object"},
+                {"properties", nlohmann::json::object()},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
+        },
+        {
+            "create_node_tree",
+            "Create an arbitrary node tree from a declarative JSON specification in one atomic operation. Supports any node type with properties and nested children. Ctrl+Z undoes the entire creation.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"spec", {
+                        {"type", "object"},
+                        {"description", "Node tree spec: {\"type\": \"Node2D\", \"name\": \"MyNode\", \"properties\": {\"position\": \"Vector2(100,200)\"}, \"children\": [{\"type\": \"Sprite2D\", ...}]}. Supports unlimited nesting."}
+                    }},
+                    {"parent_path", {
+                        {"type", "string"},
+                        {"description", "Path to parent node. Empty or omit for scene root."}
+                    }}
+                }},
+                {"required", {"spec"}}
+            },
+            {4, 3, 0}
+        },
+        {
             "inject_input_sequence",
             "Execute a sequence of input steps with timing in the running game. Each step can be an action press+hold+release, key press, mouse event, or wait. Steps execute sequentially with specified durations. Requires a game to be running with the MCP bridge connected.",
             {
