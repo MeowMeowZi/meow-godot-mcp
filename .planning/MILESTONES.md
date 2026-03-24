@@ -1,5 +1,18 @@
 # Milestones
 
+## v1.5 AI Workflow Enhancement (Shipped: 2026-03-24)
+
+**Phases completed:** 4 phases, 8 plans, 12 tasks
+
+**Key accomplishments:**
+
+- Smart error handling: MCP isError protocol, Levenshtein fuzzy matching for node/class names, 10-category error classification with recovery guidance, 55 unit tests
+- Enriched MCP Resources: scene tree with inline scripts/signals/properties, 3 URI resource templates (node/script/signals), project file metadata (size/type/mtime)
+- 5 composite tools (55 total): find_nodes, batch_set_property, create_character, create_ui_panel, duplicate_node — all with atomic UndoRedo
+- 8 new prompt templates (15 total): tool composition guide, debugging workflows, game-building workflows (platformer/top-down/parameterized)
+
+---
+
 ## v1.4 2D Game Development Core (Shipped: 2026-03-22)
 
 **Phases completed:** 3 phases (19-21), direct commit (no GSD planning)
