@@ -71,7 +71,8 @@ nlohmann::json create_initialize_response(const nlohmann::json& id) {
             {"protocolVersion", "2025-03-26"},
             {"capabilities", {
                 {"tools", {{"listChanged", false}}},
-                {"prompts", {{"listChanged", false}}}
+                {"prompts", {{"listChanged", false}}},
+                {"resources", {{"subscribe", false}}}
             }},
             {"serverInfo", {
                 {"name", "meow-godot-mcp"},
@@ -149,6 +150,29 @@ nlohmann::json create_resources_list_response(const nlohmann::json& id, const nl
 
 nlohmann::json create_resource_read_response(const nlohmann::json& id, const nlohmann::json& contents) {
     return {{"jsonrpc", "2.0"}, {"id", id}, {"result", {{"contents", contents}}}};
+}
+
+nlohmann::json create_resource_templates_list_response(const nlohmann::json& id) {
+    nlohmann::json templates = nlohmann::json::array();
+    templates.push_back({
+        {"uriTemplate", "godot://node/{path}"},
+        {"name", "Node Details"},
+        {"description", "Full details for a single node: all properties, script source, child list (one level), signal connections"},
+        {"mimeType", "application/json"}
+    });
+    templates.push_back({
+        {"uriTemplate", "godot://script/{path}"},
+        {"name", "Script Source"},
+        {"description", "GDScript source code for a script file (pass res:// path)"},
+        {"mimeType", "application/json"}
+    });
+    templates.push_back({
+        {"uriTemplate", "godot://signals/{path}"},
+        {"name", "Node Signals"},
+        {"description", "All signals and connections for a node"},
+        {"mimeType", "application/json"}
+    });
+    return {{"jsonrpc", "2.0"}, {"id", id}, {"result", {{"resourceTemplates", templates}}}};
 }
 
 nlohmann::json create_prompts_list_response(const nlohmann::json& id) {

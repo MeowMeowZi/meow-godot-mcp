@@ -50,6 +50,7 @@ nlohmann::json create_tool_not_found_error(const nlohmann::json& id, const std::
 // MCP Resources protocol builders
 nlohmann::json create_resources_list_response(const nlohmann::json& id, const nlohmann::json& resources);
 nlohmann::json create_resource_read_response(const nlohmann::json& id, const nlohmann::json& contents);
+nlohmann::json create_resource_templates_list_response(const nlohmann::json& id);
 
 // MCP Prompts protocol builders
 nlohmann::json create_prompts_list_response(const nlohmann::json& id);
