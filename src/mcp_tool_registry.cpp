@@ -851,6 +851,44 @@ const std::vector<ToolDef>& get_all_tools() {
             },
             {4, 3, 0}
         },
+        // --- Phase 24: Composite Tools ---
+        {
+            "find_nodes",
+            "Search the scene tree for nodes matching criteria (type, name pattern, property value). "
+            "Returns matching node paths and types. Supports inheritance (e.g., type='Control' matches Label, Button).",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"type", {{"type", "string"}, {"description", "Node class name to match (supports inheritance, e.g., 'Control' matches Label, Button)"}}},
+                    {"name_pattern", {{"type", "string"}, {"description", "Name pattern with * wildcards (e.g., 'Player*', '*Label*'). Case-insensitive."}}},
+                    {"property_filter", {{"type", "object"}, {"description", "Filter by property value. Provide {name, value} to match nodes."},
+                        {"properties", {
+                            {"name", {{"type", "string"}, {"description", "Property name"}}},
+                            {"value", {{"type", "string"}, {"description", "Property value to match"}}}
+                        }}}},
+                    {"root_path", {{"type", "string"}, {"description", "Node path to start search from (default: scene root)"}}}
+                }},
+                {"required", nlohmann::json::array()}
+            },
+            {4, 3, 0}
+        },
+        {
+            "batch_set_property",
+            "Set a property on multiple nodes in one atomic operation. Specify nodes by explicit paths or type filter. "
+            "Ctrl+Z undoes all changes at once.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_paths", {{"type", "array"}, {"items", {{"type", "string"}}},
+                        {"description", "Explicit list of node paths to modify"}}},
+                    {"type_filter", {{"type", "string"}, {"description", "Apply to all nodes of this type (e.g., 'Label', 'Sprite2D')"}}},
+                    {"property", {{"type", "string"}, {"description", "Property name to set (e.g., 'visible', 'modulate')"}}},
+                    {"value", {{"type", "string"}, {"description", "Property value as string (auto-parsed: 'Vector2(100,200)', '#ff0000', 'true')"}}}
+                }},
+                {"required", {"property", "value"}}
+            },
+            {4, 3, 0}
+        },
         // --- Restart Editor ---
         {
             "restart_editor",

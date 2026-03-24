@@ -16,6 +16,7 @@
 #include <godot_cpp/classes/editor_interface.hpp>
 #include "tilemap_tools.h"
 #include "physics_tools.h"
+#include "composite_tools.h"
 
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
@@ -1043,6 +1044,42 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameters: parent_path, shape_type");
             }
             return mcp::create_tool_result(id, create_collision_shape(parent_path, shape_type, shape_params, name, undo_redo));
+        }
+
+        // --- Phase 24: Composite Tools ---
+
+        if (tool_name == "find_nodes") {
+            auto& args = get_args(params);
+            std::string type = get_string(args, "type");
+            std::string name_pattern = get_string(args, "name_pattern");
+            std::string property_name, property_value;
+            if (args.contains("property_filter") && args["property_filter"].is_object()) {
+                property_name = get_string(args["property_filter"], "name");
+                property_value = get_string(args["property_filter"], "value");
+            }
+            std::string root_path = get_string(args, "root_path");
+            if (type.empty() && name_pattern.empty() && property_name.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "At least one search filter required: type, name_pattern, or property_filter");
+            }
+            return mcp::create_tool_result(id, find_nodes(type, name_pattern, property_name, property_value, root_path));
+        }
+
+        if (tool_name == "batch_set_property") {
+            auto& args = get_args(params);
+            nlohmann::json node_paths = args.contains("node_paths") && args["node_paths"].is_array() ? args["node_paths"] : nlohmann::json();
+            std::string type_filter = get_string(args, "type_filter");
+            std::string property = get_string(args, "property");
+            std::string value = get_string(args, "value");
+            if (property.empty() || value.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing required parameters: property, value");
+            }
+            if (node_paths.empty() && type_filter.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Must provide node_paths array or type_filter");
+            }
+            return mcp::create_tool_result(id, batch_set_property(node_paths, type_filter, property, value, undo_redo));
         }
 
         if (tool_name == "restart_editor") {
