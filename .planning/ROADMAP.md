@@ -169,5 +169,5 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 | 19-21. 2D Game Dev Core | v1.4 | -- | Complete | 2026-03-22 |
 | 22. Smart Error Handling | v1.5 | 2/2 | Complete    | 2026-03-23 |
 | 23. Enriched Resources | v1.5 | 2/2 | Complete    | 2026-03-24 |
-| 24. Composite Tools | v1.5 | 2/2 | Complete | 2026-03-24 |
+| 24. Composite Tools | v1.5 | 2/2 | Complete    | 2026-03-24 |
 | 25. Prompt Templates | v1.5 | 0/TBD | Not started | - |
