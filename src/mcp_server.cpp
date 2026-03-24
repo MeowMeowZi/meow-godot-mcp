@@ -1143,10 +1143,10 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             }
             std::string root_path = get_string(args, "root_path");
             if (type.empty() && name_pattern.empty() && property_name.empty()) {
-                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
-                    "At least one search filter required: type, name_pattern, or property_filter");
+                return make_params_error(id,
+                    "At least one search filter required: type, name_pattern, or property_filter", "find_nodes");
             }
-            return mcp::create_tool_result(id, find_nodes(type, name_pattern, property_name, property_value, root_path));
+            return make_tool_response(id, find_nodes(type, name_pattern, property_name, property_value, root_path), "find_nodes");
         }
 
         if (tool_name == "batch_set_property") {
@@ -1156,14 +1156,14 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             std::string property = get_string(args, "property");
             std::string value = get_string(args, "value");
             if (property.empty() || value.empty()) {
-                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
-                    "Missing required parameters: property, value");
+                return make_params_error(id,
+                    "Missing required parameters: property, value", "batch_set_property");
             }
             if (node_paths.empty() && type_filter.empty()) {
-                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
-                    "Must provide node_paths array or type_filter");
+                return make_params_error(id,
+                    "Must provide node_paths array or type_filter", "batch_set_property");
             }
-            return mcp::create_tool_result(id, batch_set_property(node_paths, type_filter, property, value, undo_redo));
+            return make_tool_response(id, batch_set_property(node_paths, type_filter, property, value, undo_redo), "batch_set_property");
         }
 
         if (tool_name == "create_character") {
