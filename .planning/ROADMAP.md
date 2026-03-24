@@ -139,7 +139,10 @@ Plans:
   2. AI can follow a structured debug workflow (crash diagnosis, physics issues) that references the correct diagnostic and runtime tools
   3. AI can follow a complete game-building workflow (platformer, top-down, or parameterized by genre) from empty project to playable prototype
   4. All prompt templates reference only tools that actually exist in the tool registry (validated by unit test)
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 25-01-PLAN.md -- Reference & diagnostic prompts: tool_composition_guide, debug_game_crash, debug_physics_issue, fix_common_errors + test suite
+- [ ] 25-02-PLAN.md -- Game-building prompts: build_platformer_game, setup_tilemap_level, build_top_down_game, create_game_from_scratch
 
 ## Progress
 
@@ -170,4 +173,4 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 | 22. Smart Error Handling | v1.5 | 2/2 | Complete    | 2026-03-23 |
 | 23. Enriched Resources | v1.5 | 2/2 | Complete    | 2026-03-24 |
 | 24. Composite Tools | v1.5 | 2/2 | Complete    | 2026-03-24 |
-| 25. Prompt Templates | v1.5 | 0/TBD | Not started | - |
+| 25. Prompt Templates | v1.5 | 0/2 | Not started | - |
