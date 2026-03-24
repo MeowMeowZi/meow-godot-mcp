@@ -55,7 +55,7 @@ TEST(GodotVersion, LesserPatch) {
 
 TEST(ToolRegistry, HasExactly38Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 52);
+    ASSERT_EQ(tools.size(), 55);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
