@@ -457,7 +457,7 @@ TEST(PromptsListResponse, HasCorrectStructure) {
     EXPECT_EQ(response["jsonrpc"], "2.0");
     EXPECT_EQ(response["id"], 10);
     auto prompts = response["result"]["prompts"];
-    ASSERT_EQ(prompts.size(), 11);
+    ASSERT_EQ(prompts.size(), 15);
     for (const auto& p : prompts) {
         EXPECT_TRUE(p.contains("name"));
         EXPECT_TRUE(p.contains("description"));
@@ -507,9 +507,9 @@ TEST(PromptNotFoundError, ContainsPromptName) {
 
 // --- Prompts data layer tests ---
 
-TEST(PromptsData, GetAllPromptsReturns11) {
+TEST(PromptsData, GetAllPromptsReturns15) {
     auto prompts = get_all_prompts_json();
-    ASSERT_EQ(prompts.size(), 11);
+    ASSERT_EQ(prompts.size(), 15);
 }
 
 TEST(PromptsData, PromptExistsWorks) {
