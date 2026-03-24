@@ -381,11 +381,16 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
         return mcp::create_resources_list_response(id, resources);
     }
 
+    if (method == "resources/templates/list") {
+        return mcp::create_resource_templates_list_response(id);
+    }
+
     if (method == "resources/read") {
         std::string uri;
         if (params.contains("uri") && params["uri"].is_string()) {
             uri = params["uri"].get<std::string>();
         }
+        // Exact-match static resources
         if (uri == "godot://scene_tree") {
             nlohmann::json tree = get_enriched_scene_tree();
             nlohmann::json contents = nlohmann::json::array();
@@ -396,6 +401,43 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             nlohmann::json files = get_enriched_project_files();
             nlohmann::json contents = nlohmann::json::array();
             contents.push_back({{"uri", uri}, {"mimeType", "application/json"}, {"text", files.dump()}});
+            return mcp::create_resource_read_response(id, contents);
+        }
+        // URI template matching (godot://node/{path}, godot://script/{path}, godot://signals/{path})
+        const std::string node_prefix = "godot://node/";
+        if (uri.substr(0, node_prefix.size()) == node_prefix) {
+            std::string node_path = uri.substr(node_prefix.size());
+            if (node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing node path in URI. Example: godot://node/Player/Sprite2D");
+            }
+            nlohmann::json detail = enrich_node_detail(node_path);
+            nlohmann::json contents = nlohmann::json::array();
+            contents.push_back({{"uri", uri}, {"mimeType", "application/json"}, {"text", detail.dump()}});
+            return mcp::create_resource_read_response(id, contents);
+        }
+        const std::string script_prefix = "godot://script/";
+        if (uri.substr(0, script_prefix.size()) == script_prefix) {
+            std::string script_path = uri.substr(script_prefix.size());
+            if (script_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing script path in URI. Example: godot://script/res://player.gd");
+            }
+            nlohmann::json result = read_script(script_path);
+            nlohmann::json contents = nlohmann::json::array();
+            contents.push_back({{"uri", uri}, {"mimeType", "application/json"}, {"text", result.dump()}});
+            return mcp::create_resource_read_response(id, contents);
+        }
+        const std::string signals_prefix = "godot://signals/";
+        if (uri.substr(0, signals_prefix.size()) == signals_prefix) {
+            std::string sig_node_path = uri.substr(signals_prefix.size());
+            if (sig_node_path.empty()) {
+                return mcp::create_error_response(id, mcp::INVALID_PARAMS,
+                    "Missing node path in URI. Example: godot://signals/Player");
+            }
+            nlohmann::json result = get_node_signals(sig_node_path);
+            nlohmann::json contents = nlohmann::json::array();
+            contents.push_back({{"uri", uri}, {"mimeType", "application/json"}, {"text", result.dump()}});
             return mcp::create_resource_read_response(id, contents);
         }
         return mcp::create_error_response(id, mcp::INVALID_PARAMS, "Unknown resource URI: " + uri);
