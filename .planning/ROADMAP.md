@@ -6,6 +6,8 @@
 - v1.1 UI & Editor Expansion -- Phases 6-11 (shipped 2026-03-19)
 - v1.2 Runtime Interaction Enhancement -- Phases 12-15 (shipped 2026-03-20)
 - v1.3 Developer Experience Polish -- Phases 16-18 (shipped 2026-03-22)
+- v1.4 2D Game Development Core -- Phases 19-21 (shipped 2026-03-22)
+- v1.5 AI Workflow Enhancement -- Phases 22-25 (in progress)
 
 ## Phases
 
@@ -54,52 +56,92 @@ See `.planning/milestones/v1.2-ROADMAP.md` for full details.
 
 </details>
 
-### v1.3 Developer Experience Polish (In Progress)
+<details>
+<summary>v1.3 Developer Experience Polish (Phases 16-18) -- SHIPPED 2026-03-22</summary>
 
-**Milestone Goal:** 消除 MCP 工具使用中的摩擦点，让 AI 辅助游戏开发的工作流更顺畅。
+- [x] Phase 16: Game Bridge Auto-Wait (2/2 plans) -- completed 2026-03-22
+- [x] Phase 17: Reliable Game Output (2/2 plans) -- completed 2026-03-21
+- [x] Phase 18: Tool Ergonomics (1/1 plan) -- completed 2026-03-22
 
-- [x] **Phase 16: Game Bridge Auto-Wait** - run_game 自动等待 bridge 连接；根节点路径统一 -- completed 2026-03-22
-- [x] **Phase 17: Reliable Game Output** - game output 可靠捕获，不依赖 file_logging 刷新时机 (completed 2026-03-21)
-- [x] **Phase 18: Tool Ergonomics** - set_layout_preset 等工具支持根节点；其他易用性改进 (completed 2026-03-22)
+See `.planning/milestones/v1.3-ROADMAP.md` for full details.
+
+</details>
+
+<details>
+<summary>v1.4 2D Game Development Core (Phases 19-21) -- SHIPPED 2026-03-22</summary>
+
+- [x] Phase 19-21: Resource properties, TileMap ops, collision shape quick-create, restart_editor
+
+**6 new tools (50 total) | 82 unit tests + 23 UAT tests**
+
+</details>
+
+### v1.5 AI Workflow Enhancement (In Progress)
+
+**Milestone Goal:** From toolbox to intelligent workbench -- AI gets richer context, smarter error recovery, composite operations, and guided workflows.
+
+- [x] **Phase 22: Smart Error Handling** - Tool errors become diagnostic-rich: isError flag, did-you-mean suggestions, recovery guidance (completed 2026-03-24)
+- [ ] **Phase 23: Enriched Resources** - MCP Resources deliver scene context automatically: scripts, signals, node details, file metadata
+- [ ] **Phase 24: Composite Tools** - Multi-step operations as single tools: find_nodes, batch_set_property, create_character, create_ui_panel, duplicate_node
+- [ ] **Phase 25: Prompt Templates** - 8 workflow-oriented prompt templates for game building, debugging, and tool composition
 
 ## Phase Details
 
-### Phase 16: Game Bridge Auto-Wait
-**Goal**: run_game 返回时 bridge 已就绪，所有工具统一根节点路径约定
-**Depends on**: Phase 15
-**Requirements**: DX-01, DX-02
+### Phase 22: Smart Error Handling
+**Goal**: AI can self-correct from tool errors using diagnostic information, suggestions, and recovery guidance baked into every error response
+**Depends on**: Phase 21 (v1.4 complete)
+**Requirements**: ERR-01, ERR-02, ERR-03, ERR-04, ERR-05, ERR-06, ERR-07, ERR-08
+**Success Criteria** (what must be TRUE):
+  1. Every tool error response carries `isError: true` in the MCP result, distinguishing errors from successful empty results
+  2. When AI references a node that does not exist, the error message suggests similar node names and lists the parent's children
+  3. When a tool fails due to missing preconditions (no scene open, game not running, missing parameter), the error tells the AI exactly what to do next (which tool to call, what format to use)
+  4. Script parse errors include the offending line number and line content so the AI can fix the exact problem
+  5. Every error response includes a `suggested_tools` list the AI can use to recover
 **Plans:** 2/2 plans complete
 Plans:
-- [x] 16-01-PLAN.md — Deferred wait_for_bridge + unified node_path root handling
-- [x] 16-02-PLAN.md — UAT test suite for DX-01 and DX-02
-**Success Criteria** (what must be TRUE):
-  1. run_game 带 wait_for_bridge 参数时，返回时 bridge 已连接（或超时报错）
-  2. 所有接受 node_path 的工具统一支持 "" 和 "." 表示场景根节点
+- [x] 22-01-PLAN.md -- Core error enrichment infrastructure: isError protocol, Levenshtein fuzzy matching, error categorization, dispatch-layer interception
+- [x] 22-02-PLAN.md -- Parameter format hints for missing-param errors, script parse error line capture
 
-### Phase 17: Reliable Game Output
-**Goal**: print() 输出在所有场景下都能被 get_game_output 可靠捕获
-**Depends on**: Phase 16
-**Requirements**: DX-03
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 17-01-PLAN.md — Companion-side log forwarding + editor handler + dispatch cleanup
-- [x] 17-02-PLAN.md — UAT test suite for DX-03
+### Phase 23: Enriched Resources
+**Goal**: AI automatically receives rich scene context (scripts, signals, properties, file metadata) through MCP Resources without calling individual query tools
+**Depends on**: Phase 22
+**Requirements**: RES-01, RES-02, RES-03
 **Success Criteria** (what must be TRUE):
-  1. 游戏中的 print() 调用在 1 秒内可通过 get_game_output 获取
-  2. 不依赖 file_logging 项目设置的刷新时机
+  1. Reading the scene_tree resource returns node entries that include script paths, signal connections, and key property values inline
+  2. AI can query a single node's full details via `godot://node/{path}` resource template, and a script's content via `godot://script/{path}`
+  3. The project files resource includes file size, type classification (scene/script/resource/image), and modification timestamps
+**Plans:** 2 plans
+Plans:
+- [ ] 23-01-PLAN.md -- Resource enrichment module: enriched scene tree (inline scripts, signals, @export props) and enriched project files (size, type, mtime)
+- [ ] 23-02-PLAN.md -- URI resource templates (godot://node, script, signals) and resources/templates/list MCP method
 
-### Phase 18: Tool Ergonomics
-**Goal**: 验证 DX-04 已被 Phase 16 的 node_path 统一工作覆盖，并用 UAT 测试正式关闭需求
-**Depends on**: Phase 16
-**Requirements**: DX-04
-**Plans:** 1/1 plans complete
-Plans:
-- [x] 18-01-PLAN.md — UAT verification that set_layout_preset works on scene root node
+### Phase 24: Composite Tools
+**Goal**: AI can perform multi-step scene operations in a single tool call with atomic undo, eliminating tedious step-by-step workflows for common tasks
+**Depends on**: Phase 22
+**Requirements**: COMP-01, COMP-02, COMP-03, COMP-04, COMP-05
 **Success Criteria** (what must be TRUE):
-  1. set_layout_preset 可对场景根节点使用
-  2. UAT 测试验证 preset 实际生效（anchor 值正确）
+  1. AI can search the scene tree by type, name pattern, or property value using `find_nodes` and get matching results
+  2. AI can set the same property on multiple nodes in one call using `batch_set_property` (by path list or type filter)
+  3. AI can create a complete character (CharacterBody + CollisionShape + visual node) with `create_character`, and Ctrl+Z undoes the entire operation in one step
+  4. AI can create a UI panel from a declarative JSON spec using `create_ui_panel`, producing container + children + styling in one step
+  5. AI can deep-copy a node subtree to a new parent using `duplicate_node`, preserving all children and properties
+**Plans**: TBD
+
+### Phase 25: Prompt Templates
+**Goal**: AI has workflow-oriented prompt templates that guide it through complex multi-tool tasks like building games, debugging crashes, and composing tools effectively
+**Depends on**: Phase 24
+**Requirements**: PROMPT-01, PROMPT-02, PROMPT-03, PROMPT-04, PROMPT-05, PROMPT-06, PROMPT-07, PROMPT-08
+**Success Criteria** (what must be TRUE):
+  1. AI can retrieve a tool composition guide that maps common tasks to specific tool sequences with parameter examples
+  2. AI can follow a structured debug workflow (crash diagnosis, physics issues) that references the correct diagnostic and runtime tools
+  3. AI can follow a complete game-building workflow (platformer, top-down, or parameterized by genre) from empty project to playable prototype
+  4. All prompt templates reference only tools that actually exist in the tool registry (validated by unit test)
+**Plans**: TBD
 
 ## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
@@ -119,5 +161,10 @@ Plans:
 | 14. Game Output Enhancement | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 15. Integration Testing Toolkit | v1.2 | 2/2 | Complete | 2026-03-20 |
 | 16. Game Bridge Auto-Wait | v1.3 | 2/2 | Complete | 2026-03-22 |
-| 17. Reliable Game Output | v1.3 | Complete    | 2026-03-21 | 2026-03-22 |
-| 18. Tool Ergonomics | v1.3 | Complete    | 2026-03-21 | 2026-03-22 |
+| 17. Reliable Game Output | v1.3 | 2/2 | Complete | 2026-03-21 |
+| 18. Tool Ergonomics | v1.3 | 1/1 | Complete | 2026-03-22 |
+| 19-21. 2D Game Dev Core | v1.4 | -- | Complete | 2026-03-22 |
+| 22. Smart Error Handling | v1.5 | 2/2 | Complete    | 2026-03-23 |
+| 23. Enriched Resources | v1.5 | 0/2 | Not started | - |
+| 24. Composite Tools | v1.5 | 0/TBD | Not started | - |
+| 25. Prompt Templates | v1.5 | 0/TBD | Not started | - |
