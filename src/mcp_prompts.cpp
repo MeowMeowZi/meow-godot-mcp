@@ -884,6 +884,619 @@ static const std::vector<PromptDef>& get_prompt_defs() {
                     {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
                 });
             }
+        },
+
+        // 8. tool_composition_guide (PROMPT-01)
+        {
+            "tool_composition_guide",
+            "Quick reference card mapping common game development tasks to MCP tool sequences with parameter examples",
+            nlohmann::json::array({
+                {{"name", "task_category"}, {"description", "Task category: scene_setup, ui_building, animation, scripting, debugging, testing (default: scene_setup)"}, {"required", false}}
+            }),
+            [](const nlohmann::json& args) -> nlohmann::json {
+                std::string category = "scene_setup";
+                if (args.contains("task_category") && args["task_category"].is_string()) {
+                    category = args["task_category"].get<std::string>();
+                }
+
+                std::string text;
+                if (category == "scene_setup") {
+                    text = "Tool Composition Guide: Scene Setup\n\n"
+                           "=== Create a scene with nodes ===\n"
+                           "1. create_scene { \"root_type\": \"Node2D\", \"path\": \"res://scenes/level.tscn\" }\n"
+                           "2. create_node { \"type\": \"CharacterBody2D\", \"name\": \"Player\", \"parent\": \"/root/Level\" }\n"
+                           "3. set_node_property { \"node_path\": \"/root/Level/Player\", \"property\": \"position\", \"value\": \"Vector2(100, 200)\" }\n"
+                           "4. save_scene { \"path\": \"res://scenes/level.tscn\" }\n\n"
+                           "=== Instantiate a prefab scene ===\n"
+                           "1. instantiate_scene { \"scene_path\": \"res://scenes/enemy.tscn\", \"parent_path\": \"/root/Level/Enemies\", \"name\": \"Goblin\" }\n\n"
+                           "=== Bulk property update ===\n"
+                           "1. find_nodes { \"pattern\": \"Enemy*\", \"type_filter\": \"CharacterBody2D\" }\n"
+                           "2. batch_set_property { \"node_paths\": [\"Enemy1\", \"Enemy2\"], \"property\": \"speed\", \"value\": \"150\" }\n\n"
+                           "=== Duplicate existing node ===\n"
+                           "1. duplicate_node { \"node_path\": \"/root/Level/Player\", \"new_name\": \"Player2\" }";
+                } else if (category == "ui_building") {
+                    text = "Tool Composition Guide: UI Building\n\n"
+                           "=== Create a UI panel (quick) ===\n"
+                           "1. create_ui_panel { \"root_type\": \"VBoxContainer\", \"name\": \"MenuPanel\", \"parent_path\": \"/root/Scene\", "
+                              "\"children\": [{\"type\": \"Label\", \"name\": \"Title\"}, {\"type\": \"Button\", \"name\": \"Play\"}] }\n\n"
+                           "=== Create a UI from scratch ===\n"
+                           "1. create_node { \"type\": \"Control\", \"name\": \"HUD\", \"parent\": \"/root/Scene\" }\n"
+                           "2. set_layout_preset { \"node_path\": \"/root/Scene/HUD\", \"preset\": \"full_rect\" }\n"
+                           "3. create_stylebox { \"node_path\": \"/root/Scene/HUD\", \"override_name\": \"panel\", \"bg_color\": \"#1a1a2e\", \"corner_radius\": 8 }\n"
+                           "4. set_theme_override { \"node_path\": \"/root/Scene/HUD/Title\", \"overrides\": { \"font_size\": 32 } }\n"
+                           "5. set_container_layout { \"node_path\": \"/root/Scene/HUD\", \"separation\": 8, \"alignment\": 1 }\n\n"
+                           "=== Inspect existing UI ===\n"
+                           "1. get_ui_properties { \"node_path\": \"/root/Scene/HUD\" }\n"
+                           "2. get_theme_overrides { \"node_path\": \"/root/Scene/HUD/Title\" }";
+                } else if (category == "animation") {
+                    text = "Tool Composition Guide: Animation\n\n"
+                           "=== Create a fade-in animation ===\n"
+                           "1. create_animation { \"animation_name\": \"fade_in\", \"parent_path\": \"/root/Scene/UI\" }\n"
+                           "2. add_animation_track { \"player_path\": \"/root/Scene/UI/AnimationPlayer\", \"animation_name\": \"fade_in\", "
+                              "\"track_type\": \"value\", \"track_path\": \".:modulate\" }\n"
+                           "3. set_keyframe { \"player_path\": \"/root/Scene/UI/AnimationPlayer\", \"animation_name\": \"fade_in\", "
+                              "\"track_index\": 0, \"time\": 0.0, \"action\": \"set\", \"value\": \"Color(1,1,1,0)\" }\n"
+                           "4. set_keyframe { ... \"time\": 0.5, \"value\": \"Color(1,1,1,1)\" }\n"
+                           "5. set_animation_properties { \"player_path\": \"/root/Scene/UI/AnimationPlayer\", \"animation_name\": \"fade_in\", "
+                              "\"length\": 0.5, \"loop_mode\": 0 }\n\n"
+                           "=== Inspect animation ===\n"
+                           "1. get_animation_info { \"player_path\": \"/root/Scene/UI/AnimationPlayer\" }";
+                } else if (category == "scripting") {
+                    text = "Tool Composition Guide: Scripting\n\n"
+                           "=== Create and attach a new script ===\n"
+                           "1. write_script { \"path\": \"res://scripts/player.gd\", \"content\": \"extends CharacterBody2D\\n...\" }\n"
+                           "2. attach_script { \"node_path\": \"/root/Scene/Player\", \"script_path\": \"res://scripts/player.gd\" }\n\n"
+                           "=== Edit an existing script ===\n"
+                           "1. read_script { \"path\": \"res://scripts/player.gd\" }\n"
+                           "2. edit_script { \"path\": \"res://scripts/player.gd\", \"edits\": [{\"line\": 5, \"action\": \"replace\", \"text\": \"var speed = 300\"}] }\n\n"
+                           "=== Connect a signal in script ===\n"
+                           "1. connect_signal { \"source_path\": \"/root/Scene/Button\", \"signal_name\": \"pressed\", "
+                              "\"target_path\": \"/root/Scene/Main\", \"method_name\": \"_on_button_pressed\" }\n\n"
+                           "=== Detach a script ===\n"
+                           "1. detach_script { \"node_path\": \"/root/Scene/Player\" }";
+                } else if (category == "debugging") {
+                    text = "Tool Composition Guide: Debugging\n\n"
+                           "=== Inspect scene structure ===\n"
+                           "1. get_scene_tree { \"max_depth\": 5, \"include_properties\": true }\n"
+                           "2. find_nodes { \"pattern\": \"*Player*\" }\n\n"
+                           "=== Check signal connections ===\n"
+                           "1. get_node_signals { \"node_path\": \"/root/Scene/Button\" }\n\n"
+                           "=== Debug a running game ===\n"
+                           "1. get_game_output { \"keyword\": \"error\" }\n"
+                           "2. eval_in_game { \"expression\": \"get_node('Player').position\" }\n"
+                           "3. capture_game_viewport { \"width\": 800 }\n\n"
+                           "=== Check project structure ===\n"
+                           "1. list_project_files { \"directory\": \"res://scenes\" }\n"
+                           "2. get_project_settings { \"keys\": [\"application/run/main_scene\"] }\n"
+                           "3. get_resource_info { \"path\": \"res://scenes/main.tscn\" }";
+                } else if (category == "testing") {
+                    text = "Tool Composition Guide: Testing\n\n"
+                           "=== Manual test flow ===\n"
+                           "1. run_game { \"mode\": \"current\" }\n"
+                           "2. get_game_bridge_status { }\n"
+                           "3. click_node { \"node_path\": \"StartButton\" }\n"
+                           "4. get_game_node_property { \"node_path\": \"Player\", \"property\": \"health\" }\n"
+                           "5. stop_game { }\n\n"
+                           "=== Automated test sequence ===\n"
+                           "1. run_game { \"mode\": \"custom\", \"scene_path\": \"res://scenes/test.tscn\" }\n"
+                           "2. run_test_sequence { \"steps\": [\n"
+                           "     { \"action\": \"click_node\", \"args\": { \"node_path\": \"Button\" }, \"description\": \"Click button\" },\n"
+                           "     { \"action\": \"get_game_node_property\", \"args\": { \"node_path\": \"Label\", \"property\": \"text\" },\n"
+                           "       \"assert\": { \"property\": \"value\", \"contains\": \"clicked\" }, \"description\": \"Verify label\" }\n"
+                           "   ] }\n"
+                           "3. stop_game { }\n\n"
+                           "=== Visual verification ===\n"
+                           "1. run_game { \"mode\": \"main\" }\n"
+                           "2. capture_game_viewport { \"width\": 1280 }\n"
+                           "3. get_game_scene_tree { \"max_depth\": 3 }\n"
+                           "4. stop_game { }";
+                } else {
+                    text = "Tool Composition Guide: Category Summary\n\n"
+                           "Available categories (pass as task_category argument):\n\n"
+                           "  scene_setup   - Create scenes, add nodes, set properties, instantiate prefabs\n"
+                           "  ui_building   - Build UI layouts with containers, styles, and themes\n"
+                           "  animation     - Create animations with tracks, keyframes, and properties\n"
+                           "  scripting     - Write/edit scripts, attach to nodes, connect signals\n"
+                           "  debugging     - Inspect scene tree, check signals, read game output\n"
+                           "  testing       - Run game, click UI, verify state, automated test sequences\n\n"
+                           "Each category provides step-by-step tool sequences with parameter examples.";
+                }
+
+                return nlohmann::json::array({
+                    {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
+                });
+            }
+        },
+
+        // 9. debug_game_crash (PROMPT-02)
+        {
+            "debug_game_crash",
+            "Systematic workflow for diagnosing game crashes and runtime errors using MCP diagnostic tools",
+            nlohmann::json::array({
+                {{"name", "error_type"}, {"description", "Error type: crash, null_reference, signal_error, script_error, scene_load_error (default: crash)"}, {"required", false}}
+            }),
+            [](const nlohmann::json& args) -> nlohmann::json {
+                std::string error_type = "crash";
+                if (args.contains("error_type") && args["error_type"].is_string()) {
+                    error_type = args["error_type"].get<std::string>();
+                }
+
+                std::string text;
+                if (error_type == "crash") {
+                    text = "Debug Game Crash: Systematic Diagnosis\n\n"
+                           "Step 1: Read error logs\n"
+                           "  Tool: get_game_output\n"
+                           "  Parameters: { \"keyword\": \"error\" }\n"
+                           "  Look for: stack traces, error messages, last printed output before crash\n\n"
+                           "Step 2: Read the crashing script\n"
+                           "  Tool: read_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/<crashing_script>.gd\" }\n"
+                           "  Look for: null references, invalid method calls, type mismatches\n\n"
+                           "Step 3: Check scene structure\n"
+                           "  Tool: get_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 5, \"include_properties\": true }\n"
+                           "  Look for: missing nodes, wrong node types, detached scripts\n\n"
+                           "Step 4: Verify expected nodes exist\n"
+                           "  Tool: find_nodes\n"
+                           "  Parameters: { \"pattern\": \"<expected_node_name>\" }\n"
+                           "  Look for: nodes referenced in script that may be missing or renamed\n\n"
+                           "Step 5: Check signal connections\n"
+                           "  Tool: get_node_signals\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/<node>\" }\n"
+                           "  Look for: disconnected signals, signals connected to non-existent methods\n\n"
+                           "Step 6: Fix the issue\n"
+                           "  Tool: edit_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/<script>.gd\", \"edits\": [{\"line\": N, \"action\": \"replace\", \"text\": \"fixed code\"}] }\n\n"
+                           "Step 7: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Parameters: { \"mode\": \"current\" }\n"
+                           "  Verify the crash is resolved by checking get_game_output for errors";
+                } else if (error_type == "null_reference") {
+                    text = "Debug Null Reference Error\n\n"
+                           "Step 1: Check scene tree for the node\n"
+                           "  Tool: get_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 5 }\n"
+                           "  Verify the node exists in the scene tree at the expected path\n\n"
+                           "Step 2: Search for the node by name\n"
+                           "  Tool: find_nodes\n"
+                           "  Parameters: { \"pattern\": \"<node_name>\" }\n"
+                           "  Check if the node exists but at a different path\n\n"
+                           "Step 3: Test reference at runtime\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node_or_null('path/to/node') != null\" }\n"
+                           "  Verify the node is accessible at runtime (not just editor time)\n\n"
+                           "Step 4: Read the script using the reference\n"
+                           "  Tool: read_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/<script>.gd\" }\n"
+                           "  Check: @onready var refs, get_node() calls, hardcoded paths\n\n"
+                           "Step 5: Fix the path\n"
+                           "  Tool: edit_script\n"
+                           "  Use correct node path from find_nodes result\n\n"
+                           "Step 6: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Tool: get_game_output\n"
+                           "  Verify no more null reference errors";
+                } else if (error_type == "signal_error") {
+                    text = "Debug Signal Error\n\n"
+                           "Step 1: List signals on the source node\n"
+                           "  Tool: get_node_signals\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/<source_node>\" }\n"
+                           "  Check: signal exists, current connections, target methods\n\n"
+                           "Step 2: Read the target script\n"
+                           "  Tool: read_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/<target>.gd\" }\n"
+                           "  Verify: target method exists and has correct signature\n\n"
+                           "Step 3: Disconnect broken signal\n"
+                           "  Tool: disconnect_signal\n"
+                           "  Parameters: { \"source_path\": \"<source>\", \"signal_name\": \"<signal>\", "
+                              "\"target_path\": \"<target>\", \"method_name\": \"<old_method>\" }\n\n"
+                           "Step 4: Reconnect with correct method\n"
+                           "  Tool: connect_signal\n"
+                           "  Parameters: { \"source_path\": \"<source>\", \"signal_name\": \"<signal>\", "
+                              "\"target_path\": \"<target>\", \"method_name\": \"<correct_method>\" }\n\n"
+                           "Step 5: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Tool: get_game_output\n"
+                           "  Verify signal fires correctly without errors";
+                } else if (error_type == "script_error") {
+                    text = "Debug Script Error\n\n"
+                           "Step 1: Read the error output\n"
+                           "  Tool: get_game_output\n"
+                           "  Parameters: { \"keyword\": \"error\" }\n"
+                           "  Note the script path, line number, and error message\n\n"
+                           "Step 2: Read the script\n"
+                           "  Tool: read_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/<script>.gd\" }\n"
+                           "  Examine the error line and surrounding context\n\n"
+                           "Step 3: Fix specific lines\n"
+                           "  Tool: edit_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/<script>.gd\", \"edits\": [\n"
+                           "    { \"line\": <error_line>, \"action\": \"replace\", \"text\": \"corrected code\" }\n"
+                           "  ] }\n\n"
+                           "Step 4: Re-attach script if needed\n"
+                           "  Tool: attach_script\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/<node>\", \"script_path\": \"res://scripts/<script>.gd\" }\n\n"
+                           "Step 5: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Tool: get_game_output\n"
+                           "  Verify no more script errors appear";
+                } else if (error_type == "scene_load_error") {
+                    text = "Debug Scene Load Error\n\n"
+                           "Step 1: List project files to verify scene exists\n"
+                           "  Tool: list_project_files\n"
+                           "  Parameters: { \"directory\": \"res://scenes\" }\n"
+                           "  Check: file exists at expected path, correct extension (.tscn/.scn)\n\n"
+                           "Step 2: Try opening the scene\n"
+                           "  Tool: open_scene\n"
+                           "  Parameters: { \"path\": \"res://scenes/<scene>.tscn\" }\n"
+                           "  If this fails, scene file may be corrupted or have missing dependencies\n\n"
+                           "Step 3: Inspect scene tree once loaded\n"
+                           "  Tool: get_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 3 }\n"
+                           "  Check for: missing resources, broken references, invalid node types\n\n"
+                           "Step 4: Check listed open scenes\n"
+                           "  Tool: list_open_scenes\n"
+                           "  Verify which scenes are currently open in the editor\n\n"
+                           "Step 5: If scene is broken, recreate it\n"
+                           "  Tool: create_scene\n"
+                           "  Parameters: { \"root_type\": \"Node2D\", \"path\": \"res://scenes/<scene>.tscn\" }\n"
+                           "  Then rebuild the scene tree with create_node calls";
+                } else {
+                    text = "Debug Game Crash: General Guide\n\n"
+                           "Available error types (pass as error_type argument):\n"
+                           "  crash            - General crash diagnosis workflow\n"
+                           "  null_reference   - Node/variable is null at runtime\n"
+                           "  signal_error     - Signal connection or emission failures\n"
+                           "  script_error     - GDScript syntax or runtime errors\n"
+                           "  scene_load_error - Scene file fails to load or is corrupted\n\n"
+                           "General debugging tools:\n"
+                           "  get_game_output - Read error logs and print output\n"
+                           "  read_script     - Examine script source code\n"
+                           "  get_scene_tree  - Inspect scene tree structure\n"
+                           "  find_nodes      - Search for nodes by name pattern\n"
+                           "  eval_in_game    - Evaluate expressions at runtime";
+                }
+
+                return nlohmann::json::array({
+                    {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
+                });
+            }
+        },
+
+        // 10. debug_physics_issue (PROMPT-06)
+        {
+            "debug_physics_issue",
+            "Specialized workflow for diagnosing and fixing physics problems: collision failures, movement bugs, layer mismatches",
+            nlohmann::json::array({
+                {{"name", "issue_type"}, {"description", "Physics issue: no_collision, wrong_movement, falling_through, jitter, one_way_collision, tunneling (default: no_collision)"}, {"required", false}}
+            }),
+            [](const nlohmann::json& args) -> nlohmann::json {
+                std::string issue_type = "no_collision";
+                if (args.contains("issue_type") && args["issue_type"].is_string()) {
+                    issue_type = args["issue_type"].get<std::string>();
+                }
+
+                std::string text;
+                if (issue_type == "no_collision") {
+                    text = "Debug Physics: No Collision Detected\n\n"
+                           "Step 1: Find collision shapes in the scene\n"
+                           "  Tool: find_nodes\n"
+                           "  Parameters: { \"pattern\": \"CollisionShape*\" }\n"
+                           "  Check: collision shapes exist for both colliding bodies\n\n"
+                           "Step 2: Verify scene tree structure\n"
+                           "  Tool: get_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 4, \"include_properties\": true }\n"
+                           "  Check: CollisionShape is a direct child of a physics body (CharacterBody2D, StaticBody2D, etc.)\n\n"
+                           "Step 3: Read collision layer/mask at runtime\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Player').collision_layer\" }\n"
+                           "  And: { \"expression\": \"get_node('Player').collision_mask\" }\n"
+                           "  Check: layer of body A matches mask of body B and vice versa\n"
+                           "  Layer 1 = bit 1 (value 1), Layer 2 = bit 2 (value 2), etc.\n\n"
+                           "Step 4: Fix collision layers with batch update\n"
+                           "  Tool: batch_set_property\n"
+                           "  Parameters: { \"node_paths\": [\"/root/Scene/Player\"], \"property\": \"collision_mask\", \"value\": \"3\" }\n"
+                           "  Set mask to detect layers 1 and 2 (bitmask: 1+2=3)\n\n"
+                           "Step 5: Verify collision shape has a shape resource\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Parameters: { \"node_path\": \"Player/CollisionShape2D\", \"property\": \"shape\" }\n"
+                           "  If null, the collision shape has no shape assigned\n\n"
+                           "Step 6: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Verify collisions work correctly";
+                } else if (issue_type == "wrong_movement") {
+                    text = "Debug Physics: Wrong Movement Behavior\n\n"
+                           "Step 1: Check CharacterBody velocity at runtime\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Player').velocity\" }\n"
+                           "  Check: velocity vector matches expected direction/magnitude\n\n"
+                           "Step 2: Check floor detection\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Player').is_on_floor()\" }\n"
+                           "  If false when it should be true: floor collision layers may not match\n\n"
+                           "Step 3: Read the movement script\n"
+                           "  Tool: read_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/player.gd\" }\n"
+                           "  Check: _physics_process (not _process), move_and_slide() call, gravity application\n\n"
+                           "Step 4: Fix the movement script\n"
+                           "  Tool: edit_script\n"
+                           "  Common fixes: add gravity, fix direction calculation, use delta correctly\n\n"
+                           "Step 5: Re-test movement\n"
+                           "  Tool: run_game\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Player').velocity\" }\n"
+                           "  Verify velocity and movement behave correctly";
+                } else if (issue_type == "falling_through") {
+                    text = "Debug Physics: Falling Through Floor\n\n"
+                           "Step 1: Verify floor has a collision shape\n"
+                           "  Tool: find_nodes\n"
+                           "  Parameters: { \"pattern\": \"CollisionShape*\" }\n"
+                           "  Check: floor/ground node has a CollisionShape2D/3D child\n\n"
+                           "Step 2: Check floor body type\n"
+                           "  Tool: get_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 3, \"include_properties\": true }\n"
+                           "  Floor should be StaticBody2D/3D (not Area2D which has no collision response)\n\n"
+                           "Step 3: Verify layer/mask compatibility\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Floor').collision_layer\" }\n"
+                           "  And: { \"expression\": \"get_node('Player').collision_mask\" }\n"
+                           "  Player's mask must include Floor's layer\n\n"
+                           "Step 4: Fix layers if mismatched\n"
+                           "  Tool: batch_set_property\n"
+                           "  Parameters: { \"node_paths\": [\"/root/Scene/Floor\"], \"property\": \"collision_layer\", \"value\": \"1\" }\n\n"
+                           "Step 5: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Verify player stands on the floor correctly";
+                } else if (issue_type == "jitter") {
+                    text = "Debug Physics: Jittery Movement\n\n"
+                           "Step 1: Check process function usage\n"
+                           "  Tool: read_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/player.gd\" }\n"
+                           "  CRITICAL: Physics code must use _physics_process, NOT _process\n"
+                           "  _process runs at variable framerate, _physics_process at fixed intervals\n\n"
+                           "Step 2: Check delta usage\n"
+                           "  In _physics_process, verify movement uses delta:\n"
+                           "  velocity.x = direction * speed  (NOT direction * speed * delta for CharacterBody)\n"
+                           "  Note: move_and_slide() already accounts for delta internally\n\n"
+                           "Step 3: Fix the script\n"
+                           "  Tool: edit_script\n"
+                           "  Move physics code from _process to _physics_process\n"
+                           "  Remove redundant delta multiplication with move_and_slide()\n\n"
+                           "Step 4: Check camera smoothing\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Camera2D').position_smoothing_enabled\" }\n"
+                           "  Enable smoothing to reduce visual jitter from physics interpolation\n\n"
+                           "Step 5: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Tool: capture_game_viewport\n"
+                           "  Verify smooth movement without jitter";
+                } else if (issue_type == "one_way_collision") {
+                    text = "Debug Physics: One-Way Collision Not Working\n\n"
+                           "Step 1: Check one_way_collision property\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Parameters: { \"node_path\": \"Platform/CollisionShape2D\", \"property\": \"one_way_collision\" }\n"
+                           "  Must be true for one-way platforms\n\n"
+                           "Step 2: Verify the CollisionShape setup\n"
+                           "  Tool: get_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 3 }\n"
+                           "  Check: CollisionShape2D is child of StaticBody2D or AnimatableBody2D\n\n"
+                           "Step 3: Set one_way_collision if not enabled\n"
+                           "  Tool: batch_set_property\n"
+                           "  Parameters: { \"node_paths\": [\"Platform/CollisionShape2D\"], "
+                              "\"property\": \"one_way_collision\", \"value\": \"true\" }\n\n"
+                           "Step 4: Check one_way_collision_margin\n"
+                           "  Tool: get_game_node_property\n"
+                           "  Parameters: { \"node_path\": \"Platform/CollisionShape2D\", \"property\": \"one_way_collision_margin\" }\n"
+                           "  Increase if player passes through at high speed (default: 1.0)\n\n"
+                           "Step 5: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Verify player can jump through from below and land on top";
+                } else if (issue_type == "tunneling") {
+                    text = "Debug Physics: Tunneling (Objects Passing Through Each Other)\n\n"
+                           "Tunneling occurs when fast-moving objects skip past thin collision shapes between frames.\n\n"
+                           "Step 1: Check object speed\n"
+                           "  Tool: eval_in_game\n"
+                           "  Parameters: { \"expression\": \"get_node('Projectile').velocity.length()\" }\n"
+                           "  If speed > 500 pixels/frame, tunneling is likely\n\n"
+                           "Step 2: Read the movement script\n"
+                           "  Tool: read_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/projectile.gd\" }\n"
+                           "  Check: is it using _physics_process and move_and_slide?\n\n"
+                           "Step 3: Solutions:\n"
+                           "  a) Enable Continuous Collision Detection (CCD):\n"
+                           "     Tool: edit_script\n"
+                           "     For RigidBody: set continuous_cd = true in _ready()\n\n"
+                           "  b) Increase physics tick rate:\n"
+                           "     Tool: get_project_settings\n"
+                           "     Parameters: { \"keys\": [\"physics/common/physics_ticks_per_second\"] }\n"
+                           "     Default is 60, try 120 for fast objects\n\n"
+                           "  c) Use raycasts for hit detection:\n"
+                           "     Cast a ray from previous position to current position each frame\n"
+                           "     Detect hits even if the body moves past the shape\n\n"
+                           "Step 4: Re-test\n"
+                           "  Tool: run_game\n"
+                           "  Verify fast objects no longer pass through walls";
+                } else {
+                    text = "Debug Physics Issue: General Guide\n\n"
+                           "Available issue types (pass as issue_type argument):\n"
+                           "  no_collision       - Two bodies don't collide (layer/mask/shape issues)\n"
+                           "  wrong_movement     - Character moves incorrectly (velocity/gravity)\n"
+                           "  falling_through     - Objects fall through floors (missing shapes/layers)\n"
+                           "  jitter             - Movement is jittery (_process vs _physics_process)\n"
+                           "  one_way_collision  - One-way platforms not working\n"
+                           "  tunneling          - Fast objects pass through thin walls\n\n"
+                           "Key diagnostic tools:\n"
+                           "  find_nodes          - Search for collision shapes by name\n"
+                           "  get_scene_tree      - Inspect node hierarchy\n"
+                           "  eval_in_game        - Read physics properties at runtime\n"
+                           "  read_script         - Examine movement code\n"
+                           "  batch_set_property  - Fix collision layers/masks in bulk\n"
+                           "  get_game_node_property - Check specific node properties";
+                }
+
+                return nlohmann::json::array({
+                    {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
+                });
+            }
+        },
+
+        // 11. fix_common_errors (PROMPT-08)
+        {
+            "fix_common_errors",
+            "Recovery guide for common MCP tool errors: node not found, scene not open, script syntax errors, property type mismatches",
+            nlohmann::json::array({
+                {{"name", "error_pattern"}, {"description", "Error pattern: node_not_found, no_scene_open, script_syntax, type_mismatch, game_not_running, permission_error (default: node_not_found)"}, {"required", false}}
+            }),
+            [](const nlohmann::json& args) -> nlohmann::json {
+                std::string error_pattern = "node_not_found";
+                if (args.contains("error_pattern") && args["error_pattern"].is_string()) {
+                    error_pattern = args["error_pattern"].get<std::string>();
+                }
+
+                std::string text;
+                if (error_pattern == "node_not_found") {
+                    text = "Fix Common Error: Node Not Found\n\n"
+                           "Error message pattern: \"Node not found: <path>\" or \"Invalid node path\"\n\n"
+                           "Step 1: See the actual scene tree\n"
+                           "  Tool: get_scene_tree\n"
+                           "  Parameters: { \"max_depth\": 5 }\n"
+                           "  Compare actual paths against the path you used\n\n"
+                           "Step 2: Search for the node by name\n"
+                           "  Tool: find_nodes\n"
+                           "  Parameters: { \"pattern\": \"<partial_name>\" }\n"
+                           "  The node may exist at a different path or with a different case\n\n"
+                           "Step 3: Common path mistakes:\n"
+                           "  - Missing /root/ prefix: use \"/root/Scene/Node\" not \"Scene/Node\"\n"
+                           "  - Wrong case: node names are case-sensitive in Godot\n"
+                           "  - Node not yet added: create it first with create_node\n"
+                           "  - Node in different scene: check list_open_scenes\n\n"
+                           "Step 4: Retry with the correct path\n"
+                           "  Use the path shown by get_scene_tree or find_nodes";
+                } else if (error_pattern == "no_scene_open") {
+                    text = "Fix Common Error: No Scene Open\n\n"
+                           "Error message pattern: \"No scene is currently open\" or \"Scene root is null\"\n\n"
+                           "Step 1: Check what scenes are open\n"
+                           "  Tool: list_open_scenes\n"
+                           "  If empty, no scene is loaded in the editor\n\n"
+                           "Step 2a: Open an existing scene\n"
+                           "  Tool: open_scene\n"
+                           "  Parameters: { \"path\": \"res://scenes/main.tscn\" }\n\n"
+                           "Step 2b: Or create a new scene\n"
+                           "  Tool: create_scene\n"
+                           "  Parameters: { \"root_type\": \"Node2D\", \"path\": \"res://scenes/new_scene.tscn\" }\n\n"
+                           "Step 3: Retry the original operation\n"
+                           "  Most MCP tools require an open scene with a scene root\n\n"
+                           "Common causes:\n"
+                           "  - Godot just started and no scene was opened\n"
+                           "  - All scene tabs were closed\n"
+                           "  - Previous create_scene failed silently";
+                } else if (error_pattern == "script_syntax") {
+                    text = "Fix Common Error: Script Syntax Error\n\n"
+                           "Error message pattern: \"Parse Error\" or \"Unexpected token\" or \"Expected ...\"\n\n"
+                           "Step 1: Read the current script content\n"
+                           "  Tool: read_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/<script>.gd\" }\n"
+                           "  Find the syntax error at the reported line number\n\n"
+                           "Step 2: Fix the specific error lines\n"
+                           "  Tool: edit_script\n"
+                           "  Parameters: { \"path\": \"res://scripts/<script>.gd\", \"edits\": [\n"
+                           "    { \"line\": <error_line>, \"action\": \"replace\", \"text\": \"fixed_code\" }\n"
+                           "  ] }\n\n"
+                           "Step 3: Re-attach script if it was detached\n"
+                           "  Tool: attach_script\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/<node>\", \"script_path\": \"res://scripts/<script>.gd\" }\n\n"
+                           "Common GDScript syntax errors:\n"
+                           "  - Missing colon after if/for/func: func _ready():  (not func _ready())\n"
+                           "  - Wrong indentation: use tabs, not spaces (Godot default)\n"
+                           "  - Missing quotes around strings: var name = \"Player\" not var name = Player\n"
+                           "  - Using = instead of == in conditions: if x == 5 not if x = 5";
+                } else if (error_pattern == "type_mismatch") {
+                    text = "Fix Common Error: Property Type Mismatch\n\n"
+                           "Error message pattern: \"Invalid value type\" or \"Cannot convert\"\n\n"
+                           "Step 1: Check the expected property type\n"
+                           "  Tool: get_resource_info\n"
+                           "  Parameters: { \"path\": \"res://scenes/<scene>.tscn\" }\n"
+                           "  Or inspect the node to see property types\n\n"
+                           "Step 2: Common Godot property value formats:\n"
+                           "  Vector2:    \"Vector2(100, 200)\"     (not \"100,200\")\n"
+                           "  Vector3:    \"Vector3(1, 2, 3)\"      (not \"1,2,3\")\n"
+                           "  Color:      \"Color(1, 0, 0, 1)\"     (RGBA 0-1) or \"#ff0000\"\n"
+                           "  Rect2:      \"Rect2(0, 0, 100, 50)\"\n"
+                           "  NodePath:   \"NodePath('Player')\"    (for NodePath properties)\n"
+                           "  bool:       \"true\" or \"false\"       (lowercase)\n"
+                           "  int:        \"42\"                     (whole number as string)\n"
+                           "  float:      \"3.14\"                   (decimal as string)\n"
+                           "  Resource:   \"res://path/to/resource\" (for resource properties)\n\n"
+                           "Step 3: Set the property with correct format\n"
+                           "  Tool: set_node_property\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/<node>\", \"property\": \"position\", \"value\": \"Vector2(100, 200)\" }\n\n"
+                           "Step 4: For resource properties, use the res:// prefix\n"
+                           "  Tool: set_node_property\n"
+                           "  Parameters: { \"node_path\": \"/root/Scene/<node>\", \"property\": \"texture\", \"value\": \"res://assets/sprite.png\" }";
+                } else if (error_pattern == "game_not_running") {
+                    text = "Fix Common Error: Game Not Running\n\n"
+                           "Error message pattern: \"Game is not running\" or \"No game bridge connection\"\n\n"
+                           "Step 1: Start the game\n"
+                           "  Tool: run_game\n"
+                           "  Parameters: { \"mode\": \"current\" }\n"
+                           "  Or: { \"mode\": \"main\" } for main scene, { \"mode\": \"custom\", \"scene_path\": \"res://...\" }\n\n"
+                           "Step 2: Wait for bridge connection\n"
+                           "  Tool: get_game_bridge_status\n"
+                           "  The game bridge must be connected before using runtime tools\n"
+                           "  run_game auto-waits, but you can also poll get_game_bridge_status\n\n"
+                           "Step 3: Retry the runtime tool\n"
+                           "  Runtime tools (require game to be running):\n"
+                           "  - eval_in_game, get_game_node_property, get_game_scene_tree\n"
+                           "  - click_node, inject_input, capture_game_viewport\n"
+                           "  - get_game_output, run_test_sequence, get_game_bridge_status\n\n"
+                           "Common causes:\n"
+                           "  - Game was never started (call run_game first)\n"
+                           "  - Game crashed on startup (check get_game_output for errors)\n"
+                           "  - Game was stopped (call run_game to restart)";
+                } else if (error_pattern == "permission_error") {
+                    text = "Fix Common Error: Permission / File Path Error\n\n"
+                           "Error message pattern: \"File not found\" or \"Cannot save\" or \"Invalid path\"\n\n"
+                           "Step 1: List project files to verify paths\n"
+                           "  Tool: list_project_files\n"
+                           "  Parameters: { \"directory\": \"res://\" }\n"
+                           "  Check that the file exists and path is correct\n\n"
+                           "Step 2: Verify the res:// prefix\n"
+                           "  All Godot project files must use \"res://\" prefix:\n"
+                           "  Correct:   \"res://scripts/player.gd\"\n"
+                           "  Incorrect: \"scripts/player.gd\" or \"C:/project/scripts/player.gd\"\n\n"
+                           "Step 3: Check file extension\n"
+                           "  Scripts:  .gd (GDScript)\n"
+                           "  Scenes:   .tscn (text scene) or .scn (binary scene)\n"
+                           "  Resources: .tres (text resource) or .res (binary resource)\n\n"
+                           "Step 4: Create the file if it doesn't exist\n"
+                           "  Tool: write_script (for .gd files)\n"
+                           "  Parameters: { \"path\": \"res://scripts/new_script.gd\", \"content\": \"extends Node\\n\" }\n"
+                           "  Tool: create_scene (for .tscn files)\n"
+                           "  Parameters: { \"root_type\": \"Node2D\", \"path\": \"res://scenes/new_scene.tscn\" }\n\n"
+                           "Common causes:\n"
+                           "  - Typo in file path\n"
+                           "  - Missing directory (Godot auto-creates directories on save)\n"
+                           "  - File was deleted or moved outside of Godot";
+                } else {
+                    text = "Fix Common Errors: Recovery Guide\n\n"
+                           "Available error patterns (pass as error_pattern argument):\n"
+                           "  node_not_found    - Node path doesn't match scene tree\n"
+                           "  no_scene_open     - No scene loaded in editor\n"
+                           "  script_syntax     - GDScript parse errors\n"
+                           "  type_mismatch     - Wrong property value format\n"
+                           "  game_not_running  - Runtime tools need game running\n"
+                           "  permission_error  - File path or access issues\n\n"
+                           "General recovery steps:\n"
+                           "1. get_scene_tree - See current scene state\n"
+                           "2. find_nodes - Search for nodes by name\n"
+                           "3. list_project_files - Check file existence\n"
+                           "4. get_game_output - Read error details from logs";
+                }
+
+                return nlohmann::json::array({
+                    {{"role", "user"}, {"content", {{"type", "text"}, {"text", text}}}}
+                });
+            }
         }
     };
     return defs;
