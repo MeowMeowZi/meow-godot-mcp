@@ -82,7 +82,7 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
 
 - [x] **Phase 22: Smart Error Handling** - Tool errors become diagnostic-rich: isError flag, did-you-mean suggestions, recovery guidance (completed 2026-03-24)
 - [x] **Phase 23: Enriched Resources** - MCP Resources deliver scene context automatically: scripts, signals, node details, file metadata (completed 2026-03-24)
-- [ ] **Phase 24: Composite Tools** - Multi-step operations as single tools: find_nodes, batch_set_property, create_character, create_ui_panel, duplicate_node
+- [x] **Phase 24: Composite Tools** - Multi-step operations as single tools: find_nodes, batch_set_property, create_character, create_ui_panel, duplicate_node (completed 2026-03-24)
 - [ ] **Phase 25: Prompt Templates** - 8 workflow-oriented prompt templates for game building, debugging, and tool composition
 
 ## Phase Details
@@ -125,10 +125,10 @@ Plans:
   3. AI can create a complete character (CharacterBody + CollisionShape + visual node) with `create_character`, and Ctrl+Z undoes the entire operation in one step
   4. AI can create a UI panel from a declarative JSON spec using `create_ui_panel`, producing container + children + styling in one step
   5. AI can deep-copy a node subtree to a new parent using `duplicate_node`, preserving all children and properties
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 24-01-PLAN.md -- Search & batch tools: find_nodes (scene tree search by type/name/property) and batch_set_property (multi-node property setting with single UndoRedo)
-- [ ] 24-02-PLAN.md -- Creation & duplication tools: create_character, create_ui_panel, duplicate_node with atomic UndoRedo
+- [x] 24-01-PLAN.md -- Search & batch tools: find_nodes (scene tree search by type/name/property) and batch_set_property (multi-node property setting with single UndoRedo)
+- [x] 24-02-PLAN.md -- Creation & duplication tools: create_character, create_ui_panel, duplicate_node with atomic UndoRedo
 
 ### Phase 25: Prompt Templates
 **Goal**: AI has workflow-oriented prompt templates that guide it through complex multi-tool tasks like building games, debugging crashes, and composing tools effectively
@@ -169,5 +169,5 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 | 19-21. 2D Game Dev Core | v1.4 | -- | Complete | 2026-03-22 |
 | 22. Smart Error Handling | v1.5 | 2/2 | Complete    | 2026-03-23 |
 | 23. Enriched Resources | v1.5 | 2/2 | Complete    | 2026-03-24 |
-| 24. Composite Tools | v1.5 | 0/2 | Not started | - |
+| 24. Composite Tools | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 25. Prompt Templates | v1.5 | 0/TBD | Not started | - |

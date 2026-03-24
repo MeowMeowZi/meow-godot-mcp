@@ -20,11 +20,11 @@ Requirements for v1.5 AI 工作流增强 milestone. Each maps to roadmap phases.
 
 ### Composite Tools
 
-- [ ] **COMP-01**: AI 可使用 `find_nodes` 按类型、名称模式、属性值搜索场景树中的节点
-- [ ] **COMP-02**: AI 可使用 `batch_set_property` 批量设置多个节点的属性（按路径列表或类型过滤）
-- [ ] **COMP-03**: AI 可使用 `create_character` 一步创建角色（CharacterBody + CollisionShape + 视觉节点），整个操作为单个 UndoRedo action
-- [ ] **COMP-04**: AI 可使用 `create_ui_panel` 从声明式 JSON 规格创建 UI 面板（容器 + 子节点 + 样式），单个 UndoRedo action
-- [ ] **COMP-05**: AI 可使用 `duplicate_node` 深拷贝节点子树到新父节点，包含所有子节点和属性
+- [x] **COMP-01**: AI 可使用 `find_nodes` 按类型、名称模式、属性值搜索场景树中的节点
+- [x] **COMP-02**: AI 可使用 `batch_set_property` 批量设置多个节点的属性（按路径列表或类型过滤）
+- [x] **COMP-03**: AI 可使用 `create_character` 一步创建角色（CharacterBody + CollisionShape + 视觉节点），整个操作为单个 UndoRedo action
+- [x] **COMP-04**: AI 可使用 `create_ui_panel` 从声明式 JSON 规格创建 UI 面板（容器 + 子节点 + 样式），单个 UndoRedo action
+- [x] **COMP-05**: AI 可使用 `duplicate_node` 深拷贝节点子树到新父节点，包含所有子节点和属性
 
 ### Enriched Resources
 
@@ -89,11 +89,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RES-01 | Phase 23 | Complete |
 | RES-02 | Phase 23 | Pending |
 | RES-03 | Phase 23 | Complete |
-| COMP-01 | Phase 24 | Pending |
-| COMP-02 | Phase 24 | Pending |
-| COMP-03 | Phase 24 | Pending |
-| COMP-04 | Phase 24 | Pending |
-| COMP-05 | Phase 24 | Pending |
+| COMP-01 | Phase 24 | Complete |
+| COMP-02 | Phase 24 | Complete |
+| COMP-03 | Phase 24 | Complete |
+| COMP-04 | Phase 24 | Complete |
+| COMP-05 | Phase 24 | Complete |
 | PROMPT-01 | Phase 25 | Pending |
 | PROMPT-02 | Phase 25 | Pending |
 | PROMPT-03 | Phase 25 | Pending |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: AI Workflow Enhancement
 status: Ready to plan
-stopped_at: Completed 23-02-PLAN.md (Phase 23 complete)
-last_updated: "2026-03-24T03:26:13.285Z"
+stopped_at: Completed 24-02-PLAN.md (Phase 24 complete)
+last_updated: "2026-03-24T04:37:00Z"
 last_activity: 2026-03-24
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  completed_phases: 3
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -20,12 +20,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** Phase 23 — Enriched Resources
+**Current focus:** Phase 24 — Composite Tools
 
 ## Current Position
 
-Phase: 24
-Plan: Not started
+Phase: 24 (Composite Tools) — COMPLETE
+Plan: 2 of 2 (all complete)
 
 ## Performance Metrics
 
@@ -43,6 +43,8 @@ Plan: Not started
 | Phase 22 P02 | 11min | 2 tasks | 5 files |
 | Phase 23 P01 | 8min | 2 tasks | 5 files |
 | Phase 23 P02 | 6min | 2 tasks | 4 files |
+| Phase 24 P01 | 8min | 2 tasks | 8 files |
+| Phase 24 P02 | 7min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -59,6 +61,11 @@ Plan: Not started
 - [23-02]: URI prefix matching after exact-match checks (godot://node/ vs godot://scene_tree do not overlap)
 - [23-02]: resources capability advertised with subscribe:false (no subscription support yet)
 - [23-02]: Empty path validation with descriptive error messages including examples
+- [24-01]: find_nodes_match_name as pure C++ function for unit testability without Godot
+- [24-01]: Substring match when no wildcards (more intuitive than exact match)
+- [24-02]: Direct ClassDB::instantiate + UndoRedo for composite tools (no reuse of functions with own actions)
+- [24-02]: Manual GDScript construction for create_character script (avoids ResourceLoader::load crash)
+- [24-02]: create_ui_panel validates root_type is Control subclass, limits to 2 levels
 
 ### Pending Todos
 
@@ -87,6 +94,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-24
-Last session: 2026-03-24T03:20:22Z
-Stopped at: Completed 23-02-PLAN.md (Phase 23 complete)
+Last session: 2026-03-24T04:37:00Z
+Stopped at: Completed 24-02-PLAN.md (Phase 24 complete)
 Resume file: None
