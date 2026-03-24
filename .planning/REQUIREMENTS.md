@@ -29,7 +29,7 @@ Requirements for v1.5 AI 工作流增强 milestone. Each maps to roadmap phases.
 ### Enriched Resources
 
 - [x] **RES-01**: 场景树资源（scene_tree）包含每个节点的脚本源码、信号连接和关键属性值
-- [ ] **RES-02**: 支持参数化资源模板（godot://node/{path}、godot://signals/{path}、godot://script/{path}），AI 可按需查询单个节点/脚本/信号详情
+- [x] **RES-02**: 支持参数化资源模板（godot://node/{path}、godot://signals/{path}、godot://script/{path}），AI 可按需查询单个节点/脚本/信号详情
 - [x] **RES-03**: 项目文件资源包含文件大小、类型分类（场景/脚本/资源/图片）和修改时间戳
 
 ### Prompt Templates

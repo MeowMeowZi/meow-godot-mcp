@@ -81,7 +81,7 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
 **Milestone Goal:** From toolbox to intelligent workbench -- AI gets richer context, smarter error recovery, composite operations, and guided workflows.
 
 - [x] **Phase 22: Smart Error Handling** - Tool errors become diagnostic-rich: isError flag, did-you-mean suggestions, recovery guidance (completed 2026-03-24)
-- [ ] **Phase 23: Enriched Resources** - MCP Resources deliver scene context automatically: scripts, signals, node details, file metadata
+- [x] **Phase 23: Enriched Resources** - MCP Resources deliver scene context automatically: scripts, signals, node details, file metadata (completed 2026-03-24)
 - [ ] **Phase 24: Composite Tools** - Multi-step operations as single tools: find_nodes, batch_set_property, create_character, create_ui_panel, duplicate_node
 - [ ] **Phase 25: Prompt Templates** - 8 workflow-oriented prompt templates for game building, debugging, and tool composition
 
@@ -110,10 +110,10 @@ Plans:
   1. Reading the scene_tree resource returns node entries that include script paths, signal connections, and key property values inline
   2. AI can query a single node's full details via `godot://node/{path}` resource template, and a script's content via `godot://script/{path}`
   3. The project files resource includes file size, type classification (scene/script/resource/image), and modification timestamps
-**Plans:** 0/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 23-01-PLAN.md -- Resource enrichment module: enriched scene tree (inline scripts, signals, @export props) and enriched project files (size, type, mtime)
-- [ ] 23-02-PLAN.md -- URI resource templates (godot://node, script, signals) and resources/templates/list MCP method
+- [x] 23-01-PLAN.md -- Resource enrichment module: enriched scene tree (inline scripts, signals, @export props) and enriched project files (size, type, mtime)
+- [x] 23-02-PLAN.md -- URI resource templates (godot://node, script, signals) and resources/templates/list MCP method
 
 ### Phase 24: Composite Tools
 **Goal**: AI can perform multi-step scene operations in a single tool call with atomic undo, eliminating tedious step-by-step workflows for common tasks
@@ -165,6 +165,6 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 | 18. Tool Ergonomics | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 19-21. 2D Game Dev Core | v1.4 | -- | Complete | 2026-03-22 |
 | 22. Smart Error Handling | v1.5 | 2/2 | Complete    | 2026-03-23 |
-| 23. Enriched Resources | v1.5 | 0/2 | Planned    |  |
+| 23. Enriched Resources | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 24. Composite Tools | v1.5 | 0/TBD | Not started | - |
 | 25. Prompt Templates | v1.5 | 0/TBD | Not started | - |
