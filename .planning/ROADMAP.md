@@ -141,7 +141,7 @@ Plans:
   4. All prompt templates reference only tools that actually exist in the tool registry (validated by unit test)
 **Plans:** 2 plans
 Plans:
-- [ ] 25-01-PLAN.md -- Reference & diagnostic prompts: tool_composition_guide, debug_game_crash, debug_physics_issue, fix_common_errors + test suite
+- [x] 25-01-PLAN.md -- Reference & diagnostic prompts: tool_composition_guide, debug_game_crash, debug_physics_issue, fix_common_errors + test suite
 - [ ] 25-02-PLAN.md -- Game-building prompts: build_platformer_game, setup_tilemap_level, build_top_down_game, create_game_from_scratch
 
 ## Progress
@@ -173,4 +173,4 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 | 22. Smart Error Handling | v1.5 | 2/2 | Complete    | 2026-03-23 |
 | 23. Enriched Resources | v1.5 | 2/2 | Complete    | 2026-03-24 |
 | 24. Composite Tools | v1.5 | 2/2 | Complete    | 2026-03-24 |
-| 25. Prompt Templates | v1.5 | 0/2 | Not started | - |
+| 25. Prompt Templates | v1.5 | 1/2 | In progress | - |

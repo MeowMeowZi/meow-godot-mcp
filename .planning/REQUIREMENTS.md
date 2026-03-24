@@ -34,14 +34,14 @@ Requirements for v1.5 AI 工作流增强 milestone. Each maps to roadmap phases.
 
 ### Prompt Templates
 
-- [ ] **PROMPT-01**: `tool_composition_guide` 模板——工具组合速查卡，教 AI 如何组合工具完成常见任务
-- [ ] **PROMPT-02**: `debug_game_crash` 模板——游戏崩溃时的系统性排查工作流
+- [x] **PROMPT-01**: `tool_composition_guide` 模板——工具组合速查卡，教 AI 如何组合工具完成常见任务
+- [x] **PROMPT-02**: `debug_game_crash` 模板——游戏崩溃时的系统性排查工作流
 - [ ] **PROMPT-03**: `build_platformer_game` 模板——从零搭建 2D 平台跳跃游戏的完整流程
 - [ ] **PROMPT-04**: `setup_tilemap_level` 模板——TileMap 关卡搭建工作流
 - [ ] **PROMPT-05**: `build_top_down_game` 模板——从零搭建俯视角游戏的完整流程
-- [ ] **PROMPT-06**: `debug_physics_issue` 模板——物理问题专项调试工作流
+- [x] **PROMPT-06**: `debug_physics_issue` 模板——物理问题专项调试工作流
 - [ ] **PROMPT-07**: `create_game_from_scratch` 模板——按游戏类型参数化的全流程建游戏指南
-- [ ] **PROMPT-08**: `fix_common_errors` 模板——常见 MCP 工具错误的恢复指南
+- [x] **PROMPT-08**: `fix_common_errors` 模板——常见 MCP 工具错误的恢复指南
 
 ## v2 Requirements
 
@@ -94,14 +94,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-03 | Phase 24 | Complete |
 | COMP-04 | Phase 24 | Complete |
 | COMP-05 | Phase 24 | Complete |
-| PROMPT-01 | Phase 25 | Pending |
-| PROMPT-02 | Phase 25 | Pending |
+| PROMPT-01 | Phase 25 | Complete |
+| PROMPT-02 | Phase 25 | Complete |
 | PROMPT-03 | Phase 25 | Pending |
 | PROMPT-04 | Phase 25 | Pending |
 | PROMPT-05 | Phase 25 | Pending |
-| PROMPT-06 | Phase 25 | Pending |
+| PROMPT-06 | Phase 25 | Complete |
 | PROMPT-07 | Phase 25 | Pending |
-| PROMPT-08 | Phase 25 | Pending |
+| PROMPT-08 | Phase 25 | Complete |
 
 **Coverage:**
 - v1.5 requirements: 24 total

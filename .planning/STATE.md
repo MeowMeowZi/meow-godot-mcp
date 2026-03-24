@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: AI Workflow Enhancement
-status: Ready to plan
-stopped_at: Completed 24-02-PLAN.md (Phase 24 complete)
-last_updated: "2026-03-24T04:47:46.239Z"
+status: Executing Phase 25
+stopped_at: Completed 25-01-PLAN.md
+last_updated: "2026-03-24T05:04:39Z"
 last_activity: 2026-03-24
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
 ---
 
 # Project State
@@ -20,20 +20,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** Phase 24 — Composite Tools
+**Current focus:** Phase 25 — Prompt Templates
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
+Phase: 25 (Prompt Templates) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 2 (v1.5)
-- Average duration: 11 min
-- Total execution time: 0.4 hours
+- Total plans completed: 7 (v1.5)
+- Average duration: 8 min
+- Total execution time: 1.0 hours
 
 **By Phase:**
 
@@ -45,6 +45,7 @@ Plan: Not started
 | Phase 23 P02 | 6min | 2 tasks | 4 files |
 | Phase 24 P01 | 8min | 2 tasks | 8 files |
 | Phase 24 P02 | 7min | 2 tasks | 7 files |
+| Phase 25 P01 | 6min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,8 @@ Plan: Not started
 - [24-02]: Direct ClassDB::instantiate + UndoRedo for composite tools (no reuse of functions with own actions)
 - [24-02]: Manual GDScript construction for create_character script (avoids ResourceLoader::load crash)
 - [24-02]: create_ui_panel validates root_type is Control subclass, limits to 2 levels
+- [25-01]: Each prompt includes a default/summary branch for unknown argument values listing available options
+- [25-01]: Tool name validation uses text search across all 55 tool names rather than regex extraction
 
 ### Pending Todos
 
@@ -94,6 +97,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-24
-Last session: 2026-03-24T04:37:00Z
-Stopped at: Completed 24-02-PLAN.md (Phase 24 complete)
+Last session: 2026-03-24T05:04:39Z
+Stopped at: Completed 25-01-PLAN.md
 Resume file: None
