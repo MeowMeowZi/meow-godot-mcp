@@ -71,6 +71,14 @@ add_executable(test_composite_tools
 )
 target_link_libraries(test_composite_tools GTest::gtest_main)
 
+# Prompt template unit tests (validates prompt content and tool references)
+add_executable(test_prompts
+    test_prompts.cpp
+    ${CMAKE_SOURCE_DIR}/../src/mcp_prompts.cpp
+    ${CMAKE_SOURCE_DIR}/../src/mcp_tool_registry.cpp
+)
+target_link_libraries(test_prompts GTest::gtest_main)
+
 include(GoogleTest)
 gtest_discover_tests(test_placeholder)
 gtest_discover_tests(test_protocol)
@@ -80,3 +88,4 @@ gtest_discover_tests(test_scene_mutation)
 gtest_discover_tests(test_script_tools)
 gtest_discover_tests(test_tool_registry)
 gtest_discover_tests(test_composite_tools)
+gtest_discover_tests(test_prompts)
