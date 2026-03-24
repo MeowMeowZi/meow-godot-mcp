@@ -337,6 +337,41 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
         return true;
     }
 
+    if (action == "input_sequence_result") {
+        if (pending_type == PendingType::INPUT_SEQUENCE && deferred_callback) {
+            bool success = p_data.size() >= 1 ? (bool)p_data[0] : false;
+            int steps_executed = p_data.size() >= 2 ? (int)p_data[1] : 0;
+            std::string error_msg = p_data.size() >= 3 ? std::string(String(p_data[2]).utf8().get_data()) : "";
+            nlohmann::json result;
+            if (success) {
+                result = {{"success", true}, {"steps_executed", steps_executed}};
+            } else {
+                result = {{"error", error_msg.empty() ? "Input sequence failed" : error_msg}, {"steps_executed", steps_executed}};
+            }
+            auto response = mcp::create_tool_result(pending_id, result);
+            deferred_callback(response);
+            pending_type = PendingType::NONE;
+        }
+        return true;
+    }
+
+    if (action == "inject_text_result") {
+        if (pending_type == PendingType::INJECT_TEXT && deferred_callback) {
+            bool success = p_data.size() >= 1 ? (bool)p_data[0] : false;
+            std::string error_msg = p_data.size() >= 2 ? std::string(String(p_data[1]).utf8().get_data()) : "";
+            nlohmann::json result;
+            if (success) {
+                result = {{"success", true}};
+            } else {
+                result = {{"error", error_msg.empty() ? "Text injection failed" : error_msg}};
+            }
+            auto response = mcp::create_tool_result(pending_id, result);
+            deferred_callback(response);
+            pending_type = PendingType::NONE;
+        }
+        return true;
+    }
+
     return false;
 }
 
@@ -885,4 +920,49 @@ nlohmann::json MeowDebuggerPlugin::_evaluate_assertion(
     }
 
     return assertion_result;
+}
+
+// === inject_input_sequence ===
+
+nlohmann::json MeowDebuggerPlugin::inject_input_sequence_tool(const nlohmann::json& id, const nlohmann::json& steps) {
+    if (!is_game_connected()) {
+        return {{"error", "No game running or bridge not connected. Use run_game to start the game first."}};
+    }
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending. Wait for it to complete."}};
+    }
+    if (!steps.is_array() || steps.empty()) {
+        return {{"error", "steps must be a non-empty array"}};
+    }
+
+    pending_type = PendingType::INPUT_SEQUENCE;
+    pending_id = id;
+
+    // Serialize steps as JSON string to send to game
+    Array data;
+    data.push_back(String(steps.dump().c_str()));
+    send_to_game("meow_mcp:inject_sequence", data);
+
+    return {{"__deferred", true}};
+}
+
+// === inject_text ===
+
+nlohmann::json MeowDebuggerPlugin::inject_text_tool(const nlohmann::json& id, const std::string& node_path, const std::string& text) {
+    if (!is_game_connected()) {
+        return {{"error", "No game running or bridge not connected. Use run_game to start the game first."}};
+    }
+    if (pending_type != PendingType::NONE) {
+        return {{"error", "Another deferred request is already pending. Wait for it to complete."}};
+    }
+
+    pending_type = PendingType::INJECT_TEXT;
+    pending_id = id;
+
+    Array data;
+    data.push_back(String(node_path.c_str()));
+    data.push_back(String(text.c_str()));
+    send_to_game("meow_mcp:inject_text", data);
+
+    return {{"__deferred", true}};
 }

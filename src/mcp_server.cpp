@@ -924,6 +924,40 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return make_tool_response(id, game_bridge->inject_input_tool(args), tool_name);
         }
 
+        if (tool_name == "inject_input_sequence") {
+            auto& args = get_args(params);
+            if (!args.contains("steps") || !args["steps"].is_array()) {
+                return make_params_error(id,
+                    "Missing required parameter: steps (array of input steps)", tool_name);
+            }
+            if (!game_bridge) {
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
+            }
+            auto result = game_bridge->inject_input_sequence_tool(id, args["steps"]);
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;
+            }
+            return make_tool_response(id, result, tool_name);
+        }
+
+        if (tool_name == "inject_text") {
+            auto& args = get_args(params);
+            std::string node_path = get_string(args, "node_path");
+            std::string text = get_string(args, "text");
+            if (node_path.empty()) {
+                return make_params_error(id,
+                    "Missing required parameter: node_path", tool_name);
+            }
+            if (!game_bridge) {
+                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
+            }
+            auto result = game_bridge->inject_text_tool(id, node_path, text);
+            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
+                return result;
+            }
+            return make_tool_response(id, result, tool_name);
+        }
+
         if (tool_name == "capture_game_viewport") {
             auto& args = get_args(params);
             int width = get_int(args, "width");

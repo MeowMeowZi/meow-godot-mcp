@@ -92,6 +92,12 @@ func _on_message(message: String, data: Array) -> bool:
 			return _handle_eval_in_game(data)
 		"get_game_scene_tree":
 			return _handle_get_game_scene_tree(data)
+		"inject_sequence":
+			_handle_inject_sequence(data)
+			return true
+		"inject_text":
+			_handle_inject_text(data)
+			return true
 	return false
 
 func _inject_key(data: Array) -> bool:
@@ -368,3 +374,117 @@ func _serialize_node(node: Node, depth: int, max_depth: int) -> Dictionary:
 			result["children"] = children_arr
 
 	return result
+
+# === Input Sequence ===
+
+func _handle_inject_sequence(data: Array) -> void:
+	var steps_json: String = data[0]
+	var parsed = JSON.parse_string(steps_json)
+	if parsed == null or not (parsed is Array):
+		EngineDebugger.send_message("meow_mcp:input_sequence_result", [false, 0, "Invalid steps JSON"])
+		return
+
+	var steps: Array = parsed
+	var executed := 0
+
+	for step in steps:
+		if not (step is Dictionary):
+			continue
+
+		if step.has("action"):
+			var action_name: String = step["action"]
+			var duration_ms: int = step.get("duration", 50)
+			# Press
+			var press_evt = InputEventAction.new()
+			press_evt.action = action_name
+			press_evt.pressed = true
+			press_evt.strength = 1.0
+			Input.parse_input_event(press_evt)
+			# Hold
+			await get_tree().create_timer(duration_ms / 1000.0).timeout
+			# Release
+			var release_evt = InputEventAction.new()
+			release_evt.action = action_name
+			release_evt.pressed = false
+			release_evt.strength = 0.0
+			Input.parse_input_event(release_evt)
+			executed += 1
+
+		elif step.has("key"):
+			var keycode_str: String = step["key"]
+			var duration_ms: int = step.get("duration", 50)
+			var key_event = InputEventKey.new()
+			key_event.keycode = OS.find_keycode_from_string(keycode_str)
+			key_event.physical_keycode = key_event.keycode
+			key_event.pressed = true
+			Input.parse_input_event(key_event)
+			await get_tree().create_timer(duration_ms / 1000.0).timeout
+			var release_key = InputEventKey.new()
+			release_key.keycode = key_event.keycode
+			release_key.physical_keycode = key_event.keycode
+			release_key.pressed = false
+			Input.parse_input_event(release_key)
+			executed += 1
+
+		elif step.has("mouse"):
+			var mouse_action: String = step["mouse"]
+			var pos = Vector2.ZERO
+			if step.has("position") and step["position"] is Dictionary:
+				pos = Vector2(step["position"].get("x", 0), step["position"].get("y", 0))
+			if mouse_action == "click":
+				var btn = MOUSE_BUTTON_LEFT
+				var press_m = InputEventMouseButton.new()
+				press_m.position = pos
+				press_m.global_position = pos
+				press_m.button_index = btn
+				press_m.pressed = true
+				Input.parse_input_event(press_m)
+				await get_tree().create_timer(0.05).timeout
+				var release_m = InputEventMouseButton.new()
+				release_m.position = pos
+				release_m.global_position = pos
+				release_m.button_index = btn
+				release_m.pressed = false
+				Input.parse_input_event(release_m)
+			elif mouse_action == "move":
+				var move_evt = InputEventMouseMotion.new()
+				move_evt.position = pos
+				move_evt.global_position = pos
+				Input.parse_input_event(move_evt)
+			executed += 1
+
+		elif step.has("wait"):
+			var wait_ms: int = step["wait"]
+			await get_tree().create_timer(wait_ms / 1000.0).timeout
+			executed += 1
+
+	EngineDebugger.send_message("meow_mcp:input_sequence_result", [true, executed, ""])
+
+# === Text Injection ===
+
+func _handle_inject_text(data: Array) -> void:
+	var node_path: String = data[0]
+	var text: String = data[1]
+
+	var node = _resolve_node(node_path)
+	if node == null:
+		EngineDebugger.send_message("meow_mcp:inject_text_result",
+			[false, "Node not found: " + node_path])
+		return
+
+	if node is LineEdit:
+		node.text = text
+		node.text_changed.emit(text)
+		EngineDebugger.send_message("meow_mcp:inject_text_result", [true, ""])
+	elif node is TextEdit:
+		node.text = text
+		node.text_changed.emit()
+		EngineDebugger.send_message("meow_mcp:inject_text_result", [true, ""])
+	else:
+		# Try setting text property directly
+		if "text" in node:
+			node.set("text", text)
+			EngineDebugger.send_message("meow_mcp:inject_text_result", [true, ""])
+		else:
+			EngineDebugger.send_message("meow_mcp:inject_text_result",
+				[false, "Node '" + node_path + "' is not a text input (LineEdit/TextEdit) and has no 'text' property"])

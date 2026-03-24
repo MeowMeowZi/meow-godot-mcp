@@ -575,6 +575,41 @@ const std::vector<ToolDef>& get_all_tools() {
             {4, 3, 0}
         },
         {
+            "inject_input_sequence",
+            "Execute a sequence of input steps with timing in the running game. Each step can be an action press+hold+release, key press, mouse event, or wait. Steps execute sequentially with specified durations. Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"steps", {
+                        {"type", "array"},
+                        {"description", "Array of input steps. Each step: {\"action\": \"ui_right\", \"duration\": 1000} (hold action for ms), {\"key\": \"W\", \"duration\": 500} (hold key), {\"mouse\": \"click\", \"position\": {\"x\": 100, \"y\": 200}} (click), {\"wait\": 300} (delay ms). Duration defaults to 50ms if omitted."},
+                        {"items", {{"type", "object"}}}
+                    }}
+                }},
+                {"required", {"steps"}}
+            },
+            {4, 3, 0}
+        },
+        {
+            "inject_text",
+            "Set text content on a LineEdit or TextEdit node in the running game. Directly sets the text property and emits the appropriate change signal. Requires a game to be running with the MCP bridge connected.",
+            {
+                {"type", "object"},
+                {"properties", {
+                    {"node_path", {
+                        {"type", "string"},
+                        {"description", "Path to the LineEdit or TextEdit node relative to scene root (e.g., 'UI/NameInput')"}
+                    }},
+                    {"text", {
+                        {"type", "string"},
+                        {"description", "Text content to set on the node"}
+                    }}
+                }},
+                {"required", {"node_path", "text"}}
+            },
+            {4, 3, 0}
+        },
+        {
             "capture_game_viewport",
             "Capture a screenshot of the running game's viewport. Returns the image as base64-encoded PNG via MCP ImageContent. Requires a game to be running with the MCP bridge connected.",
             {

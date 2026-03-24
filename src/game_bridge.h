@@ -17,7 +17,7 @@ struct LogEntry {
     int64_t timestamp_ms; // milliseconds since epoch (steady_clock)
 };
 
-enum class PendingType { NONE, VIEWPORT_CAPTURE, CLICK_NODE, GET_NODE_RECT, GET_NODE_PROPERTY, EVAL_IN_GAME, GET_GAME_SCENE_TREE, RUN_TEST_SEQUENCE };
+enum class PendingType { NONE, VIEWPORT_CAPTURE, CLICK_NODE, GET_NODE_RECT, GET_NODE_PROPERTY, EVAL_IN_GAME, GET_GAME_SCENE_TREE, RUN_TEST_SEQUENCE, INPUT_SEQUENCE, INJECT_TEXT };
 
 class MeowDebuggerPlugin : public godot::EditorDebuggerPlugin {
     GDCLASS(MeowDebuggerPlugin, godot::EditorDebuggerPlugin);
@@ -46,6 +46,10 @@ public:
 
     // Phase 15: Integration Testing Toolkit
     nlohmann::json run_test_sequence_tool(const nlohmann::json& id, const nlohmann::json& steps);
+
+    // Input sequence and text injection
+    nlohmann::json inject_input_sequence_tool(const nlohmann::json& id, const nlohmann::json& steps);
+    nlohmann::json inject_text_tool(const nlohmann::json& id, const std::string& node_path, const std::string& text);
 
     // Phase 14: Log buffer methods
     nlohmann::json get_buffered_game_output(bool clear_after_read, const std::string& level_filter,
