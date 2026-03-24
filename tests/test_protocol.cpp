@@ -105,7 +105,7 @@ TEST(ToolsListResponse, HasGetSceneTreeTool) {
     EXPECT_EQ(response["id"], 2);
 
     auto tools = response["result"]["tools"];
-    ASSERT_EQ(tools.size(), 50);
+    ASSERT_EQ(tools.size(), 52);
     EXPECT_EQ(tools[0]["name"], "get_scene_tree");
 }
 
