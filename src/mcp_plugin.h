@@ -32,6 +32,7 @@ private:
     void _on_restart_pressed();
     void _on_configure_mcp_pressed();
     void _on_port_changed(double new_port);
+    void _on_tool_toggled(bool pressed);
 
     MCPServer* server;
     MCPDock* dock;

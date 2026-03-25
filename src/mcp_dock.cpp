@@ -1,9 +1,11 @@
 #include "mcp_dock.h"
+#include "mcp_tool_registry.h"
 
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/color.hpp>
 #include <godot_cpp/core/memory.hpp>
 #include <godot_cpp/classes/style_box_flat.hpp>
+#include <map>
 
 using namespace godot;
 
@@ -88,6 +90,26 @@ MCPDock::MCPDock() {
     configure_feedback_label->set_autowrap_mode(TextServer::AUTOWRAP_WORD_SMART);
     configure_feedback->add_child(configure_feedback_label);
     root->add_child(configure_feedback);
+
+    // Tools category section (collapsible area with checkboxes)
+    auto* tools_sep = memnew(HSeparator);
+    root->add_child(tools_sep);
+
+    auto* tools_header = memnew(Label);
+    tools_header->set_text(String::utf8("工具开关"));
+    tools_header->add_theme_font_size_override("font_size", 13);
+    root->add_child(tools_header);
+
+    // Scroll container for tool checkboxes (limited height)
+    auto* scroll = memnew(ScrollContainer);
+    scroll->set_custom_minimum_size(Vector2(0, 180));
+    scroll->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+    scroll->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+    root->add_child(scroll);
+
+    tools_section = memnew(VBoxContainer);
+    tools_section->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+    scroll->add_child(tools_section);
 
     // Autoload warning banner (hidden by default)
     autoload_warning = memnew(PanelContainer);
@@ -207,6 +229,66 @@ void MCPDock::tick_feedback(double delta, bool client_connected) {
         feedback_timer = 0.0;
         if (configure_feedback) {
             configure_feedback->set_visible(false);
+        }
+    }
+}
+
+void MCPDock::set_tool_toggle_callback(ToolToggleCallback cb) {
+    tool_toggle_cb = cb;
+}
+
+const std::vector<CheckBox*>& MCPDock::get_tool_checkboxes() const {
+    return tool_checkboxes;
+}
+
+void MCPDock::build_tool_checkboxes() {
+    if (!tools_section) return;
+
+    // Clear existing
+    for (auto* cb : tool_checkboxes) {
+        // Children are owned by Godot scene tree
+    }
+    tool_checkboxes.clear();
+    while (tools_section->get_child_count() > 0) {
+        auto* child = tools_section->get_child(0);
+        tools_section->remove_child(child);
+        memdelete(child);
+    }
+
+    // Group tools by category
+    std::map<ToolCategory, std::vector<const ToolDef*>> by_category;
+    for (const auto& tool : get_all_tools()) {
+        by_category[tool.category].push_back(&tool);
+    }
+
+    // Category order
+    ToolCategory order[] = {
+        ToolCategory::SCENE, ToolCategory::SCRIPT, ToolCategory::PROJECT,
+        ToolCategory::RUNTIME, ToolCategory::INPUT, ToolCategory::QUERY,
+        ToolCategory::TILEMAP, ToolCategory::COMPOSITE, ToolCategory::DX
+    };
+
+    for (auto cat : order) {
+        auto it = by_category.find(cat);
+        if (it == by_category.end()) continue;
+
+        // Category label
+        auto* cat_label = memnew(Label);
+        cat_label->set_text(String("- ") + String(get_category_name(cat)) + String(" -"));
+        cat_label->add_theme_font_size_override("font_size", 11);
+        cat_label->add_theme_color_override("font_color", Color(0.6, 0.6, 0.7));
+        tools_section->add_child(cat_label);
+
+        // Tool checkboxes
+        for (const auto* tool : it->second) {
+            auto* cb = memnew(CheckBox);
+            cb->set_text(String(tool->name.c_str()));
+            cb->set_pressed_no_signal(!is_tool_disabled(tool->name));
+            cb->add_theme_font_size_override("font_size", 11);
+            // Store tool name as meta for retrieval in toggle handler
+            cb->set_meta("tool_name", String(tool->name.c_str()));
+            tools_section->add_child(cb);
+            tool_checkboxes.push_back(cb);
         }
     }
 }

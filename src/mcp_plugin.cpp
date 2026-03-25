@@ -128,6 +128,23 @@ void MCPPlugin::_enter_tree() {
     // Add dock to editor (right-bottom panel)
     add_control_to_dock(DOCK_SLOT_RIGHT_BL, dock->get_root());
 
+    // Build tool category checkboxes
+    dock->build_tool_checkboxes();
+    dock->set_tool_toggle_callback([this](const std::string& tool_name, bool enabled) {
+        // Update tool count display when tools are toggled
+        tool_count = get_tool_count(detected_version);
+        if (dock) {
+            bool running = server && server->is_running();
+            bool connected = server && server->has_client();
+            dock->update_status(running, connected, port, version_string, tool_count);
+        }
+    });
+
+    // Connect checkbox toggled signals
+    for (auto* cb : dock->get_tool_checkboxes()) {
+        cb->connect("toggled", callable_mp(this, &MCPPlugin::_on_tool_toggled));
+    }
+
     // Initial dock state
     dock->update_status(true, false, port, version_string, tool_count);
     dock->update_buttons(true);
@@ -316,6 +333,27 @@ void MCPPlugin::_on_configure_mcp_pressed() {
     }
 
     UtilityFunctions::print(String::utf8("MCP Meow: 配置命令已复制到剪贴板"));
+}
+
+void MCPPlugin::_on_tool_toggled(bool pressed) {
+    // Find which checkbox was toggled (the sender)
+    // In Godot 4.x, we don't have get_sender() in C++, so we iterate checkboxes
+    if (!dock) return;
+    for (auto* cb : dock->get_tool_checkboxes()) {
+        if (cb->has_meta("tool_name")) {
+            bool is_pressed = cb->is_pressed();
+            String tool_name_str = cb->get_meta("tool_name");
+            std::string tool_name = std::string(tool_name_str.utf8().get_data());
+            set_tool_disabled(tool_name, !is_pressed);
+        }
+    }
+    // Update tool count
+    tool_count = get_tool_count(detected_version);
+    if (dock) {
+        bool running = server && server->is_running();
+        bool connected = server && server->has_client();
+        dock->update_status(running, connected, port, version_string, tool_count);
+    }
 }
 
 void MCPPlugin::_bind_methods() {

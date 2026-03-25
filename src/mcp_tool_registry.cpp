@@ -23,7 +23,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::SCENE
         },
         {
             "create_node",
@@ -38,7 +39,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"type"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::SCENE
         },
         {
             "set_node_property",
@@ -54,7 +56,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"node_path", "property", "value"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::SCENE
         },
         {
             "delete_node",
@@ -66,7 +69,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"node_path"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::SCENE
         },
         {
             "read_script",
@@ -78,7 +82,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"path"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::SCRIPT
         },
         {
             "write_script",
@@ -91,7 +96,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"path", "content"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::SCRIPT
         },
         {
             "edit_script",
@@ -107,7 +113,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"path", "operation", "line"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::SCRIPT
         },
         {
             "attach_script",
@@ -120,7 +127,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"node_path", "script_path"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::SCRIPT
         },
         {
             "list_project_files",
@@ -130,7 +138,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"properties", nlohmann::json::object()},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::PROJECT
         },
         {
             "run_game",
@@ -149,7 +158,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"mode"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::RUNTIME
         },
         {
             "stop_game",
@@ -159,7 +169,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"properties", nlohmann::json::object()},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::RUNTIME
         },
         {
             "get_game_output",
@@ -181,7 +192,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::RUNTIME
         },
         {
             "connect_signal",
@@ -196,7 +208,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"source_path", "signal_name", "target_path", "method_name"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::QUERY
         },
         // --- Phase 6: Scene File Management tools ---
         {
@@ -209,7 +222,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::PROJECT
         },
         {
             "open_scene",
@@ -221,7 +235,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"path"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::PROJECT
         },
         {
             "create_scene",
@@ -235,7 +250,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"root_type", "path"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::PROJECT
         },
         // --- Phase 9: Viewport Screenshot tools ---
         {
@@ -260,7 +276,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::RUNTIME
         },
         // --- Phase 10: Running Game Bridge tools ---
         {
@@ -312,7 +329,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"type"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::INPUT
         },
         {
             "validate_scripts",
@@ -322,7 +340,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 {"properties", nlohmann::json::object()},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::DX
         },
         {
             "create_node_tree",
@@ -341,7 +360,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"spec"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::COMPOSITE
         },
         {
             "inject_input_sequence",
@@ -357,7 +377,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"steps"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::INPUT
         },
         {
             "inject_text",
@@ -376,7 +397,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"node_path", "text"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::INPUT
         },
         {
             "capture_game_viewport",
@@ -395,7 +417,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::RUNTIME
         },
         // --- Phase 13: Runtime State Query tools ---
         {
@@ -418,7 +441,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"node_path", "property"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::QUERY
         },
         {
             "eval_in_game",
@@ -438,7 +462,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"expression"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::QUERY
         },
         // --- Phase 20: TileMap Operations ---
         {
@@ -468,7 +493,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"node_path", "cells"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::TILEMAP
         },
         {
             "erase_tilemap_cells",
@@ -493,7 +519,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"node_path", "coords"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::TILEMAP
         },
         {
             "batch_set_property",
@@ -510,7 +537,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"property", "value"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::COMPOSITE
         },
         {
             "duplicate_node",
@@ -525,7 +553,8 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", {"source_path"}}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::COMPOSITE
         },
         // --- Restart Editor ---
         {
@@ -539,16 +568,52 @@ const std::vector<ToolDef>& get_all_tools() {
                 }},
                 {"required", nlohmann::json::array()}
             },
-            {4, 3, 0}
+            {4, 3, 0},
+            ToolCategory::DX
         }
     };
     return tools;
 }
 
+// --- Disabled tools set ---
+static std::set<std::string> s_disabled_tools;
+
+void set_tool_disabled(const std::string& name, bool disabled) {
+    if (disabled) {
+        s_disabled_tools.insert(name);
+    } else {
+        s_disabled_tools.erase(name);
+    }
+}
+
+bool is_tool_disabled(const std::string& name) {
+    return s_disabled_tools.count(name) > 0;
+}
+
+const std::set<std::string>& get_disabled_tools() {
+    return s_disabled_tools;
+}
+
+// --- Category display names ---
+const char* get_category_name(ToolCategory cat) {
+    switch (cat) {
+        case ToolCategory::SCENE:     return "Scene";
+        case ToolCategory::SCRIPT:    return "Script";
+        case ToolCategory::PROJECT:   return "Project";
+        case ToolCategory::RUNTIME:   return "Runtime";
+        case ToolCategory::INPUT:     return "Input";
+        case ToolCategory::QUERY:     return "Query";
+        case ToolCategory::TILEMAP:   return "TileMap";
+        case ToolCategory::COMPOSITE: return "Composite";
+        case ToolCategory::DX:        return "DX";
+        default:                      return "Other";
+    }
+}
+
 nlohmann::json get_filtered_tools_json(const GodotVersion& current) {
     nlohmann::json result = nlohmann::json::array();
     for (const auto& tool : get_all_tools()) {
-        if (current >= tool.min_version) {
+        if (current >= tool.min_version && !is_tool_disabled(tool.name)) {
             result.push_back({
                 {"name", tool.name},
                 {"description", tool.description},
@@ -562,7 +627,7 @@ nlohmann::json get_filtered_tools_json(const GodotVersion& current) {
 int get_tool_count(const GodotVersion& current) {
     int count = 0;
     for (const auto& tool : get_all_tools()) {
-        if (current >= tool.min_version) {
+        if (current >= tool.min_version && !is_tool_disabled(tool.name)) {
             count++;
         }
     }

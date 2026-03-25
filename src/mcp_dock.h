@@ -5,11 +5,15 @@
 #include <godot_cpp/classes/h_box_container.hpp>
 #include <godot_cpp/classes/label.hpp>
 #include <godot_cpp/classes/button.hpp>
+#include <godot_cpp/classes/check_box.hpp>
 #include <godot_cpp/classes/h_separator.hpp>
 #include <godot_cpp/classes/panel_container.hpp>
+#include <godot_cpp/classes/scroll_container.hpp>
 #include <godot_cpp/classes/spin_box.hpp>
 
 #include <string>
+#include <vector>
+#include <functional>
 
 // Plain C++ class (NOT a Godot Object, NOT registered to ClassDB)
 // Manages a VBoxContainer hierarchy for the MCP Meow dock panel.
@@ -45,6 +49,16 @@ public:
     // Called from MCPPlugin::_process to tick feedback timer
     void tick_feedback(double delta, bool client_connected);
 
+    // Tool toggle callback type
+    using ToolToggleCallback = std::function<void(const std::string& tool_name, bool enabled)>;
+    void set_tool_toggle_callback(ToolToggleCallback cb);
+
+    // Build tool category checkboxes from registry
+    void build_tool_checkboxes();
+
+    // Get all tool checkboxes for signal connection from MCPPlugin
+    const std::vector<godot::CheckBox*>& get_tool_checkboxes() const;
+
 private:
     godot::VBoxContainer* root = nullptr;
     godot::Label* status_label = nullptr;
@@ -62,6 +76,11 @@ private:
 
     // Feedback auto-hide timer
     double feedback_timer = 0.0;
+
+    // Tool checkboxes section
+    godot::VBoxContainer* tools_section = nullptr;
+    ToolToggleCallback tool_toggle_cb;
+    std::vector<godot::CheckBox*> tool_checkboxes;
 
     // Cached state for dirty checking
     bool last_running = false;
