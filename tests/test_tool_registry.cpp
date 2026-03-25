@@ -55,7 +55,7 @@ TEST(GodotVersion, LesserPatch) {
 
 TEST(ToolRegistry, HasExactly38Tools) {
     const auto& tools = get_all_tools();
-    ASSERT_EQ(tools.size(), 59);
+    ASSERT_EQ(tools.size(), 30);
 }
 
 TEST(ToolRegistry, EachToolHasNonEmptyFields) {
@@ -82,25 +82,17 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
     std::vector<std::string> expected_names = {
         "get_scene_tree", "create_node", "set_node_property", "delete_node",
         "read_script", "write_script", "edit_script", "attach_script",
-        "detach_script", "list_project_files", "get_project_settings", "get_resource_info",
+        "list_project_files",
         "run_game", "stop_game", "get_game_output",
-        "get_node_signals", "connect_signal", "disconnect_signal",
-        "save_scene", "open_scene", "list_open_scenes", "create_scene", "instantiate_scene",
-        "set_layout_preset", "set_theme_override", "create_stylebox", "get_ui_properties", "set_container_layout", "get_theme_overrides",
-        "create_animation", "add_animation_track", "set_keyframe", "get_animation_info", "set_animation_properties",
+        "connect_signal",
+        "save_scene", "open_scene", "create_scene",
         "capture_viewport",
         "inject_input", "validate_scripts", "create_node_tree",
         "inject_input_sequence", "inject_text",
-        "capture_game_viewport", "get_game_bridge_status",
-        "click_node", "get_node_rect",
-        "get_game_node_property", "eval_in_game", "get_game_scene_tree",
-        "run_test_sequence",
-        "set_tilemap_cells", "erase_tilemap_cells", "get_tilemap_cell_info", "get_tilemap_info",
-        "create_collision_shape",
-        "find_nodes",
+        "capture_game_viewport",
+        "get_game_node_property", "eval_in_game",
+        "set_tilemap_cells", "erase_tilemap_cells",
         "batch_set_property",
-        "create_character",
-        "create_ui_panel",
         "duplicate_node",
         "restart_editor"
     };
@@ -115,7 +107,7 @@ TEST(ToolRegistry, ToolNamesAreCorrect) {
 TEST(FilteredTools, Version430Returns38Tools) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 59);
+    EXPECT_EQ(json_tools.size(), 30);
 }
 
 TEST(FilteredTools, Version420Returns0Tools) {
@@ -127,7 +119,7 @@ TEST(FilteredTools, Version420Returns0Tools) {
 TEST(FilteredTools, PermissiveVersionReturns38Tools) {
     auto json_tools = get_filtered_tools_json({99, 99, 99});
     ASSERT_TRUE(json_tools.is_array());
-    EXPECT_EQ(json_tools.size(), 59);
+    EXPECT_EQ(json_tools.size(), 30);
 }
 
 TEST(FilteredTools, EachToolHasNameDescriptionSchema) {
@@ -151,7 +143,7 @@ TEST(FilteredTools, FirstToolIsGetSceneTree) {
 // --- Tool count tests ---
 
 TEST(ToolCount, Version430Returns38) {
-    EXPECT_EQ(get_tool_count({4, 3, 0}), 59);
+    EXPECT_EQ(get_tool_count({4, 3, 0}), 30);
 }
 
 TEST(ToolCount, Version420Returns0) {
@@ -248,20 +240,6 @@ TEST(FilteredTools, GetGameOutputSchemaValidation) {
     FAIL() << "get_game_output not found in filtered tools";
 }
 
-TEST(FilteredTools, GetNodeSignalsSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "get_node_signals") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("node_path"));
-            ASSERT_EQ(schema["required"].size(), 1);
-            EXPECT_EQ(schema["required"][0], "node_path");
-            return;
-        }
-    }
-    FAIL() << "get_node_signals not found in filtered tools";
-}
-
 TEST(FilteredTools, ConnectSignalSchemaValidation) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     for (const auto& tool : json_tools) {
@@ -280,26 +258,6 @@ TEST(FilteredTools, ConnectSignalSchemaValidation) {
         }
     }
     FAIL() << "connect_signal not found in filtered tools";
-}
-
-TEST(FilteredTools, DisconnectSignalSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "disconnect_signal") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("source_path"));
-            EXPECT_TRUE(schema["properties"].contains("signal_name"));
-            EXPECT_TRUE(schema["properties"].contains("target_path"));
-            EXPECT_TRUE(schema["properties"].contains("method_name"));
-            ASSERT_EQ(schema["required"].size(), 4);
-            EXPECT_EQ(schema["required"][0], "source_path");
-            EXPECT_EQ(schema["required"][1], "signal_name");
-            EXPECT_EQ(schema["required"][2], "target_path");
-            EXPECT_EQ(schema["required"][3], "method_name");
-            return;
-        }
-    }
-    FAIL() << "disconnect_signal not found in filtered tools";
 }
 
 // --- Phase 6 scene file tool schema validation tests ---
@@ -331,18 +289,6 @@ TEST(FilteredTools, OpenSceneSchemaValidation) {
     FAIL() << "open_scene not found in filtered tools";
 }
 
-TEST(FilteredTools, ListOpenScenesSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "list_open_scenes") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["required"].empty());
-            return;
-        }
-    }
-    FAIL() << "list_open_scenes not found in filtered tools";
-}
-
 TEST(FilteredTools, CreateSceneSchemaValidation) {
     auto json_tools = get_filtered_tools_json({4, 3, 0});
     for (const auto& tool : json_tools) {
@@ -358,223 +304,6 @@ TEST(FilteredTools, CreateSceneSchemaValidation) {
         }
     }
     FAIL() << "create_scene not found in filtered tools";
-}
-
-TEST(FilteredTools, InstantiateSceneSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "instantiate_scene") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("scene_path"));
-            EXPECT_TRUE(schema["properties"].contains("parent_path"));
-            EXPECT_TRUE(schema["properties"].contains("name"));
-            ASSERT_EQ(schema["required"].size(), 1);
-            EXPECT_EQ(schema["required"][0], "scene_path");
-            return;
-        }
-    }
-    FAIL() << "instantiate_scene not found in filtered tools";
-}
-
-// --- Phase 7 UI system tool schema validation tests ---
-
-TEST(FilteredTools, SetLayoutPresetSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "set_layout_preset") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("node_path"));
-            EXPECT_TRUE(schema["properties"].contains("preset"));
-            ASSERT_EQ(schema["required"].size(), 2);
-            EXPECT_EQ(schema["required"][0], "node_path");
-            EXPECT_EQ(schema["required"][1], "preset");
-            return;
-        }
-    }
-    FAIL() << "set_layout_preset not found in filtered tools";
-}
-
-TEST(FilteredTools, SetThemeOverrideSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "set_theme_override") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("node_path"));
-            EXPECT_TRUE(schema["properties"].contains("overrides"));
-            ASSERT_EQ(schema["required"].size(), 2);
-            EXPECT_EQ(schema["required"][0], "node_path");
-            EXPECT_EQ(schema["required"][1], "overrides");
-            return;
-        }
-    }
-    FAIL() << "set_theme_override not found in filtered tools";
-}
-
-TEST(FilteredTools, CreateStyleboxSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "create_stylebox") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("node_path"));
-            EXPECT_TRUE(schema["properties"].contains("override_name"));
-            EXPECT_TRUE(schema["properties"].contains("bg_color"));
-            EXPECT_TRUE(schema["properties"].contains("corner_radius"));
-            EXPECT_TRUE(schema["properties"].contains("border_width"));
-            ASSERT_EQ(schema["required"].size(), 2);
-            EXPECT_EQ(schema["required"][0], "node_path");
-            EXPECT_EQ(schema["required"][1], "override_name");
-            return;
-        }
-    }
-    FAIL() << "create_stylebox not found in filtered tools";
-}
-
-TEST(FilteredTools, GetUIPropertiesSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "get_ui_properties") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("node_path"));
-            ASSERT_EQ(schema["required"].size(), 1);
-            EXPECT_EQ(schema["required"][0], "node_path");
-            return;
-        }
-    }
-    FAIL() << "get_ui_properties not found in filtered tools";
-}
-
-TEST(FilteredTools, SetContainerLayoutSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "set_container_layout") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("node_path"));
-            EXPECT_TRUE(schema["properties"].contains("separation"));
-            EXPECT_TRUE(schema["properties"].contains("alignment"));
-            EXPECT_TRUE(schema["properties"].contains("columns"));
-            ASSERT_EQ(schema["required"].size(), 1);
-            EXPECT_EQ(schema["required"][0], "node_path");
-            return;
-        }
-    }
-    FAIL() << "set_container_layout not found in filtered tools";
-}
-
-TEST(FilteredTools, GetThemeOverridesSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "get_theme_overrides") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("node_path"));
-            ASSERT_EQ(schema["required"].size(), 1);
-            EXPECT_EQ(schema["required"][0], "node_path");
-            return;
-        }
-    }
-    FAIL() << "get_theme_overrides not found in filtered tools";
-}
-
-// --- Phase 8 Animation system tool schema validation tests ---
-
-TEST(FilteredTools, CreateAnimationSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "create_animation") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("animation_name"));
-            EXPECT_TRUE(schema["properties"].contains("player_path"));
-            EXPECT_TRUE(schema["properties"].contains("parent_path"));
-            EXPECT_TRUE(schema["properties"].contains("node_name"));
-            ASSERT_EQ(schema["required"].size(), 1);
-            EXPECT_EQ(schema["required"][0], "animation_name");
-            return;
-        }
-    }
-    FAIL() << "create_animation not found in filtered tools";
-}
-
-TEST(FilteredTools, AddAnimationTrackSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "add_animation_track") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("player_path"));
-            EXPECT_TRUE(schema["properties"].contains("animation_name"));
-            EXPECT_TRUE(schema["properties"].contains("track_type"));
-            EXPECT_TRUE(schema["properties"].contains("track_path"));
-            ASSERT_EQ(schema["required"].size(), 4);
-            EXPECT_EQ(schema["required"][0], "player_path");
-            EXPECT_EQ(schema["required"][1], "animation_name");
-            EXPECT_EQ(schema["required"][2], "track_type");
-            EXPECT_EQ(schema["required"][3], "track_path");
-            return;
-        }
-    }
-    FAIL() << "add_animation_track not found in filtered tools";
-}
-
-TEST(FilteredTools, SetKeyframeSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "set_keyframe") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("player_path"));
-            EXPECT_TRUE(schema["properties"].contains("animation_name"));
-            EXPECT_TRUE(schema["properties"].contains("track_index"));
-            EXPECT_TRUE(schema["properties"].contains("time"));
-            EXPECT_TRUE(schema["properties"].contains("action"));
-            EXPECT_TRUE(schema["properties"].contains("value"));
-            EXPECT_TRUE(schema["properties"].contains("transition"));
-            ASSERT_EQ(schema["required"].size(), 5);
-            EXPECT_EQ(schema["required"][0], "player_path");
-            EXPECT_EQ(schema["required"][1], "animation_name");
-            EXPECT_EQ(schema["required"][2], "track_index");
-            EXPECT_EQ(schema["required"][3], "time");
-            EXPECT_EQ(schema["required"][4], "action");
-            // Verify track_index is integer, time is number
-            EXPECT_EQ(schema["properties"]["track_index"]["type"], "integer");
-            EXPECT_EQ(schema["properties"]["time"]["type"], "number");
-            return;
-        }
-    }
-    FAIL() << "set_keyframe not found in filtered tools";
-}
-
-TEST(FilteredTools, GetAnimationInfoSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "get_animation_info") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("player_path"));
-            EXPECT_TRUE(schema["properties"].contains("animation_name"));
-            ASSERT_EQ(schema["required"].size(), 1);
-            EXPECT_EQ(schema["required"][0], "player_path");
-            return;
-        }
-    }
-    FAIL() << "get_animation_info not found in filtered tools";
-}
-
-TEST(FilteredTools, SetAnimationPropertiesSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "set_animation_properties") {
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("player_path"));
-            EXPECT_TRUE(schema["properties"].contains("animation_name"));
-            EXPECT_TRUE(schema["properties"].contains("length"));
-            EXPECT_TRUE(schema["properties"].contains("loop_mode"));
-            EXPECT_TRUE(schema["properties"].contains("step"));
-            ASSERT_EQ(schema["required"].size(), 2);
-            EXPECT_EQ(schema["required"][0], "player_path");
-            EXPECT_EQ(schema["required"][1], "animation_name");
-            // Verify length and step are number types
-            EXPECT_EQ(schema["properties"]["length"]["type"], "number");
-            EXPECT_EQ(schema["properties"]["step"]["type"], "number");
-            return;
-        }
-    }
-    FAIL() << "set_animation_properties not found in filtered tools";
 }
 
 // --- Phase 9 Viewport Screenshot tool schema validation tests ---
@@ -675,15 +404,4 @@ TEST(FilteredTools, CaptureGameViewportSchemaValidation) {
     FAIL() << "capture_game_viewport not found in filtered tools";
 }
 
-TEST(FilteredTools, GetGameBridgeStatusSchemaValidation) {
-    auto json_tools = get_filtered_tools_json({4, 3, 0});
-    for (const auto& tool : json_tools) {
-        if (tool["name"] == "get_game_bridge_status") {
-            auto schema = tool["inputSchema"];
-            // required is empty
-            EXPECT_TRUE(schema["required"].empty());
-            return;
-        }
-    }
-    FAIL() << "get_game_bridge_status not found in filtered tools";
-}
+// get_game_bridge_status test removed (tool consolidated in DX optimization)

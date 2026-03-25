@@ -105,7 +105,7 @@ TEST(ToolsListResponse, HasGetSceneTreeTool) {
     EXPECT_EQ(response["id"], 2);
 
     auto tools = response["result"]["tools"];
-    ASSERT_EQ(tools.size(), 59);
+    ASSERT_EQ(tools.size(), 30);
     EXPECT_EQ(tools[0]["name"], "get_scene_tree");
 }
 
@@ -348,23 +348,7 @@ TEST(ToolsListResponse, HasAttachScriptTool) {
     EXPECT_TRUE(found) << "attach_script tool not found in tools/list";
 }
 
-TEST(ToolsListResponse, HasDetachScriptTool) {
-    auto response = create_tools_list_response(2);
-    auto tools = response["result"]["tools"];
-    bool found = false;
-    for (const auto& tool : tools) {
-        if (tool["name"] == "detach_script") {
-            found = true;
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("node_path"));
-            auto req = schema["required"];
-            EXPECT_EQ(req.size(), 1);
-            EXPECT_EQ(req[0], "node_path");
-            break;
-        }
-    }
-    EXPECT_TRUE(found) << "detach_script tool not found in tools/list";
-}
+// detach_script test removed (tool consolidated in DX optimization)
 
 // --- Project tool registration tests ---
 
@@ -384,40 +368,7 @@ TEST(ToolsListResponse, HasListProjectFilesTool) {
     EXPECT_TRUE(found) << "list_project_files tool not found in tools/list";
 }
 
-TEST(ToolsListResponse, HasGetProjectSettingsTool) {
-    auto response = create_tools_list_response(2);
-    auto tools = response["result"]["tools"];
-    bool found = false;
-    for (const auto& tool : tools) {
-        if (tool["name"] == "get_project_settings") {
-            found = true;
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("category"));
-            EXPECT_TRUE(schema["required"].empty());
-            break;
-        }
-    }
-    EXPECT_TRUE(found) << "get_project_settings tool not found in tools/list";
-}
-
-TEST(ToolsListResponse, HasGetResourceInfoTool) {
-    auto response = create_tools_list_response(2);
-    auto tools = response["result"]["tools"];
-    bool found = false;
-    for (const auto& tool : tools) {
-        if (tool["name"] == "get_resource_info") {
-            found = true;
-            auto schema = tool["inputSchema"];
-            EXPECT_TRUE(schema["properties"].contains("path"));
-            EXPECT_EQ(schema["properties"]["path"]["type"], "string");
-            auto req = schema["required"];
-            EXPECT_EQ(req.size(), 1);
-            EXPECT_EQ(req[0], "path");
-            break;
-        }
-    }
-    EXPECT_TRUE(found) << "get_resource_info tool not found in tools/list";
-}
+// get_project_settings + get_resource_info tests removed (tools consolidated in DX optimization)
 
 // --- Initialize response resources capability test ---
 // resources capability now advertised (Phase 23 enriched resources)
@@ -457,7 +408,7 @@ TEST(PromptsListResponse, HasCorrectStructure) {
     EXPECT_EQ(response["jsonrpc"], "2.0");
     EXPECT_EQ(response["id"], 10);
     auto prompts = response["result"]["prompts"];
-    ASSERT_EQ(prompts.size(), 15);
+    ASSERT_EQ(prompts.size(), 12);
     for (const auto& p : prompts) {
         EXPECT_TRUE(p.contains("name"));
         EXPECT_TRUE(p.contains("description"));
@@ -509,16 +460,14 @@ TEST(PromptNotFoundError, ContainsPromptName) {
 
 TEST(PromptsData, GetAllPromptsReturns15) {
     auto prompts = get_all_prompts_json();
-    ASSERT_EQ(prompts.size(), 15);
+    ASSERT_EQ(prompts.size(), 12);
 }
 
 TEST(PromptsData, PromptExistsWorks) {
     EXPECT_TRUE(prompt_exists("create_player_controller"));
     EXPECT_TRUE(prompt_exists("setup_scene_structure"));
     EXPECT_TRUE(prompt_exists("debug_physics"));
-    EXPECT_TRUE(prompt_exists("create_ui_interface"));
-    EXPECT_TRUE(prompt_exists("build_ui_layout"));
-    EXPECT_TRUE(prompt_exists("setup_animation"));
+    EXPECT_TRUE(prompt_exists("tool_composition_guide"));
     EXPECT_FALSE(prompt_exists("nonexistent"));
     EXPECT_FALSE(prompt_exists(""));
 }
@@ -541,55 +490,7 @@ TEST(PromptsData, GetPromptMessagesNonexistent) {
     EXPECT_TRUE(messages.is_null());
 }
 
-TEST(PromptsData, BuildUiLayoutPromptContent) {
-    auto messages = get_prompt_messages("build_ui_layout", {{"layout_type", "main_menu"}});
-    ASSERT_FALSE(messages.is_null());
-    ASSERT_TRUE(messages.is_array());
-    ASSERT_GE(messages.size(), 1);
-    EXPECT_EQ(messages[0]["role"], "user");
-    std::string text = messages[0]["content"]["text"].get<std::string>();
-    // Must reference v1.1 UI tool names
-    EXPECT_NE(text.find("create_node"), std::string::npos);
-    EXPECT_NE(text.find("set_layout_preset"), std::string::npos);
-    EXPECT_NE(text.find("set_theme_override"), std::string::npos);
-    EXPECT_NE(text.find("create_stylebox"), std::string::npos);
-    EXPECT_NE(text.find("set_container_layout"), std::string::npos);
-    EXPECT_NE(text.find("get_ui_properties"), std::string::npos);
-    EXPECT_NE(text.find("save_scene"), std::string::npos);
-    // Must mention the layout type
-    EXPECT_NE(text.find("Main Menu"), std::string::npos);
-}
-
-TEST(PromptsData, SetupAnimationPromptContent) {
-    auto messages = get_prompt_messages("setup_animation", {{"animation_type", "ui_transition"}});
-    ASSERT_FALSE(messages.is_null());
-    ASSERT_TRUE(messages.is_array());
-    ASSERT_GE(messages.size(), 1);
-    EXPECT_EQ(messages[0]["role"], "user");
-    std::string text = messages[0]["content"]["text"].get<std::string>();
-    // Must reference v1.1 animation tool names
-    EXPECT_NE(text.find("create_animation"), std::string::npos);
-    EXPECT_NE(text.find("add_animation_track"), std::string::npos);
-    EXPECT_NE(text.find("set_keyframe"), std::string::npos);
-    EXPECT_NE(text.find("set_animation_properties"), std::string::npos);
-    EXPECT_NE(text.find("get_animation_info"), std::string::npos);
-}
-
-TEST(PromptsData, BuildUiLayoutDefaultParam) {
-    // No arguments -- should default to main_menu
-    auto messages = get_prompt_messages("build_ui_layout", {});
-    ASSERT_FALSE(messages.is_null());
-    std::string text = messages[0]["content"]["text"].get<std::string>();
-    EXPECT_NE(text.find("Main Menu"), std::string::npos);
-}
-
-TEST(PromptsData, SetupAnimationDefaultParam) {
-    // No arguments -- should default to ui_transition
-    auto messages = get_prompt_messages("setup_animation", {});
-    ASSERT_FALSE(messages.is_null());
-    std::string text = messages[0]["content"]["text"].get<std::string>();
-    EXPECT_NE(text.find("UI Transition"), std::string::npos);
-}
+// build_ui_layout + setup_animation prompt tests removed (prompts consolidated in DX optimization)
 
 // --- create_image_tool_result tests ---
 

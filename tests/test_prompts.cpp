@@ -8,7 +8,7 @@
 
 TEST(PromptRegistry, HasExactly15Prompts) {
     auto prompts = get_all_prompts_json();
-    ASSERT_EQ(prompts.size(), 15);
+    ASSERT_EQ(prompts.size(), 12);
 }
 
 // --- Prompt field validation ---
@@ -39,9 +39,6 @@ TEST(PromptRegistry, PromptNamesAreCorrect) {
         "setup_scene_structure",
         "debug_physics",
         "create_ui_interface",
-        "build_ui_layout",
-        "setup_animation",
-        "test_game_ui",
         "tool_composition_guide",
         "debug_game_crash",
         "debug_physics_issue",
@@ -130,9 +127,6 @@ TEST(PromptToolValidation, AllReferencedToolsExist) {
         {"debug_game_crash", nlohmann::json::object()},
         {"debug_physics_issue", nlohmann::json::object()},
         {"fix_common_errors", nlohmann::json::object()},
-        {"build_ui_layout", nlohmann::json::object()},
-        {"setup_animation", nlohmann::json::object()},
-        {"test_game_ui", nlohmann::json::object()},
         // Plan 02 prompts -- default args
         {"build_platformer_game", nlohmann::json::object()},
         {"setup_tilemap_level", nlohmann::json::object()},
@@ -190,7 +184,7 @@ TEST(PromptMessages, ToolCompositionGuide_Categories) {
         ASSERT_FALSE(messages.is_null());
         std::string text = extract_prompt_text(messages);
         EXPECT_NE(text.find("get_scene_tree"), std::string::npos) << "debugging should reference get_scene_tree";
-        EXPECT_NE(text.find("find_nodes"), std::string::npos) << "debugging should reference find_nodes";
+        EXPECT_NE(text.find("get_game_output"), std::string::npos) << "debugging should reference get_game_output";
     }
 
     // testing category

@@ -569,33 +569,8 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return make_tool_response(id, attach_script(node_path, script_path, undo_redo), tool_name);
         }
 
-        if (tool_name == "detach_script") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            if (!has_node_path) {
-                return make_params_error(id, "Missing required parameter: node_path", tool_name);
-            }
-            return make_tool_response(id, detach_script(node_path, undo_redo), tool_name);
-        }
-
         if (tool_name == "list_project_files") {
             return make_tool_response(id, list_project_files(), tool_name);
-        }
-
-        if (tool_name == "get_project_settings") {
-            auto& args = get_args(params);
-            std::string category = get_string(args, "category");
-            return make_tool_response(id, get_project_settings(category), tool_name);
-        }
-
-        if (tool_name == "get_resource_info") {
-            auto& args = get_args(params);
-            std::string path = get_string(args, "path");
-            if (path.empty()) {
-                return make_params_error(id, "Missing required parameter: path", tool_name);
-            }
-            return make_tool_response(id, get_resource_info(path), tool_name);
         }
 
         if (tool_name == "run_game") {
@@ -670,16 +645,6 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return make_tool_response(id, file_result, tool_name);
         }
 
-        if (tool_name == "get_node_signals") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            if (!has_node_path) {
-                return make_params_error(id, "Missing required parameter: node_path", tool_name);
-            }
-            return make_tool_response(id, get_node_signals(node_path), tool_name);
-        }
-
         if (tool_name == "connect_signal") {
             auto& args = get_args(params);
             std::string source_path = get_string(args, "source_path");
@@ -691,19 +656,6 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Missing required parameters: source_path, signal_name, target_path, method_name", tool_name);
             }
             return make_tool_response(id, connect_signal(source_path, signal_name, target_path, method_name), tool_name);
-        }
-
-        if (tool_name == "disconnect_signal") {
-            auto& args = get_args(params);
-            std::string source_path = get_string(args, "source_path");
-            std::string signal_name = get_string(args, "signal_name");
-            std::string target_path = get_string(args, "target_path");
-            std::string method_name = get_string(args, "method_name");
-            if (source_path.empty() || signal_name.empty() || target_path.empty() || method_name.empty()) {
-                return make_params_error(id,
-                    "Missing required parameters: source_path, signal_name, target_path, method_name", tool_name);
-            }
-            return make_tool_response(id, disconnect_signal(source_path, signal_name, target_path, method_name), tool_name);
         }
 
         if (tool_name == "save_scene") {
@@ -721,10 +673,6 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return make_tool_response(id, open_scene(path), tool_name);
         }
 
-        if (tool_name == "list_open_scenes") {
-            return make_tool_response(id, list_open_scenes(), tool_name);
-        }
-
         if (tool_name == "create_scene") {
             auto& args = get_args(params);
             std::string root_type = get_string(args, "root_type");
@@ -734,160 +682,6 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                 return make_params_error(id, "Missing required parameters: root_type, path", tool_name);
             }
             return make_tool_response(id, create_scene(root_type, path, root_name), tool_name);
-        }
-
-        if (tool_name == "instantiate_scene") {
-            auto& args = get_args(params);
-            std::string scene_path = get_string(args, "scene_path");
-            std::string parent_path = get_string(args, "parent_path");
-            std::string name = get_string(args, "name");
-            if (scene_path.empty()) {
-                return make_params_error(id, "Missing required parameter: scene_path", tool_name);
-            }
-            return make_tool_response(id, instantiate_scene(scene_path, parent_path, name, undo_redo), tool_name);
-        }
-
-        // --- Phase 7: UI System tools ---
-
-        if (tool_name == "set_layout_preset") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            std::string preset = get_string(args, "preset");
-            if (!has_node_path || preset.empty()) {
-                return make_params_error(id,
-                    "Missing required parameters: node_path, preset", tool_name);
-            }
-            return make_tool_response(id, set_layout_preset(node_path, preset, undo_redo), tool_name);
-        }
-
-        if (tool_name == "set_theme_override") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            nlohmann::json overrides;
-            if (args.contains("overrides") && args["overrides"].is_object())
-                overrides = args["overrides"];
-            if (!has_node_path || overrides.empty()) {
-                return make_params_error(id,
-                    "Missing required parameters: node_path, overrides", tool_name);
-            }
-            return make_tool_response(id, set_theme_override(node_path, overrides, undo_redo), tool_name);
-        }
-
-        if (tool_name == "create_stylebox") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            std::string override_name = get_string(args, "override_name");
-            // Collect all arguments as properties (function will read what it needs)
-            nlohmann::json properties = args;
-            if (!has_node_path || override_name.empty()) {
-                return make_params_error(id,
-                    "Missing required parameters: node_path, override_name", tool_name);
-            }
-            return make_tool_response(id, create_stylebox(node_path, override_name, properties, undo_redo), tool_name);
-        }
-
-        if (tool_name == "get_ui_properties") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            if (!has_node_path) {
-                return make_params_error(id,
-                    "Missing required parameter: node_path", tool_name);
-            }
-            return make_tool_response(id, get_ui_properties(node_path), tool_name);
-        }
-
-        if (tool_name == "set_container_layout") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            nlohmann::json layout_params = args;
-            if (!has_node_path) {
-                return make_params_error(id,
-                    "Missing required parameter: node_path", tool_name);
-            }
-            return make_tool_response(id, set_container_layout(node_path, layout_params, undo_redo), tool_name);
-        }
-
-        if (tool_name == "get_theme_overrides") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            if (!has_node_path) {
-                return make_params_error(id,
-                    "Missing required parameter: node_path", tool_name);
-            }
-            return make_tool_response(id, get_theme_overrides(node_path), tool_name);
-        }
-
-        // --- Phase 8: Animation System tools ---
-
-        if (tool_name == "create_animation") {
-            auto& args = get_args(params);
-            std::string animation_name = get_string(args, "animation_name");
-            std::string player_path = get_string(args, "player_path");
-            std::string parent_path = get_string(args, "parent_path");
-            std::string node_name = get_string(args, "node_name");
-            if (animation_name.empty()) {
-                return make_params_error(id,
-                    "Missing required parameter: animation_name", tool_name);
-            }
-            return make_tool_response(id, create_animation(animation_name, player_path, parent_path, node_name, undo_redo), tool_name);
-        }
-
-        if (tool_name == "add_animation_track") {
-            auto& args = get_args(params);
-            std::string player_path = get_string(args, "player_path");
-            std::string animation_name = get_string(args, "animation_name");
-            std::string track_type = get_string(args, "track_type");
-            std::string track_path = get_string(args, "track_path");
-            if (player_path.empty() || animation_name.empty() || track_type.empty() || track_path.empty()) {
-                return make_params_error(id,
-                    "Missing required parameters: player_path, animation_name, track_type, track_path", tool_name);
-            }
-            return make_tool_response(id, add_animation_track(player_path, animation_name, track_type, track_path), tool_name);
-        }
-
-        if (tool_name == "set_keyframe") {
-            auto& args = get_args(params);
-            std::string player_path = get_string(args, "player_path");
-            std::string animation_name = get_string(args, "animation_name");
-            int track_index = get_int(args, "track_index", -1);
-            double time = get_double(args, "time");
-            std::string action_str = get_string(args, "action");
-            std::string value_str = get_string(args, "value");
-            double transition = get_double(args, "transition", 1.0);
-            if (player_path.empty() || animation_name.empty() || track_index < 0 || action_str.empty()) {
-                return make_params_error(id,
-                    "Missing required parameters: player_path, animation_name, track_index, time, action", tool_name);
-            }
-            return make_tool_response(id, set_keyframe(player_path, animation_name, track_index, time, action_str, value_str, transition), tool_name);
-        }
-
-        if (tool_name == "get_animation_info") {
-            auto& args = get_args(params);
-            std::string player_path = get_string(args, "player_path");
-            std::string animation_name = get_string(args, "animation_name");
-            if (player_path.empty()) {
-                return make_params_error(id,
-                    "Missing required parameter: player_path", tool_name);
-            }
-            return make_tool_response(id, get_animation_info(player_path, animation_name), tool_name);
-        }
-
-        if (tool_name == "set_animation_properties") {
-            auto& args = get_args(params);
-            std::string player_path = get_string(args, "player_path");
-            std::string animation_name = get_string(args, "animation_name");
-            nlohmann::json props = args;
-            if (player_path.empty() || animation_name.empty()) {
-                return make_params_error(id,
-                    "Missing required parameters: player_path, animation_name", tool_name);
-            }
-            return make_tool_response(id, set_animation_properties(player_path, animation_name, props, undo_redo), tool_name);
         }
 
         // --- Phase 9: Viewport Screenshot tools ---
@@ -974,51 +768,6 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return make_tool_response(id, result, tool_name);
         }
 
-        if (tool_name == "get_game_bridge_status") {
-            if (!game_bridge) {
-                return make_tool_response(id, {{"connected", false}, {"error", "Game bridge not initialized"}}, tool_name);
-            }
-            return make_tool_response(id, game_bridge->get_bridge_status_tool(), tool_name);
-        }
-
-        // --- Phase 12: Input Injection Enhancement tools ---
-
-        if (tool_name == "click_node") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            if (!has_node_path) {
-                return make_params_error(id,
-                    "Missing required parameter: node_path", tool_name);
-            }
-            if (!game_bridge) {
-                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
-            }
-            auto result = game_bridge->click_node_tool(id, node_path);
-            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
-                return result;
-            }
-            return make_tool_response(id, result, tool_name);
-        }
-
-        if (tool_name == "get_node_rect") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            if (!has_node_path) {
-                return make_params_error(id,
-                    "Missing required parameter: node_path", tool_name);
-            }
-            if (!game_bridge) {
-                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
-            }
-            auto result = game_bridge->get_node_rect_tool(id, node_path);
-            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
-                return result;
-            }
-            return make_tool_response(id, result, tool_name);
-        }
-
         // --- Phase 13: Runtime State Query tools ---
 
         if (tool_name == "get_game_node_property") {
@@ -1056,40 +805,6 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return make_tool_response(id, result, tool_name);
         }
 
-        if (tool_name == "get_game_scene_tree") {
-            auto& args = get_args(params);
-            int max_depth = get_int(args, "max_depth", -1);
-            if (!game_bridge) {
-                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
-            }
-            auto result = game_bridge->get_game_scene_tree_tool(id, max_depth);
-            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
-                return result;
-            }
-            return make_tool_response(id, result, tool_name);
-        }
-
-        // --- Phase 15: Integration Testing Toolkit ---
-
-        if (tool_name == "run_test_sequence") {
-            auto& args = get_args(params);
-            nlohmann::json steps;
-            if (args.contains("steps") && args["steps"].is_array())
-                steps = args["steps"];
-            if (steps.empty() || !steps.is_array()) {
-                return make_params_error(id,
-                    "Missing required parameter: steps (must be a non-empty array)", tool_name);
-            }
-            if (!game_bridge) {
-                return make_tool_response(id, {{"error", "Game bridge not initialized"}}, tool_name);
-            }
-            auto result = game_bridge->run_test_sequence_tool(id, steps);
-            if (result.contains("__deferred") && result["__deferred"].get<bool>()) {
-                return result;
-            }
-            return make_tool_response(id, result, tool_name);
-        }
-
         // --- Phase 20: TileMap Operations ---
 
         if (tool_name == "set_tilemap_cells") {
@@ -1120,69 +835,6 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
             return make_tool_response(id, erase_tilemap_cells(node_path, coords, undo_redo), tool_name);
         }
 
-        if (tool_name == "get_tilemap_cell_info") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            nlohmann::json coords;
-            if (args.contains("coords") && args["coords"].is_array())
-                coords = args["coords"];
-            if (!has_node_path || coords.empty()) {
-                return make_params_error(id,
-                    "Missing required parameters: node_path, coords", tool_name);
-            }
-            return make_tool_response(id, get_tilemap_cell_info(node_path, coords), tool_name);
-        }
-
-        if (tool_name == "get_tilemap_info") {
-            auto& args = get_args(params);
-            std::string node_path = get_string(args, "node_path");
-            bool has_node_path = args.contains("node_path") && args["node_path"].is_string();
-            if (!has_node_path) {
-                return make_params_error(id,
-                    "Missing required parameter: node_path", tool_name);
-            }
-            return make_tool_response(id, get_tilemap_info(node_path), tool_name);
-        }
-
-        // --- Phase 21: Collision Shape Quick-Create ---
-
-        if (tool_name == "create_collision_shape") {
-            auto& args = get_args(params);
-            std::string parent_path = get_string(args, "parent_path");
-            bool has_parent = args.contains("parent_path") && args["parent_path"].is_string();
-            std::string shape_type = get_string(args, "shape_type");
-            bool has_type = args.contains("shape_type") && args["shape_type"].is_string();
-            nlohmann::json shape_params;
-            if (args.contains("shape_params") && args["shape_params"].is_object())
-                shape_params = args["shape_params"];
-            std::string name = get_string(args, "name");
-            if (!has_parent || !has_type) {
-                return make_params_error(id,
-                    "Missing required parameters: parent_path, shape_type", tool_name);
-            }
-            return make_tool_response(id, create_collision_shape(parent_path, shape_type, shape_params, name, undo_redo), tool_name);
-        }
-
-        // --- Phase 24: Composite Tools ---
-
-        if (tool_name == "find_nodes") {
-            auto& args = get_args(params);
-            std::string type = get_string(args, "type");
-            std::string name_pattern = get_string(args, "name_pattern");
-            std::string property_name, property_value;
-            if (args.contains("property_filter") && args["property_filter"].is_object()) {
-                property_name = get_string(args["property_filter"], "name");
-                property_value = get_string(args["property_filter"], "value");
-            }
-            std::string root_path = get_string(args, "root_path");
-            if (type.empty() && name_pattern.empty() && property_name.empty()) {
-                return make_params_error(id,
-                    "At least one search filter required: type, name_pattern, or property_filter", "find_nodes");
-            }
-            return make_tool_response(id, find_nodes(type, name_pattern, property_name, property_value, root_path), "find_nodes");
-        }
-
         if (tool_name == "batch_set_property") {
             auto& args = get_args(params);
             nlohmann::json node_paths = args.contains("node_paths") && args["node_paths"].is_array() ? args["node_paths"] : nlohmann::json();
@@ -1198,36 +850,6 @@ nlohmann::json MCPServer::handle_request(const std::string& method, const nlohma
                     "Must provide node_paths array or type_filter", "batch_set_property");
             }
             return make_tool_response(id, batch_set_property(node_paths, type_filter, property, value, undo_redo), "batch_set_property");
-        }
-
-        if (tool_name == "create_character") {
-            auto& args = get_args(params);
-            std::string name = get_string(args, "name");
-            std::string char_type = get_string(args, "type");
-            std::string shape_type = get_string(args, "shape_type");
-            std::string parent_path = get_string(args, "parent_path");
-            std::string sprite_texture = get_string(args, "sprite_texture");
-            std::string script_template = get_string(args, "script_template");
-            if (name.empty() || char_type.empty()) {
-                return make_params_error(id, "Missing required parameters: name, type", tool_name);
-            }
-            if (char_type != "2d" && char_type != "3d") {
-                return make_params_error(id, "type must be '2d' or '3d'", tool_name);
-            }
-            return make_tool_response(id, create_character(name, char_type, shape_type, parent_path, sprite_texture, script_template, undo_redo), tool_name);
-        }
-
-        if (tool_name == "create_ui_panel") {
-            auto& args = get_args(params);
-            if (!args.contains("spec") || !args["spec"].is_object()) {
-                return make_params_error(id, "Missing required parameter: spec (object)", tool_name);
-            }
-            nlohmann::json spec = args["spec"];
-            std::string parent_path = get_string(args, "parent_path");
-            if (!spec.contains("root_type") || !spec["root_type"].is_string() || spec["root_type"].get<std::string>().empty()) {
-                return make_params_error(id, "spec.root_type is required (e.g., 'PanelContainer', 'VBoxContainer')", tool_name);
-            }
-            return make_tool_response(id, create_ui_panel(spec, parent_path, undo_redo), tool_name);
         }
 
         if (tool_name == "duplicate_node") {

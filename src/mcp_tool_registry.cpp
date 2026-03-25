@@ -123,48 +123,12 @@ const std::vector<ToolDef>& get_all_tools() {
             {4, 3, 0}
         },
         {
-            "detach_script",
-            "Remove the script from a scene node. Supports undo/redo.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to the node to detach script from. Use '' or '.' for the scene root itself."}}}
-                }},
-                {"required", {"node_path"}}
-            },
-            {4, 3, 0}
-        },
-        {
             "list_project_files",
             "List all files in the project directory (res://). Returns flat list with file paths and types.",
             {
                 {"type", "object"},
                 {"properties", nlohmann::json::object()},
                 {"required", nlohmann::json::array()}
-            },
-            {4, 3, 0}
-        },
-        {
-            "get_project_settings",
-            "Read project.godot settings as structured data. Returns project configuration key-value pairs. Without category, returns common settings only. Pass category to filter (e.g. 'display', 'rendering', 'physics', 'input') or 'all' for everything.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"category", {{"type", "string"}, {"description", "Setting category prefix to filter (e.g. 'application', 'display', 'rendering', 'physics', 'input', 'autoload'). Use 'all' to return everything. Omit for common settings only."}}}
-                }},
-                {"required", nlohmann::json::array()}
-            },
-            {4, 3, 0}
-        },
-        {
-            "get_resource_info",
-            "Load and inspect a .tres or .res resource file. Returns resource type and property names/values. Read-only.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"path", {{"type", "string"}, {"description", "Path to resource file (e.g., res://theme.tres, res://material.res)"}}}
-                }},
-                {"required", {"path"}}
             },
             {4, 3, 0}
         },
@@ -220,18 +184,6 @@ const std::vector<ToolDef>& get_all_tools() {
             {4, 3, 0}
         },
         {
-            "get_node_signals",
-            "Get all signals defined on a node, including their parameters and current connections.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to the node relative to scene root. Use '' or '.' for the scene root itself."}}}
-                }},
-                {"required", {"node_path"}}
-            },
-            {4, 3, 0}
-        },
-        {
             "connect_signal",
             "Connect a signal from a source node to a method on a target node. Creates a signal connection in the scene.",
             {
@@ -241,21 +193,6 @@ const std::vector<ToolDef>& get_all_tools() {
                     {"signal_name", {{"type", "string"}, {"description", "Signal name to connect (e.g., 'pressed', 'body_entered')"}}},
                     {"target_path", {{"type", "string"}, {"description", "Path to target node (receives the callback)"}}},
                     {"method_name", {{"type", "string"}, {"description", "Method name on target node to call when signal fires"}}}
-                }},
-                {"required", {"source_path", "signal_name", "target_path", "method_name"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "disconnect_signal",
-            "Disconnect an existing signal connection between two nodes.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"source_path", {{"type", "string"}, {"description", "Path to source node"}}},
-                    {"signal_name", {{"type", "string"}, {"description", "Signal name to disconnect"}}},
-                    {"target_path", {{"type", "string"}, {"description", "Path to target node"}}},
-                    {"method_name", {{"type", "string"}, {"description", "Method name on target node"}}}
                 }},
                 {"required", {"source_path", "signal_name", "target_path", "method_name"}}
             },
@@ -287,16 +224,6 @@ const std::vector<ToolDef>& get_all_tools() {
             {4, 3, 0}
         },
         {
-            "list_open_scenes",
-            "List all currently open scenes in the editor. Returns file paths, titles, and which scene is active.",
-            {
-                {"type", "object"},
-                {"properties", nlohmann::json::object()},
-                {"required", nlohmann::json::array()}
-            },
-            {4, 3, 0}
-        },
-        {
             "create_scene",
             "Create a new scene with the specified root node type, save it to disk, and open it in the editor. The root node class must be a Node subclass.",
             {
@@ -307,193 +234,6 @@ const std::vector<ToolDef>& get_all_tools() {
                     {"root_name", {{"type", "string"}, {"description", "Name for the root node. Defaults to the class name if omitted."}}}
                 }},
                 {"required", {"root_type", "path"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "instantiate_scene",
-            "Instantiate a PackedScene (.tscn/.scn) as a child node in the current scene. Supports undo/redo. The instance root gets its owner set to the scene root.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"scene_path", {{"type", "string"}, {"description", "Path to the scene file to instantiate (e.g., res://scenes/enemy.tscn)"}}},
-                    {"parent_path", {{"type", "string"}, {"description", "Path to parent node relative to scene root. Empty or omit for scene root."}}},
-                    {"name", {{"type", "string"}, {"description", "Override name for the instantiated node. Defaults to the scene file name if omitted."}}}
-                }},
-                {"required", {"scene_path"}}
-            },
-            {4, 3, 0}
-        },
-        // --- Phase 7: UI System tools ---
-        {
-            "set_layout_preset",
-            "Set a Control node's layout preset (anchors and offsets). Presets: top_left, top_right, bottom_left, bottom_right, center_left, center_top, center_right, center_bottom, center, left_wide, top_wide, right_wide, bottom_wide, vcenter_wide, hcenter_wide, full_rect.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}},
-                    {"preset", {{"type", "string"}, {"description", "Layout preset name (e.g., full_rect, center, top_wide)"}}}
-                }},
-                {"required", {"node_path", "preset"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "set_theme_override",
-            "Batch set theme overrides on a Control node. Supports colors (hex or Color()), font sizes (int), and constants. Override type is auto-detected from key names or can be specified explicitly.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}},
-                    {"overrides", {{"type", "object"}, {"description", "Key-value pairs of theme overrides. Keys are theme override names (e.g., font_color, font_size). Values are strings: hex colors (#ff0000), integers (16), or Color() constructors."}}}
-                }},
-                {"required", {"node_path", "overrides"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "create_stylebox",
-            "Create a StyleBoxFlat resource and apply it as a theme override on a Control node. Supports bg_color, corner_radius, border_width, border_color, content_margin, shadow, and anti-aliasing properties.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}},
-                    {"override_name", {{"type", "string"}, {"description", "Theme override name to apply the StyleBox to (e.g., panel, normal, hover, pressed, disabled, focus)"}}},
-                    {"bg_color", {{"type", "string"}, {"description", "Background color as hex (#rrggbb or #rrggbbaa) or Color(r,g,b,a). Default: #999999"}}},
-                    {"corner_radius", {{"type", "integer"}, {"description", "Corner radius applied to all 4 corners. Default: 0"}}},
-                    {"corner_radius_top_left", {{"type", "integer"}, {"description", "Top-left corner radius (overrides corner_radius)"}}},
-                    {"corner_radius_top_right", {{"type", "integer"}, {"description", "Top-right corner radius (overrides corner_radius)"}}},
-                    {"corner_radius_bottom_right", {{"type", "integer"}, {"description", "Bottom-right corner radius (overrides corner_radius)"}}},
-                    {"corner_radius_bottom_left", {{"type", "integer"}, {"description", "Bottom-left corner radius (overrides corner_radius)"}}},
-                    {"border_width", {{"type", "integer"}, {"description", "Border width applied to all 4 sides. Default: 0"}}},
-                    {"border_color", {{"type", "string"}, {"description", "Border color as hex or Color(). Default: #cccccc"}}},
-                    {"content_margin", {{"type", "number"}, {"description", "Content margin applied to all 4 sides. Default: -1 (auto)"}}},
-                    {"shadow_color", {{"type", "string"}, {"description", "Shadow color as hex or Color()"}}},
-                    {"shadow_size", {{"type", "integer"}, {"description", "Shadow size in pixels. Default: 0"}}},
-                    {"anti_aliased", {{"type", "boolean"}, {"description", "Enable anti-aliasing. Default: true"}}}
-                }},
-                {"required", {"node_path", "override_name"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "get_ui_properties",
-            "Query a Control node's UI-specific properties: anchors, offsets, size flags, minimum size, pivot offset, grow direction, focus neighbors, and layout direction. For focus neighbor setting, use set_node_property with focus_neighbor_left/top/right/bottom.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}}
-                }},
-                {"required", {"node_path"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "set_container_layout",
-            "Configure a Container node's layout parameters. For BoxContainer: alignment and separation. For GridContainer: columns and h/v separation. Optionally batch-set all direct children's size_flags.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Container node relative to scene root. Use '' or '.' for the scene root itself."}}},
-                    {"separation", {{"type", "integer"}, {"description", "Space between children in pixels (BoxContainer/GridContainer)"}}},
-                    {"h_separation", {{"type", "integer"}, {"description", "Horizontal separation for GridContainer"}}},
-                    {"v_separation", {{"type", "integer"}, {"description", "Vertical separation for GridContainer"}}},
-                    {"alignment", {{"type", "string"}, {"description", "BoxContainer alignment: begin, center, or end"}}},
-                    {"columns", {{"type", "integer"}, {"description", "Number of columns for GridContainer"}}},
-                    {"child_size_flags_horizontal", {{"type", "string"}, {"description", "Batch-set all direct children's horizontal size flags: shrink_begin, fill, expand, expand_fill, shrink_center, shrink_end"}}},
-                    {"child_size_flags_vertical", {{"type", "string"}, {"description", "Batch-set all direct children's vertical size flags: shrink_begin, fill, expand, expand_fill, shrink_center, shrink_end"}}}
-                }},
-                {"required", {"node_path"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "get_theme_overrides",
-            "Query all theme overrides currently set on a Control node, categorized by type (colors, font_sizes, constants, styles). Returns only overrides that have been explicitly set, not inherited values.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to Control node relative to scene root. Use '' or '.' for the scene root itself."}}}
-                }},
-                {"required", {"node_path"}}
-            },
-            {4, 3, 0}
-        },
-        // --- Phase 8: Animation System tools ---
-        {
-            "create_animation",
-            "Create an AnimationPlayer node with an AnimationLibrary and a named Animation resource. If player_path is provided, adds the animation to an existing AnimationPlayer instead of creating a new one.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"animation_name", {{"type", "string"}, {"description", "Name for the new Animation resource"}}},
-                    {"player_path", {{"type", "string"}, {"description", "Path to existing AnimationPlayer node. If omitted, creates a new AnimationPlayer."}}},
-                    {"parent_path", {{"type", "string"}, {"description", "Parent node path for new AnimationPlayer (default: scene root). Ignored if player_path is set."}}},
-                    {"node_name", {{"type", "string"}, {"description", "Name for the new AnimationPlayer node (default: AnimationPlayer). Ignored if player_path is set."}}}
-                }},
-                {"required", {"animation_name"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "add_animation_track",
-            "Add a typed track to an existing Animation. Returns the track index for use with set_keyframe.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"player_path", {{"type", "string"}, {"description", "Path to AnimationPlayer node relative to scene root"}}},
-                    {"animation_name", {{"type", "string"}, {"description", "Name of the Animation to add the track to"}}},
-                    {"track_type", {{"type", "string"}, {"description", "Track type: value, position_3d, rotation_3d, or scale_3d"}}},
-                    {"track_path", {{"type", "string"}, {"description", "Node path the track targets, relative to AnimationPlayer (e.g. '../Sprite2D:position')"}}}
-                }},
-                {"required", {"player_path", "animation_name", "track_type", "track_path"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "set_keyframe",
-            "Insert, update, or remove a keyframe on an animation track. Values are parsed as strings (e.g. 'Vector3(1,0,0)', '0.5', 'Color(1,0,0,1)').",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"player_path", {{"type", "string"}, {"description", "Path to AnimationPlayer node relative to scene root"}}},
-                    {"animation_name", {{"type", "string"}, {"description", "Name of the Animation containing the track"}}},
-                    {"track_index", {{"type", "integer"}, {"description", "Track index (returned by add_animation_track)"}}},
-                    {"time", {{"type", "number"}, {"description", "Time in seconds for the keyframe"}}},
-                    {"action", {{"type", "string"}, {"description", "Action to perform: insert, update, or remove"}}},
-                    {"value", {{"type", "string"}, {"description", "Keyframe value as string (required for insert/update, ignored for remove)"}}},
-                    {"transition", {{"type", "number"}, {"description", "Transition easing value (default: 1.0 = linear). Values <1 ease-in, >1 ease-out."}}}
-                }},
-                {"required", {"player_path", "animation_name", "track_index", "time", "action"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "get_animation_info",
-            "Query an AnimationPlayer's animations, track structure, and keyframe data. Returns full depth: animation list with per-animation tracks and per-track keyframes.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"player_path", {{"type", "string"}, {"description", "Path to AnimationPlayer node relative to scene root"}}},
-                    {"animation_name", {{"type", "string"}, {"description", "Query a specific animation only. If omitted, returns all animations."}}}
-                }},
-                {"required", {"player_path"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "set_animation_properties",
-            "Set Animation resource properties: duration, loop mode, and step. Supports undo/redo.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"player_path", {{"type", "string"}, {"description", "Path to AnimationPlayer node relative to scene root"}}},
-                    {"animation_name", {{"type", "string"}, {"description", "Name of the Animation to modify"}}},
-                    {"length", {{"type", "number"}, {"description", "Animation duration in seconds"}}},
-                    {"loop_mode", {{"type", "string"}, {"description", "Loop mode: none, linear, or pingpong"}}},
-                    {"step", {{"type", "number"}, {"description", "Time step for snapping in the editor (e.g. 0.1)"}}}
-                }},
-                {"required", {"player_path", "animation_name"}}
             },
             {4, 3, 0}
         },
@@ -657,55 +397,6 @@ const std::vector<ToolDef>& get_all_tools() {
             },
             {4, 3, 0}
         },
-        {
-            "get_game_bridge_status",
-            "Query the connection status of the game bridge. Returns whether a game is running, bridge connected, and session info.",
-            {
-                {"type", "object"},
-                {"properties", nlohmann::json::object()},
-                {"required", nlohmann::json::array()}
-            },
-            {4, 3, 0}
-        },
-        // --- Phase 12: Input Injection Enhancement tools ---
-        {
-            "click_node",
-            "Click a UI Control node in the running game by its scene tree path. "
-            "Resolves the node, computes its center position, and injects a complete "
-            "press+release mouse click with 50ms delay. Returns the actual clicked coordinates. "
-            "Requires a game to be running with the MCP bridge connected.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {
-                        {"type", "string"},
-                        {"description", "Path to the Control node relative to the scene root "
-                                       "(e.g., 'BackpackUI/BtnSearch'). Use '' or '.' for the scene root itself. Must be a Control node."}
-                    }}
-                }},
-                {"required", {"node_path"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "get_node_rect",
-            "Get the screen rectangle (position and size) of a Control node in the "
-            "running game. Returns viewport coordinates compatible with inject_input position. "
-            "Also returns center point for easy click targeting. "
-            "Requires a game to be running with the MCP bridge connected.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {
-                        {"type", "string"},
-                        {"description", "Path to the Control node relative to the scene root "
-                                       "(e.g., 'BackpackUI/BtnSearch'). Use '' or '.' for the scene root itself. Must be a Control node."}
-                    }}
-                }},
-                {"required", {"node_path"}}
-            },
-            {4, 3, 0}
-        },
         // --- Phase 13: Runtime State Query tools ---
         {
             "get_game_node_property",
@@ -746,58 +437,6 @@ const std::vector<ToolDef>& get_all_tools() {
                     }}
                 }},
                 {"required", {"expression"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "get_game_scene_tree",
-            "Get the complete scene tree structure from the running game. Returns node names, "
-            "types, paths, script paths, visibility, and child hierarchy as JSON. "
-            "Requires a game to be running with the MCP bridge connected.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"max_depth", {
-                        {"type", "integer"},
-                        {"description", "Maximum depth to traverse. Default: -1 (unlimited). "
-                                       "0 = root only, 1 = root + direct children, etc."}
-                    }}
-                }},
-                {"required", nlohmann::json::array()}
-            },
-            {4, 3, 0}
-        },
-        // --- Phase 15: Integration Testing Toolkit ---
-        {
-            "run_test_sequence",
-            "Execute a sequence of test steps against the running game. Each step can "
-            "invoke tools (click_node, get_game_node_property, inject_input, eval_in_game, "
-            "get_game_output, get_node_rect, get_game_scene_tree, wait) with optional assertions. "
-            "Returns a structured pass/fail report. Requires a game to be running with the MCP bridge connected.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"steps", {
-                        {"type", "array"},
-                        {"description", "Array of test steps to execute sequentially"},
-                        {"items", {
-                            {"type", "object"},
-                            {"properties", {
-                                {"action", {{"type", "string"}, {"enum", {"click_node", "get_game_node_property", "inject_input", "eval_in_game", "get_game_output", "get_node_rect", "get_game_scene_tree", "wait"}}, {"description", "Tool to invoke for this step"}}},
-                                {"args", {{"type", "object"}, {"description", "Arguments to pass to the tool"}}},
-                                {"assert", {{"type", "object"}, {"description", "Optional assertion on step result. Keys: property (result field to check), equals/contains/not_empty (operator and expected value)"}, {"properties", {
-                                    {"property", {{"type", "string"}, {"description", "Result field to assert on (e.g., 'value', 'success', 'result')"}}},
-                                    {"equals", {{"type", "string"}, {"description", "Expected exact value (string comparison)"}}},
-                                    {"contains", {{"type", "string"}, {"description", "Expected substring"}}},
-                                    {"not_empty", {{"type", "boolean"}, {"description", "Assert the field is not empty"}}}
-                                }}}},
-                                {"description", {{"type", "string"}, {"description", "Human-readable description of this test step"}}}
-                            }},
-                            {"required", {"action"}}
-                        }}
-                    }}
-                }},
-                {"required", {"steps"}}
             },
             {4, 3, 0}
         },
@@ -857,86 +496,6 @@ const std::vector<ToolDef>& get_all_tools() {
             {4, 3, 0}
         },
         {
-            "get_tilemap_cell_info",
-            "Query tile information at specified grid coordinates on a TileMapLayer. "
-            "Returns source_id, atlas coordinates, and whether the cell is empty.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to TileMapLayer node relative to scene root"}}},
-                    {"coords", {
-                        {"type", "array"},
-                        {"description", "Array of grid coordinates to query"},
-                        {"items", {
-                            {"type", "object"},
-                            {"properties", {
-                                {"x", {{"type", "integer"}, {"description", "Grid x coordinate"}}},
-                                {"y", {{"type", "integer"}, {"description", "Grid y coordinate"}}}
-                            }},
-                            {"required", {"x", "y"}}
-                        }}
-                    }}
-                }},
-                {"required", {"node_path", "coords"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "get_tilemap_info",
-            "Query TileMapLayer metadata including tile_set info, used cell count, and bounding rectangle.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"node_path", {{"type", "string"}, {"description", "Path to TileMapLayer node relative to scene root"}}}
-                }},
-                {"required", {"node_path"}}
-            },
-            {4, 3, 0}
-        },
-        // --- Phase 21: Collision Shape Quick-Create ---
-        {
-            "create_collision_shape",
-            "Create a CollisionShape2D or CollisionShape3D node with a pre-configured shape resource in one step. "
-            "Automatically creates both the collision node and the shape, sets shape parameters, and adds to the scene tree. "
-            "Supports undo/redo.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"parent_path", {{"type", "string"}, {"description", "Path to parent node. The CollisionShape will be added as a child."}}},
-                    {"shape_type", {{"type", "string"}, {"enum", {"rectangle", "circle", "capsule", "segment", "world_boundary", "box", "sphere", "capsule_3d", "cylinder"}},
-                        {"description", "Shape type. 2D: rectangle, circle, capsule, segment, world_boundary. 3D: box, sphere, capsule_3d, cylinder."}}},
-                    {"shape_params", {{"type", "object"}, {"description",
-                        "Shape parameters. rectangle: {width, height}. circle: {radius}. capsule: {radius, height}. "
-                        "segment: {ax, ay, bx, by}. world_boundary: {normal_x, normal_y, distance}. "
-                        "box: {width, height, depth}. sphere: {radius}. capsule_3d: {radius, height}. cylinder: {radius, height}."}}},
-                    {"name", {{"type", "string"}, {"description", "Node name. Defaults to CollisionShape2D or CollisionShape3D."}}}
-                }},
-                {"required", {"parent_path", "shape_type"}}
-            },
-            {4, 3, 0}
-        },
-        // --- Phase 24: Composite Tools ---
-        {
-            "find_nodes",
-            "Search the scene tree for nodes matching criteria (type, name pattern, property value). "
-            "Returns matching node paths and types. Supports inheritance (e.g., type='Control' matches Label, Button).",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"type", {{"type", "string"}, {"description", "Node class name to match (supports inheritance, e.g., 'Control' matches Label, Button)"}}},
-                    {"name_pattern", {{"type", "string"}, {"description", "Name pattern with * wildcards (e.g., 'Player*', '*Label*'). Case-insensitive."}}},
-                    {"property_filter", {{"type", "object"}, {"description", "Filter by property value. Provide {name, value} to match nodes."},
-                        {"properties", {
-                            {"name", {{"type", "string"}, {"description", "Property name"}}},
-                            {"value", {{"type", "string"}, {"description", "Property value to match"}}}
-                        }}}},
-                    {"root_path", {{"type", "string"}, {"description", "Node path to start search from (default: scene root)"}}}
-                }},
-                {"required", nlohmann::json::array()}
-            },
-            {4, 3, 0}
-        },
-        {
             "batch_set_property",
             "Set a property on multiple nodes in one atomic operation. Specify nodes by explicit paths or type filter. "
             "Ctrl+Z undoes all changes at once.",
@@ -950,46 +509,6 @@ const std::vector<ToolDef>& get_all_tools() {
                     {"value", {{"type", "string"}, {"description", "Property value as string (auto-parsed: 'Vector2(100,200)', '#ff0000', 'true')"}}}
                 }},
                 {"required", {"property", "value"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "create_character",
-            "Create a complete game character (CharacterBody + CollisionShape + optional Sprite) in one atomic operation. "
-            "Ctrl+Z undoes the entire creation.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"name", {{"type", "string"}, {"description", "Character name (e.g., 'Player', 'Enemy')"}}},
-                    {"type", {{"type", "string"}, {"enum", {"2d", "3d"}}, {"description", "Character dimension: '2d' for CharacterBody2D, '3d' for CharacterBody3D"}}},
-                    {"shape_type", {{"type", "string"}, {"description", "Collision shape type. 2D: 'rectangle', 'circle', 'capsule'. 3D: 'box', 'sphere', 'capsule_3d'. Default: 'rectangle' (2D) or 'capsule_3d' (3D)"}}},
-                    {"parent_path", {{"type", "string"}, {"description", "Parent node path (default: scene root)"}}},
-                    {"sprite_texture", {{"type", "string"}, {"description", "Texture resource path (e.g., 'res://icon.svg') to create a Sprite2D/3D child"}}},
-                    {"script_template", {{"type", "string"}, {"enum", {"none", "basic_movement"}}, {"description", "Script template to attach. 'basic_movement' adds WASD+jump movement. Default: 'none'"}}}
-                }},
-                {"required", {"name", "type"}}
-            },
-            {4, 3, 0}
-        },
-        {
-            "create_ui_panel",
-            "Create a UI panel from a declarative JSON specification. Creates container + children + styling in one atomic operation. "
-            "Ctrl+Z undoes everything.",
-            {
-                {"type", "object"},
-                {"properties", {
-                    {"spec", {{"type", "object"}, {"description", "UI panel specification with root_type, optional children and style"},
-                        {"properties", {
-                            {"root_type", {{"type", "string"}, {"description", "Container type (e.g., 'PanelContainer', 'VBoxContainer', 'HBoxContainer', 'MarginContainer')"}}},
-                            {"name", {{"type", "string"}, {"description", "Root node name (default: root_type)"}}},
-                            {"children", {{"type", "array"}, {"description", "Child node specs, each: {type, name, text, ...}"}}},
-                            {"style", {{"type", "object"}, {"description", "StyleBoxFlat properties: bg_color, corner_radius, border_width, border_color, content_margin_left/right/top/bottom"}}}
-                        }},
-                        {"required", {"root_type"}}
-                    }},
-                    {"parent_path", {{"type", "string"}, {"description", "Parent node path (default: scene root)"}}}
-                }},
-                {"required", {"spec"}}
             },
             {4, 3, 0}
         },
