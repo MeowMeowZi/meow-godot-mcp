@@ -10,6 +10,8 @@
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
 #include <godot_cpp/classes/display_server.hpp>
+#include <godot_cpp/classes/v_box_container.hpp>
+#include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/callable_method_pointer.hpp>
 
@@ -143,6 +145,11 @@ void MCPPlugin::_enter_tree() {
     // Connect checkbox toggled signals
     for (auto* cb : dock->get_tool_checkboxes()) {
         cb->connect("toggled", callable_mp(this, &MCPPlugin::_on_tool_toggled));
+    }
+
+    // Connect category header buttons for fold/unfold
+    for (auto* hdr : dock->get_category_headers()) {
+        hdr->connect("pressed", callable_mp(this, &MCPPlugin::_on_category_header_pressed).bind(hdr));
     }
 
     // Initial dock state
@@ -353,6 +360,30 @@ void MCPPlugin::_on_tool_toggled(bool pressed) {
         bool running = server && server->is_running();
         bool connected = server && server->has_client();
         dock->update_status(running, connected, port, version_string, tool_count);
+    }
+}
+
+void MCPPlugin::_on_category_header_pressed(Button* header) {
+    if (!header || !header->has_meta("cat_box")) return;
+
+    auto* cat_box = Object::cast_to<VBoxContainer>(
+        header->get_meta("cat_box").operator Object*());
+    if (!cat_box) return;
+
+    bool collapsed = header->get_meta("collapsed").operator bool();
+    collapsed = !collapsed;
+    header->set_meta("collapsed", collapsed);
+
+    // Toggle visibility
+    cat_box->set_visible(!collapsed);
+
+    // Update arrow indicator
+    String cat_name = header->get_meta("cat_name");
+    int count = cat_box->get_child_count();
+    if (collapsed) {
+        header->set_text(String::utf8("\xe2\x96\xb6 ") + cat_name + String(" (") + String::num_int64(count) + String(")"));
+    } else {
+        header->set_text(String::utf8("\xe2\x96\xbc ") + cat_name + String(" (") + String::num_int64(count) + String(")"));
     }
 }
 

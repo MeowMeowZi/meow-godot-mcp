@@ -597,16 +597,16 @@ const std::set<std::string>& get_disabled_tools() {
 // --- Category display names ---
 const char* get_category_name(ToolCategory cat) {
     switch (cat) {
-        case ToolCategory::SCENE:     return "Scene";
-        case ToolCategory::SCRIPT:    return "Script";
-        case ToolCategory::PROJECT:   return "Project";
-        case ToolCategory::RUNTIME:   return "Runtime";
-        case ToolCategory::INPUT:     return "Input";
-        case ToolCategory::QUERY:     return "Query";
-        case ToolCategory::TILEMAP:   return "TileMap";
-        case ToolCategory::COMPOSITE: return "Composite";
-        case ToolCategory::DX:        return "DX";
-        default:                      return "Other";
+        case ToolCategory::SCENE:     return "\xe5\x9c\xba\xe6\x99\xaf\xe6\x93\x8d\xe4\xbd\x9c";       // 场景操作
+        case ToolCategory::SCRIPT:    return "\xe8\x84\x9a\xe6\x9c\xac\xe7\xae\xa1\xe7\x90\x86";       // 脚本管理
+        case ToolCategory::PROJECT:   return "\xe9\xa1\xb9\xe7\x9b\xae/\xe6\x96\x87\xe4\xbb\xb6";      // 项目/文件
+        case ToolCategory::RUNTIME:   return "\xe8\xbf\x90\xe8\xa1\x8c\xe6\x97\xb6";                   // 运行时
+        case ToolCategory::INPUT:     return "\xe8\xbe\x93\xe5\x85\xa5\xe6\xb3\xa8\xe5\x85\xa5";       // 输入注入
+        case ToolCategory::QUERY:     return "\xe6\x9f\xa5\xe8\xaf\xa2/\xe4\xbf\xa1\xe5\x8f\xb7";      // 查询/信号
+        case ToolCategory::TILEMAP:   return "\xe7\x93\xa6\xe7\x89\x87\xe5\x9c\xb0\xe5\x9b\xbe";       // 瓦片地图
+        case ToolCategory::COMPOSITE: return "\xe6\x89\xb9\xe9\x87\x8f\xe6\x93\x8d\xe4\xbd\x9c";       // 批量操作
+        case ToolCategory::DX:        return "\xe5\xbc\x80\xe5\x8f\x91\xe8\x80\x85\xe5\xb7\xa5\xe5\x85\xb7"; // 开发者工具
+        default:                      return "\xe5\x85\xb6\xe4\xbb\x96";                               // 其他
     }
 }
 

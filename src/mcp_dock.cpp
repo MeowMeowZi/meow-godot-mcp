@@ -241,6 +241,10 @@ const std::vector<CheckBox*>& MCPDock::get_tool_checkboxes() const {
     return tool_checkboxes;
 }
 
+const std::vector<Button*>& MCPDock::get_category_headers() const {
+    return category_headers;
+}
+
 void MCPDock::build_tool_checkboxes() {
     if (!tools_section) return;
 
@@ -249,6 +253,7 @@ void MCPDock::build_tool_checkboxes() {
         // Children are owned by Godot scene tree
     }
     tool_checkboxes.clear();
+    category_headers.clear();
     while (tools_section->get_child_count() > 0) {
         auto* child = tools_section->get_child(0);
         tools_section->remove_child(child);
@@ -272,23 +277,44 @@ void MCPDock::build_tool_checkboxes() {
         auto it = by_category.find(cat);
         if (it == by_category.end()) continue;
 
-        // Category label
-        auto* cat_label = memnew(Label);
-        cat_label->set_text(String("- ") + String(get_category_name(cat)) + String(" -"));
-        cat_label->add_theme_font_size_override("font_size", 11);
-        cat_label->add_theme_color_override("font_color", Color(0.6, 0.6, 0.7));
-        tools_section->add_child(cat_label);
+        int count = static_cast<int>(it->second.size());
 
-        // Tool checkboxes
+        // Collapsible header button
+        auto* header_btn = memnew(Button);
+        String cat_name = String::utf8(get_category_name(cat));
+        header_btn->set_text(String::utf8("\xe2\x96\xbc ") + cat_name + String(" (") + String::num_int64(count) + String(")"));
+        header_btn->set_flat(true);
+        header_btn->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+        header_btn->add_theme_font_size_override("font_size", 12);
+        header_btn->add_theme_color_override("font_color", Color(0.7, 0.7, 0.85));
+        header_btn->set_text_alignment(HORIZONTAL_ALIGNMENT_LEFT);
+        tools_section->add_child(header_btn);
+
+        // Container for this category's checkboxes
+        auto* cat_box = memnew(VBoxContainer);
+        cat_box->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+        // Add left margin for indentation
+        cat_box->add_theme_constant_override("margin_left", 16);
+        tools_section->add_child(cat_box);
+
+        // Connect header button to toggle visibility
+        // Store cat_box reference in button meta for toggling
+        header_btn->set_meta("cat_box", cat_box);
+        header_btn->set_meta("cat_name", cat_name);
+
+        // Tool checkboxes inside category container
         for (const auto* tool : it->second) {
             auto* cb = memnew(CheckBox);
             cb->set_text(String(tool->name.c_str()));
             cb->set_pressed_no_signal(!is_tool_disabled(tool->name));
             cb->add_theme_font_size_override("font_size", 11);
-            // Store tool name as meta for retrieval in toggle handler
             cb->set_meta("tool_name", String(tool->name.c_str()));
-            tools_section->add_child(cb);
+            cat_box->add_child(cb);
             tool_checkboxes.push_back(cb);
         }
+
+        // Store header for signal connection
+        header_btn->set_meta("collapsed", false);
+        category_headers.push_back(header_btn);
     }
 }

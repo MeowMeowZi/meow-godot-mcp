@@ -59,6 +59,9 @@ public:
     // Get all tool checkboxes for signal connection from MCPPlugin
     const std::vector<godot::CheckBox*>& get_tool_checkboxes() const;
 
+    // Get all category header buttons for signal connection
+    const std::vector<godot::Button*>& get_category_headers() const;
+
 private:
     godot::VBoxContainer* root = nullptr;
     godot::Label* status_label = nullptr;
@@ -81,6 +84,7 @@ private:
     godot::VBoxContainer* tools_section = nullptr;
     ToolToggleCallback tool_toggle_cb;
     std::vector<godot::CheckBox*> tool_checkboxes;
+    std::vector<godot::Button*> category_headers;
 
     // Cached state for dirty checking
     bool last_running = false;
