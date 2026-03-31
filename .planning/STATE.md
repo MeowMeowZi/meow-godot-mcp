@@ -1,31 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: AI Workflow Enhancement
-status: v1.5 milestone complete
-stopped_at: Completed 25-02-PLAN.md
-last_updated: "2026-03-24T05:31:16.965Z"
-last_activity: 2026-03-24
+milestone: v1.6
+milestone_name: MCP 细节优化
+status: Defining requirements
+stopped_at: null
+last_updated: "2026-03-31"
+last_activity: 2026-03-31
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-23)
+See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** Phase 25 — Prompt Templates
+**Current focus:** Defining requirements for v1.6
 
 ## Current Position
 
-Phase: 25
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-31 — Milestone v1.6 started
 
 ## Performance Metrics
 
