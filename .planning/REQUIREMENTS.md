@@ -9,9 +9,9 @@ Requirements for v1.6 MCP 细节优化。每条需求映射到 roadmap phase。
 
 ### Settings Persistence (设置持久化)
 
-- [ ] **PERSIST-01**: 用户在 Dock 面板设置的端口号持久化到 project.godot，编辑器重启后自动恢复
-- [ ] **PERSIST-02**: 用户在 Dock 面板禁用的工具列表持久化到 project.godot，编辑器重启后自动恢复
-- [ ] **PERSIST-03**: 端口被占用时直接报错并提示用户，不再静默自增端口号
+- [x] **PERSIST-01**: 用户在 Dock 面板设置的端口号持久化到 project.godot，编辑器重启后自动恢复
+- [x] **PERSIST-02**: 用户在 Dock 面板禁用的工具列表持久化到 project.godot，编辑器重启后自动恢复
+- [x] **PERSIST-03**: 端口被占用时直接报错并提示用户，不再静默自增端口号
 
 ### Timeout Safety (超时安全)
 
@@ -55,9 +55,9 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PERSIST-01 | Phase 26 | Pending |
-| PERSIST-02 | Phase 26 | Pending |
-| PERSIST-03 | Phase 26 | Pending |
+| PERSIST-01 | Phase 26 | Complete |
+| PERSIST-02 | Phase 26 | Complete |
+| PERSIST-03 | Phase 26 | Complete |
 | TIMEOUT-01 | Phase 27 | Pending |
 | TIMEOUT-02 | Phase 27 | Pending |
 | TIMEOUT-03 | Phase 27 | Pending |
