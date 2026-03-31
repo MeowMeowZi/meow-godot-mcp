@@ -55,20 +55,20 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PERSIST-01 | — | Pending |
-| PERSIST-02 | — | Pending |
-| PERSIST-03 | — | Pending |
-| TIMEOUT-01 | — | Pending |
-| TIMEOUT-02 | — | Pending |
-| TIMEOUT-03 | — | Pending |
-| LOG-01 | — | Pending |
-| CLEAN-01 | — | Pending |
+| PERSIST-01 | Phase 26 | Pending |
+| PERSIST-02 | Phase 26 | Pending |
+| PERSIST-03 | Phase 26 | Pending |
+| TIMEOUT-01 | Phase 27 | Pending |
+| TIMEOUT-02 | Phase 27 | Pending |
+| TIMEOUT-03 | Phase 27 | Pending |
+| LOG-01 | Phase 28 | Pending |
+| CLEAN-01 | Phase 28 | Pending |
 
 **Coverage:**
 - v1.6 requirements: 8 total
-- Mapped to phases: 0
-- Unmapped: 8 (pending roadmap creation)
+- Mapped to phases: 8
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-31*
-*Last updated: 2026-03-31 after initial definition*
+*Last updated: 2026-03-31 after roadmap creation*

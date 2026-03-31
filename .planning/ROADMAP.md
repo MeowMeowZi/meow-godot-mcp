@@ -7,7 +7,8 @@
 - v1.2 Runtime Interaction Enhancement -- Phases 12-15 (shipped 2026-03-20)
 - v1.3 Developer Experience Polish -- Phases 16-18 (shipped 2026-03-22)
 - v1.4 2D Game Development Core -- Phases 19-21 (shipped 2026-03-22)
-- v1.5 AI Workflow Enhancement -- Phases 22-25 (in progress)
+- v1.5 AI Workflow Enhancement -- Phases 22-25 (shipped 2026-03-24)
+- v1.6 MCP Detail Optimizations -- Phases 26-28 (in progress)
 
 ## Phases
 
@@ -76,78 +77,62 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
 
 </details>
 
-### v1.5 AI Workflow Enhancement (In Progress)
+<details>
+<summary>v1.5 AI Workflow Enhancement (Phases 22-25) -- SHIPPED 2026-03-24</summary>
 
-**Milestone Goal:** From toolbox to intelligent workbench -- AI gets richer context, smarter error recovery, composite operations, and guided workflows.
+- [x] Phase 22: Smart Error Handling (2/2 plans) -- completed 2026-03-23
+- [x] Phase 23: Enriched Resources (2/2 plans) -- completed 2026-03-24
+- [x] Phase 24: Composite Tools (2/2 plans) -- completed 2026-03-24
+- [x] Phase 25: Prompt Templates (2/2 plans) -- completed 2026-03-24
 
-- [x] **Phase 22: Smart Error Handling** - Tool errors become diagnostic-rich: isError flag, did-you-mean suggestions, recovery guidance (completed 2026-03-24)
-- [x] **Phase 23: Enriched Resources** - MCP Resources deliver scene context automatically: scripts, signals, node details, file metadata (completed 2026-03-24)
-- [x] **Phase 24: Composite Tools** - Multi-step operations as single tools: find_nodes, batch_set_property, create_character, create_ui_panel, duplicate_node (completed 2026-03-24)
-- [x] **Phase 25: Prompt Templates** - 8 workflow-oriented prompt templates for game building, debugging, and tool composition (completed 2026-03-24)
+**19/19 requirements | 5 composite tools (55->30 after consolidation) | 55 unit tests | 15 prompts**
+
+</details>
+
+### v1.6 MCP Detail Optimizations (In Progress)
+
+**Milestone Goal:** Reliability and persistence -- the plugin remembers user settings across restarts, fails fast on errors instead of silently degrading, and keeps its codebase clean.
+
+- [ ] **Phase 26: Settings Persistence** - Port and tool-disable settings survive editor restart; port conflicts fail fast instead of silently desyncing
+- [ ] **Phase 27: Timeout Safety** - IO thread and game bridge requests have bounded wait times; stale responses cannot corrupt subsequent requests
+- [ ] **Phase 28: Logging & Cleanup** - Errors surface in both Output and Debugger panels; dead code from tool consolidation is removed
 
 ## Phase Details
 
-### Phase 22: Smart Error Handling
-**Goal**: AI can self-correct from tool errors using diagnostic information, suggestions, and recovery guidance baked into every error response
-**Depends on**: Phase 21 (v1.4 complete)
-**Requirements**: ERR-01, ERR-02, ERR-03, ERR-04, ERR-05, ERR-06, ERR-07, ERR-08
+### Phase 26: Settings Persistence
+**Goal**: User's Dock panel configuration (port number, disabled tools) survives editor restarts, and port conflicts produce immediate visible errors instead of silent desync
+**Depends on**: Phase 25 (v1.5 complete)
+**Requirements**: PERSIST-01, PERSIST-02, PERSIST-03
 **Success Criteria** (what must be TRUE):
-  1. Every tool error response carries `isError: true` in the MCP result, distinguishing errors from successful empty results
-  2. When AI references a node that does not exist, the error message suggests similar node names and lists the parent's children
-  3. When a tool fails due to missing preconditions (no scene open, game not running, missing parameter), the error tells the AI exactly what to do next (which tool to call, what format to use)
-  4. Script parse errors include the offending line number and line content so the AI can fix the exact problem
-  5. Every error response includes a `suggested_tools` list the AI can use to recover
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 22-01-PLAN.md -- Core error enrichment infrastructure: isError protocol, Levenshtein fuzzy matching, error categorization, dispatch-layer interception
-- [x] 22-02-PLAN.md -- Parameter format hints for missing-param errors, script parse error line capture
+  1. User sets a custom port in the Dock panel, restarts the editor, and the Dock panel shows the same port number without any manual re-entry
+  2. User disables several tools via Dock checkboxes, restarts the editor, and those same tools remain disabled (not re-enabled to defaults)
+  3. When the configured port is already in use by another application, the plugin shows an error message in both the Dock panel and Output log, and does NOT silently start on a different port
+  4. The bridge executable and the GDExtension always use the same port number (no desync scenario possible)
+**Plans**: TBD
 
-### Phase 23: Enriched Resources
-**Goal**: AI automatically receives rich scene context (scripts, signals, properties, file metadata) through MCP Resources without calling individual query tools
-**Depends on**: Phase 22
-**Requirements**: RES-01, RES-02, RES-03
+### Phase 27: Timeout Safety
+**Goal**: MCP tool calls and game bridge requests have bounded response times -- the IO thread never blocks forever, and late responses from timed-out requests cannot corrupt the next request
+**Depends on**: Phase 26
+**Requirements**: TIMEOUT-01, TIMEOUT-02, TIMEOUT-03
 **Success Criteria** (what must be TRUE):
-  1. Reading the scene_tree resource returns node entries that include script paths, signal connections, and key property values inline
-  2. AI can query a single node's full details via `godot://node/{path}` resource template, and a script's content via `godot://script/{path}`
-  3. The project files resource includes file size, type classification (scene/script/resource/image), and modification timestamps
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 23-01-PLAN.md -- Resource enrichment module: enriched scene tree (inline scripts, signals, @export props) and enriched project files (size, type, mtime)
-- [x] 23-02-PLAN.md -- URI resource templates (godot://node, script, signals) and resources/templates/list MCP method
+  1. When the Godot main thread hangs or is extremely slow, the AI client receives a JSON-RPC error response (not silence) within 30 seconds of sending a tool call
+  2. When the running game does not respond to a deferred request (viewport capture, eval_in_game), the AI client receives a timeout error within 15 seconds instead of waiting forever
+  3. If a response arrives after timeout has already fired and the error has been sent, that stale response is discarded and does not appear as the result of the next tool call
+**Plans**: TBD
 
-### Phase 24: Composite Tools
-**Goal**: AI can perform multi-step scene operations in a single tool call with atomic undo, eliminating tedious step-by-step workflows for common tasks
-**Depends on**: Phase 22
-**Requirements**: COMP-01, COMP-02, COMP-03, COMP-04, COMP-05
+### Phase 28: Logging & Cleanup
+**Goal**: Plugin errors are visible in both Godot output panels, and dead code left over from the 59-to-30 tool consolidation is removed
+**Depends on**: Phase 26
+**Requirements**: LOG-01, CLEAN-01
 **Success Criteria** (what must be TRUE):
-  1. AI can search the scene tree by type, name pattern, or property value using `find_nodes` and get matching results
-  2. AI can set the same property on multiple nodes in one call using `batch_set_property` (by path list or type filter)
-  3. AI can create a complete character (CharacterBody + CollisionShape + visual node) with `create_character`, and Ctrl+Z undoes the entire operation in one step
-  4. AI can create a UI panel from a declarative JSON spec using `create_ui_panel`, producing container + children + styling in one step
-  5. AI can deep-copy a node subtree to a new parent using `duplicate_node`, preserving all children and properties
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 24-01-PLAN.md -- Search & batch tools: find_nodes (scene tree search by type/name/property) and batch_set_property (multi-node property setting with single UndoRedo)
-- [x] 24-02-PLAN.md -- Creation & duplication tools: create_character, create_ui_panel, duplicate_node with atomic UndoRedo
-
-### Phase 25: Prompt Templates
-**Goal**: AI has workflow-oriented prompt templates that guide it through complex multi-tool tasks like building games, debugging crashes, and composing tools effectively
-**Depends on**: Phase 24
-**Requirements**: PROMPT-01, PROMPT-02, PROMPT-03, PROMPT-04, PROMPT-05, PROMPT-06, PROMPT-07, PROMPT-08
-**Success Criteria** (what must be TRUE):
-  1. AI can retrieve a tool composition guide that maps common tasks to specific tool sequences with parameter examples
-  2. AI can follow a structured debug workflow (crash diagnosis, physics issues) that references the correct diagnostic and runtime tools
-  3. AI can follow a complete game-building workflow (platformer, top-down, or parameterized by genre) from empty project to playable prototype
-  4. All prompt templates reference only tools that actually exist in the tool registry (validated by unit test)
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 25-01-PLAN.md -- Reference & diagnostic prompts: tool_composition_guide, debug_game_crash, debug_physics_issue, fix_common_errors + test suite
-- [x] 25-02-PLAN.md -- Game-building prompts: build_platformer_game, setup_tilemap_level, build_top_down_game, create_game_from_scratch
+  1. When the plugin logs an error (e.g., port conflict, tool failure), the message appears in both the Output panel and the Debugger > Errors tab simultaneously
+  2. The TOOL_PARAM_HINTS map in error_enrichment.cpp contains entries only for the current 30 tools -- no references to tools that were removed during the v1.5 consolidation
+**Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 22 -> 23 -> 24 -> 25
+Phases execute in numeric order: 26 -> 27 -> 28
 
 | Phase | Milestone | Plans | Status | Completed |
 |-------|-----------|-------|--------|-----------|
@@ -170,7 +155,10 @@ Phases execute in numeric order: 22 -> 23 -> 24 -> 25
 | 17. Reliable Game Output | v1.3 | 2/2 | Complete | 2026-03-21 |
 | 18. Tool Ergonomics | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 19-21. 2D Game Dev Core | v1.4 | -- | Complete | 2026-03-22 |
-| 22. Smart Error Handling | v1.5 | 2/2 | Complete    | 2026-03-23 |
-| 23. Enriched Resources | v1.5 | 2/2 | Complete    | 2026-03-24 |
-| 24. Composite Tools | v1.5 | 2/2 | Complete    | 2026-03-24 |
-| 25. Prompt Templates | v1.5 | 2/2 | Complete    | 2026-03-24 |
+| 22. Smart Error Handling | v1.5 | 2/2 | Complete | 2026-03-23 |
+| 23. Enriched Resources | v1.5 | 2/2 | Complete | 2026-03-24 |
+| 24. Composite Tools | v1.5 | 2/2 | Complete | 2026-03-24 |
+| 25. Prompt Templates | v1.5 | 2/2 | Complete | 2026-03-24 |
+| 26. Settings Persistence | v1.6 | 0/? | Not started | - |
+| 27. Timeout Safety | v1.6 | 0/? | Not started | - |
+| 28. Logging & Cleanup | v1.6 | 0/? | Not started | - |
