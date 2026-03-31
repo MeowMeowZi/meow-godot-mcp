@@ -108,7 +108,9 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
   2. User disables several tools via Dock checkboxes, restarts the editor, and those same tools remain disabled (not re-enabled to defaults)
   3. When the configured port is already in use by another application, the plugin shows an error message in both the Dock panel and Output log, and does NOT silently start on a different port
   4. The bridge executable and the GDExtension always use the same port number (no desync scenario possible)
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 26-01-PLAN.md -- Port/tool persistence + fail-fast port conflict
 
 ### Phase 27: Timeout Safety
 **Goal**: MCP tool calls and game bridge requests have bounded response times -- the IO thread never blocks forever, and late responses from timed-out requests cannot corrupt the next request
@@ -159,6 +161,6 @@ Phases execute in numeric order: 26 -> 27 -> 28
 | 23. Enriched Resources | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 24. Composite Tools | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 25. Prompt Templates | v1.5 | 2/2 | Complete | 2026-03-24 |
-| 26. Settings Persistence | v1.6 | 0/? | Not started | - |
+| 26. Settings Persistence | v1.6 | 0/1 | Not started | - |
 | 27. Timeout Safety | v1.6 | 0/? | Not started | - |
 | 28. Logging & Cleanup | v1.6 | 0/? | Not started | - |
