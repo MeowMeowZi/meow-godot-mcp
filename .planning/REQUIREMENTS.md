@@ -1,47 +1,28 @@
-# Requirements: Godot MCP Meow v1.5
+# Requirements: Godot MCP Meow v1.6
 
-**Defined:** 2026-03-23
+**Defined:** 2026-03-31
 **Core Value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
 
-## v1.5 Requirements
+## v1.6 Requirements
 
-Requirements for v1.5 AI 工作流增强 milestone. Each maps to roadmap phases.
+Requirements for v1.6 MCP 细节优化。每条需求映射到 roadmap phase。
 
-### Smart Error Handling
+### Settings Persistence (设置持久化)
 
-- [x] **ERR-01**: AI 收到的工具错误响应使用 MCP `isError: true` 标志（而非普通文本结果）
-- [x] **ERR-02**: 节点未找到时，错误信息包含模糊匹配建议（相似节点名 + 父节点的子节点列表）
-- [x] **ERR-03**: "无场景打开"和"游戏未运行"错误包含具体下一步操作引导
-- [x] **ERR-04**: 缺少必需参数时，错误信息包含参数格式示例和使用说明
-- [x] **ERR-05**: 前置条件不满足时，错误信息包含应先调用的工具（如 "先调 run_game"）
-- [x] **ERR-06**: 属性类型不匹配时，错误信息包含期望格式和示例（如 "Vector2(100, 200)"）
-- [x] **ERR-07**: 错误响应包含建议的恢复工具列表（suggested_tools）
-- [x] **ERR-08**: 脚本解析错误包含具体出错行号和行内容
+- [ ] **PERSIST-01**: 用户在 Dock 面板设置的端口号持久化到 project.godot，编辑器重启后自动恢复
+- [ ] **PERSIST-02**: 用户在 Dock 面板禁用的工具列表持久化到 project.godot，编辑器重启后自动恢复
+- [ ] **PERSIST-03**: 端口被占用时直接报错并提示用户，不再静默自增端口号
 
-### Composite Tools
+### Timeout Safety (超时安全)
 
-- [x] **COMP-01**: AI 可使用 `find_nodes` 按类型、名称模式、属性值搜索场景树中的节点
-- [x] **COMP-02**: AI 可使用 `batch_set_property` 批量设置多个节点的属性（按路径列表或类型过滤）
-- [x] **COMP-03**: AI 可使用 `create_character` 一步创建角色（CharacterBody + CollisionShape + 视觉节点），整个操作为单个 UndoRedo action
-- [x] **COMP-04**: AI 可使用 `create_ui_panel` 从声明式 JSON 规格创建 UI 面板（容器 + 子节点 + 样式），单个 UndoRedo action
-- [x] **COMP-05**: AI 可使用 `duplicate_node` 深拷贝节点子树到新父节点，包含所有子节点和属性
+- [ ] **TIMEOUT-01**: MCP 工具调用在 30 秒内未收到响应时，IO 线程返回 JSON-RPC 超时错误给 AI 客户端
+- [ ] **TIMEOUT-02**: Game bridge 延迟请求（视口截图、eval_in_game 等）在 15 秒内未收到游戏端响应时，返回超时错误
+- [ ] **TIMEOUT-03**: 超时后收到的迟到响应被正确丢弃，不会污染下一个请求的响应
 
-### Enriched Resources
+### Logging & Cleanup (日志与清理)
 
-- [x] **RES-01**: 场景树资源（scene_tree）包含每个节点的脚本源码、信号连接和关键属性值
-- [x] **RES-02**: 支持参数化资源模板（godot://node/{path}、godot://signals/{path}、godot://script/{path}），AI 可按需查询单个节点/脚本/信号详情
-- [x] **RES-03**: 项目文件资源包含文件大小、类型分类（场景/脚本/资源/图片）和修改时间戳
-
-### Prompt Templates
-
-- [x] **PROMPT-01**: `tool_composition_guide` 模板——工具组合速查卡，教 AI 如何组合工具完成常见任务
-- [x] **PROMPT-02**: `debug_game_crash` 模板——游戏崩溃时的系统性排查工作流
-- [x] **PROMPT-03**: `build_platformer_game` 模板——从零搭建 2D 平台跳跃游戏的完整流程
-- [x] **PROMPT-04**: `setup_tilemap_level` 模板——TileMap 关卡搭建工作流
-- [x] **PROMPT-05**: `build_top_down_game` 模板——从零搭建俯视角游戏的完整流程
-- [x] **PROMPT-06**: `debug_physics_issue` 模板——物理问题专项调试工作流
-- [x] **PROMPT-07**: `create_game_from_scratch` 模板——按游戏类型参数化的全流程建游戏指南
-- [x] **PROMPT-08**: `fix_common_errors` 模板——常见 MCP 工具错误的恢复指南
+- [ ] **LOG-01**: 插件错误日志同时出现在 Godot 的 Output 面板和 Debugger Errors 面板
+- [ ] **CLEAN-01**: error_enrichment.cpp 中已删除工具（59→30 精简后的遗留）的 TOOL_PARAM_HINTS 条目被移除
 
 ## v2 Requirements
 
@@ -50,11 +31,11 @@ Deferred to future release. Tracked but not in current roadmap.
 ### MCP Sampling
 
 - **SAMP-01**: Server 可通过 MCP Sampling 请求 AI 客户端分析当前场景状态
-- **SAMP-02**: `analyze_scene` 工具利用 Sampling 自动检测常见问题（缺少碰撞体、未连接信号等）
+- **SAMP-02**: `analyze_scene` 工具利用 Sampling 自动检测常见问题
 
 ### Advanced Composites
 
-- **ACOMP-01**: `create_scene_from_template` 从游戏类型模板创建完整场景（玩家 + 关卡 + 相机 + HUD）
+- **ACOMP-01**: `create_scene_from_template` 从游戏类型模板创建完整场景
 - **ACOMP-02**: Scene diff resource（场景变更差异追踪）
 
 ### Resource Subscriptions
@@ -65,49 +46,29 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Feature | Reason |
 |---------|--------|
-| "Do everything" 万能工具 | 单个工具接受自由指令，schema 不可控，AI 选择不可靠 |
-| 自动重试逻辑 | 违反 MCP 的 model-controlled 原则，AI 应决定是否重试 |
-| 复合工具内嵌完整 GDScript 模板 | C++ 内维护 GDScript 脆弱且过时快，AI 应自行生成脚本 |
-| 资源订阅推送（v1.5） | 实现复杂且编辑器场景收益不大，留 v2+ |
-| 二进制资源（图片/音频）作为 MCP Resource | 浪费上下文，AI 无法处理原始字节 |
-| 超过 15 个 Prompt 模板 | 太多选项造成选择困难，保持精炼 |
+| MCP cancellation 协议支持 | 目前没有 AI 客户端实际发送 cancellation 通知 |
+| 国际化 (i18n) UI | 当前用户群以中文为主，推迟到需求出现时 |
+| Game bridge 请求管线化（多并发） | 架构改动大，当前单请求模式够用 |
+| 非 Windows 平台 bridge 父进程看门狗 | Windows 已有，其他平台推迟 |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ERR-01 | Phase 22 | Pending |
-| ERR-02 | Phase 22 | Pending |
-| ERR-03 | Phase 22 | Pending |
-| ERR-04 | Phase 22 | Pending |
-| ERR-05 | Phase 22 | Pending |
-| ERR-06 | Phase 22 | Pending |
-| ERR-07 | Phase 22 | Pending |
-| ERR-08 | Phase 22 | Pending |
-| RES-01 | Phase 23 | Complete |
-| RES-02 | Phase 23 | Pending |
-| RES-03 | Phase 23 | Complete |
-| COMP-01 | Phase 24 | Complete |
-| COMP-02 | Phase 24 | Complete |
-| COMP-03 | Phase 24 | Complete |
-| COMP-04 | Phase 24 | Complete |
-| COMP-05 | Phase 24 | Complete |
-| PROMPT-01 | Phase 25 | Complete |
-| PROMPT-02 | Phase 25 | Complete |
-| PROMPT-03 | Phase 25 | Complete |
-| PROMPT-04 | Phase 25 | Complete |
-| PROMPT-05 | Phase 25 | Complete |
-| PROMPT-06 | Phase 25 | Complete |
-| PROMPT-07 | Phase 25 | Complete |
-| PROMPT-08 | Phase 25 | Complete |
+| PERSIST-01 | — | Pending |
+| PERSIST-02 | — | Pending |
+| PERSIST-03 | — | Pending |
+| TIMEOUT-01 | — | Pending |
+| TIMEOUT-02 | — | Pending |
+| TIMEOUT-03 | — | Pending |
+| LOG-01 | — | Pending |
+| CLEAN-01 | — | Pending |
 
 **Coverage:**
-- v1.5 requirements: 24 total
-- Mapped to phases: 24
-- Unmapped: 0
+- v1.6 requirements: 8 total
+- Mapped to phases: 0
+- Unmapped: 8 (pending roadmap creation)
 
 ---
-*Requirements defined: 2026-03-23*
-*Last updated: 2026-03-23 after roadmap creation*
+*Requirements defined: 2026-03-31*
+*Last updated: 2026-03-31 after initial definition*
