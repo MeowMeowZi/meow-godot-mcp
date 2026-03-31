@@ -48,9 +48,6 @@ void MCPPlugin::_enter_tree() {
                        + std::to_string(detected_version.patch);
     }
 
-    // Compute available tool count for detected version
-    tool_count = get_tool_count(detected_version);
-
     // Read port from ProjectSettings (per-project configurable)
     {
         auto* ps = ProjectSettings::get_singleton();
@@ -66,12 +63,39 @@ void MCPPlugin::_enter_tree() {
             port_info["hint"] = PROPERTY_HINT_RANGE;
             port_info["hint_string"] = "1024,65535,1";
             ps->add_property_info(port_info);
-            // Set initial value (makes it appear in ProjectSettings UI)
-            ps->set_initial_value("meow_mcp/server/port", 6800);
-
             port = ps->get_setting("meow_mcp/server/port");
         }
     }
+
+    // Load disabled tools from ProjectSettings
+    {
+        auto* ps = ProjectSettings::get_singleton();
+        if (ps) {
+            // Register setting with default value if not exists
+            if (!ps->has_setting("meow_mcp/tools/disabled")) {
+                ps->set_setting("meow_mcp/tools/disabled", String(""));
+            }
+            Dictionary disabled_info;
+            disabled_info["name"] = "meow_mcp/tools/disabled";
+            disabled_info["type"] = Variant::STRING;
+            ps->add_property_info(disabled_info);
+
+            // Parse comma-separated disabled tool names
+            String disabled_str = ps->get_setting("meow_mcp/tools/disabled");
+            if (disabled_str.length() > 0) {
+                PackedStringArray parts = disabled_str.split(",", false);
+                for (int i = 0; i < parts.size(); i++) {
+                    std::string tool_name = std::string(parts[i].strip_edges().utf8().get_data());
+                    if (!tool_name.empty()) {
+                        set_tool_disabled(tool_name, true);
+                    }
+                }
+            }
+        }
+    }
+
+    // Compute available tool count for detected version (after loading disabled tools)
+    tool_count = get_tool_count(detected_version);
 
     // Create and start server
     server = new MCPServer();
@@ -132,6 +156,16 @@ void MCPPlugin::_enter_tree() {
 
     // Build tool category checkboxes
     dock->build_tool_checkboxes();
+
+    // Sync checkbox state with loaded disabled tools (before connecting signals)
+    for (auto* cb : dock->get_tool_checkboxes()) {
+        if (cb->has_meta("tool_name")) {
+            String tool_name_str = cb->get_meta("tool_name");
+            std::string tool_name = std::string(tool_name_str.utf8().get_data());
+            cb->set_pressed_no_signal(!is_tool_disabled(tool_name));
+        }
+    }
+
     dock->set_tool_toggle_callback([this](const std::string& tool_name, bool enabled) {
         // Update tool count display when tools are toggled
         tool_count = get_tool_count(detected_version);
@@ -285,10 +319,11 @@ void MCPPlugin::_on_restart_pressed() {
 void MCPPlugin::_on_port_changed(double new_port) {
     int new_port_int = static_cast<int>(new_port);
 
-    // Save to ProjectSettings
+    // Save to ProjectSettings (persist across editor restarts)
     auto* ps = ProjectSettings::get_singleton();
     if (ps) {
         ps->set_setting("meow_mcp/server/port", new_port_int);
+        ps->save();
     }
 
     // Restart server on the new port
@@ -360,6 +395,21 @@ void MCPPlugin::_on_tool_toggled(bool pressed) {
         bool running = server && server->is_running();
         bool connected = server && server->has_client();
         dock->update_status(running, connected, port, version_string, tool_count);
+    }
+
+    // Persist disabled tools to ProjectSettings
+    {
+        auto* ps = ProjectSettings::get_singleton();
+        if (ps) {
+            const auto& disabled = get_disabled_tools();
+            String disabled_str;
+            for (const auto& name : disabled) {
+                if (disabled_str.length() > 0) disabled_str += ",";
+                disabled_str += String(name.c_str());
+            }
+            ps->set_setting("meow_mcp/tools/disabled", disabled_str);
+            ps->save();
+        }
     }
 }
 
