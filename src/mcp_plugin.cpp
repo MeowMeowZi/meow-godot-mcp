@@ -102,24 +102,12 @@ void MCPPlugin::_enter_tree() {
     server->set_undo_redo(get_undo_redo());
     server->set_godot_version(detected_version);
 
-    // Try configured port, auto-increment on conflict (up to +10)
-    int configured_port = port;
-    int actual_port = 0;
-    int max_attempts = 10;
-    for (int i = 0; i < max_attempts; i++) {
-        actual_port = server->start(port + i);
-        if (actual_port > 0) {
-            port = actual_port;
-            break;
-        }
-    }
+    // Single attempt -- fail fast on port conflict (no auto-increment)
+    int actual_port = server->start(port);
     if (actual_port == 0) {
-        UtilityFunctions::printerr("MCP Meow: Failed to start on ports ",
-            configured_port, "-", configured_port + max_attempts - 1);
-    } else if (actual_port != configured_port) {
-        UtilityFunctions::push_warning(
-            String::utf8("MCP Meow: 端口 ") + String::num_int64(configured_port)
-            + String::utf8(" 被占用，自动切换到 ") + String::num_int64(actual_port));
+        UtilityFunctions::push_error(
+            String::utf8("MCP Meow: 端口 ") + String::num_int64(port)
+            + String::utf8(" 被占用，请在 Dock 面板更换端口后重启服务"));
     }
 
     // Register game bridge debugger plugin
@@ -200,10 +188,12 @@ void MCPPlugin::_enter_tree() {
 
     set_process(true);
 
-    UtilityFunctions::print(String::utf8("MCP Meow: 服务已启动，端口 "),
-                            port,
-                            " (Godot ", version_string.c_str(),
-                            String::utf8(", 工具数 "), tool_count, ")");
+    if (server->is_running()) {
+        UtilityFunctions::print(String::utf8("MCP Meow: 服务已启动，端口 "),
+                                port,
+                                " (Godot ", version_string.c_str(),
+                                String::utf8(", 工具数 "), tool_count, ")");
+    }
 }
 
 void MCPPlugin::_exit_tree() {
@@ -275,10 +265,11 @@ void MCPPlugin::_on_toggle_pressed() {
         if (ps && ps->has_setting("meow_mcp/server/port")) {
             port = ps->get_setting("meow_mcp/server/port");
         }
-        int actual_port = 0;
-        for (int i = 0; i < 10; i++) {
-            actual_port = server->start(port + i);
-            if (actual_port > 0) { port = actual_port; break; }
+        int actual_port = server->start(port);
+        if (actual_port == 0) {
+            UtilityFunctions::push_error(
+                String::utf8("MCP Meow: 端口 ") + String::num_int64(port)
+                + String::utf8(" 被占用，请更换端口后重试"));
         }
     }
 
@@ -301,10 +292,11 @@ void MCPPlugin::_on_restart_pressed() {
     if (ps && ps->has_setting("meow_mcp/server/port")) {
         port = ps->get_setting("meow_mcp/server/port");
     }
-    int actual_port = 0;
-    for (int i = 0; i < 10; i++) {
-        actual_port = server->start(port + i);
-        if (actual_port > 0) { port = actual_port; break; }
+    int actual_port = server->start(port);
+    if (actual_port == 0) {
+        UtilityFunctions::push_error(
+            String::utf8("MCP Meow: 端口 ") + String::num_int64(port)
+            + String::utf8(" 被占用，请更换端口后重试"));
     }
 
     // Immediately update dock state
@@ -329,13 +321,13 @@ void MCPPlugin::_on_port_changed(double new_port) {
     // Restart server on the new port
     if (server && server->is_running()) {
         server->stop();
-        int actual_port = 0;
-        for (int i = 0; i < 10; i++) {
-            actual_port = server->start(new_port_int + i);
-            if (actual_port > 0) { port = actual_port; break; }
-        }
-        if (actual_port == 0) {
-            UtilityFunctions::printerr("MCP Meow: Failed to restart on port ", new_port_int);
+        int actual_port = server->start(new_port_int);
+        if (actual_port > 0) {
+            port = actual_port;
+        } else {
+            UtilityFunctions::push_error(
+                String::utf8("MCP Meow: 端口 ") + String::num_int64(new_port_int)
+                + String::utf8(" 被占用，请更换端口"));
         }
     } else {
         port = new_port_int;
