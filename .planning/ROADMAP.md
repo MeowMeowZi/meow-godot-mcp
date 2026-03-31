@@ -161,6 +161,6 @@ Phases execute in numeric order: 26 -> 27 -> 28
 | 23. Enriched Resources | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 24. Composite Tools | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 25. Prompt Templates | v1.5 | 2/2 | Complete | 2026-03-24 |
-| 26. Settings Persistence | v1.6 | 1/1 | Complete   | 2026-03-31 |
+| 26. Settings Persistence | v1.6 | 1/1 | Complete    | 2026-03-31 |
 | 27. Timeout Safety | v1.6 | 0/? | Not started | - |
 | 28. Logging & Cleanup | v1.6 | 0/? | Not started | - |
