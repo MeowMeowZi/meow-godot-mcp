@@ -345,7 +345,7 @@ bool MeowDebuggerPlugin::_capture(const String &p_message, const Array &p_data,
             bool success = p_data[0];
             String error_msg = p_data[1];
             if (!success && !error_msg.is_empty()) {
-                UtilityFunctions::printerr("MCP Meow: Game input injection error: ", error_msg);
+                UtilityFunctions::push_error("MCP Meow: Game input injection error: ", error_msg);
             }
         }
         return true;

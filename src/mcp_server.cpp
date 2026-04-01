@@ -170,7 +170,7 @@ int MCPServer::start(int p_port) {
     tcp_server.instantiate();
     godot::Error err = tcp_server->listen(port);
     if (err != godot::OK) {
-        UtilityFunctions::printerr("MCP Meow: Failed to start TCP server on port ", port, " (error: ", (int)err, ")");
+        UtilityFunctions::push_error("MCP Meow: Failed to start TCP server on port ", port, " (error: ", (int)err, ")");
         tcp_server.unref();
         return 0;
     }
