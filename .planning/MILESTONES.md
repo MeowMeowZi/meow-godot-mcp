@@ -1,5 +1,17 @@
 # Milestones
 
+## v1.6 MCP Detail Optimizations (Shipped: 2026-04-01)
+
+**Phases completed:** 3 phases, 3 plans, 7 tasks
+
+**Key accomplishments:**
+
+- Port and disabled-tools persistence via ProjectSettings::save(), with fail-fast port conflict errors replacing silent auto-increment
+- 30s IO thread timeout and 15s game bridge deferred timeout with stale response discard via request ID tracking
+- push_error() replacing printerr() for TCP/input errors, and TOOL_PARAM_HINTS cleaned from 50 to 30 entries matching current registry
+
+---
+
 ## v1.5 AI Workflow Enhancement (Shipped: 2026-03-24)
 
 **Phases completed:** 4 phases, 8 plans, 12 tasks
