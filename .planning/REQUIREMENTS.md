@@ -21,8 +21,8 @@ Requirements for v1.6 MCP 细节优化。每条需求映射到 roadmap phase。
 
 ### Logging & Cleanup (日志与清理)
 
-- [ ] **LOG-01**: 插件错误日志同时出现在 Godot 的 Output 面板和 Debugger Errors 面板
-- [ ] **CLEAN-01**: error_enrichment.cpp 中已删除工具（59→30 精简后的遗留）的 TOOL_PARAM_HINTS 条目被移除
+- [x] **LOG-01**: 插件错误日志同时出现在 Godot 的 Output 面板和 Debugger Errors 面板
+- [x] **CLEAN-01**: error_enrichment.cpp 中已删除工具（59→30 精简后的遗留）的 TOOL_PARAM_HINTS 条目被移除
 
 ## v2 Requirements
 
@@ -61,8 +61,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | TIMEOUT-01 | Phase 27 | Complete |
 | TIMEOUT-02 | Phase 27 | Complete |
 | TIMEOUT-03 | Phase 27 | Complete |
-| LOG-01 | Phase 28 | Pending |
-| CLEAN-01 | Phase 28 | Pending |
+| LOG-01 | Phase 28 | Complete |
+| CLEAN-01 | Phase 28 | Complete |
 
 **Coverage:**
 - v1.6 requirements: 8 total

@@ -95,7 +95,7 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
 
 - [x] **Phase 26: Settings Persistence** - Port and tool-disable settings survive editor restart; port conflicts fail fast instead of silently desyncing (completed 2026-03-31)
 - [x] **Phase 27: Timeout Safety** - IO thread and game bridge requests have bounded wait times; stale responses cannot corrupt subsequent requests (completed 2026-04-01)
-- [ ] **Phase 28: Logging & Cleanup** - Errors surface in both Output and Debugger panels; dead code from tool consolidation is removed
+- [x] **Phase 28: Logging & Cleanup** - Errors surface in both Output and Debugger panels; dead code from tool consolidation is removed (completed 2026-04-01)
 
 ## Phase Details
 
@@ -131,9 +131,9 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. When the plugin logs an error (e.g., port conflict, tool failure), the message appears in both the Output panel and the Debugger > Errors tab simultaneously
   2. The TOOL_PARAM_HINTS map in error_enrichment.cpp contains entries only for the current 30 tools -- no references to tools that were removed during the v1.5 consolidation
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 28-01-PLAN.md -- Dual-panel logging (push_error) + TOOL_PARAM_HINTS cleanup
+- [x] 28-01-PLAN.md -- Dual-panel logging (push_error) + TOOL_PARAM_HINTS cleanup
 
 ## Progress
 
@@ -167,4 +167,4 @@ Phases execute in numeric order: 26 -> 27 -> 28
 | 25. Prompt Templates | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 26. Settings Persistence | v1.6 | 1/1 | Complete    | 2026-03-31 |
 | 27. Timeout Safety | v1.6 | 1/1 | Complete    | 2026-04-01 |
-| 28. Logging & Cleanup | v1.6 | 0/1 | Not started | - |
+| 28. Logging & Cleanup | v1.6 | 1/1 | Complete   | 2026-04-01 |

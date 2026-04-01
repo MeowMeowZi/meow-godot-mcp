@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: MCP Detail Optimizations
 status: verifying
-stopped_at: Completed 27-01-PLAN.md
-last_updated: "2026-04-01T02:27:47.964Z"
+stopped_at: Completed 28-01-PLAN.md
+last_updated: "2026-04-01T02:48:53.009Z"
 last_activity: 2026-04-01
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
   percent: 0
 ---
 
@@ -21,12 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** Phase 27 — timeout-safety
+**Current focus:** Phase 28 — logging-cleanup
 
 ## Current Position
 
-Phase: 28
-Plan: Not started
+Phase: 28 (logging-cleanup) — EXECUTING
+Plan: 1 of 1
 Status: Phase complete — ready for verification
 Last activity: 2026-04-01
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase 26 P01 | 5 | 3 tasks | 1 files |
 | Phase 27 P01 | 5min | 2 tasks | 4 files |
+| Phase 28 P01 | 15 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 27]: Error code -32001 for IO thread timeout (custom, outside JSON-RPC reserved range)
 - [Phase 27]: 15s deadline for game bridge deferred requests; expire_pending clears state before callback to prevent race
 - [Phase 27]: Stale response discard via io_pending_request_id: null check (timed out) + ID mismatch check (wrong request)
+- [Phase 28]: push_error() for error conditions, print() for informational -- consistent severity pattern
+- [Phase 28]: TOOL_PARAM_HINTS sorted alphabetically, 1:1 with mcp_tool_registry.cpp (30 entries)
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-31
-Last session: 2026-04-01T02:23:37.902Z
-Stopped at: Completed 27-01-PLAN.md
+Last session: 2026-04-01T02:48:53.006Z
+Stopped at: Completed 28-01-PLAN.md
 Resume file: None
