@@ -368,6 +368,11 @@ void MCPServer::poll() {
         // else: keep waiting (poll() called again next frame)
     }
 
+    // Check deferred game bridge timeout (TIMEOUT-02)
+    if (game_bridge && game_bridge->has_pending_timeout()) {
+        game_bridge->expire_pending();
+    }
+
     while (!request_queue.empty()) {
         auto req = request_queue.front();
         request_queue.pop();

@@ -403,6 +403,60 @@ bool MeowDebuggerPlugin::is_game_connected() const {
     return game_connected;
 }
 
+bool MeowDebuggerPlugin::has_pending_timeout() const {
+    return pending_type != PendingType::NONE &&
+           std::chrono::steady_clock::now() >= pending_deadline;
+}
+
+void MeowDebuggerPlugin::expire_pending() {
+    if (pending_type == PendingType::NONE) return;
+
+    std::string error_msg;
+    switch (pending_type) {
+        case PendingType::VIEWPORT_CAPTURE:
+            error_msg = "Game viewport capture timed out (15s)";
+            break;
+        case PendingType::CLICK_NODE:
+            error_msg = "click_node timed out (15s)";
+            break;
+        case PendingType::GET_NODE_RECT:
+            error_msg = "get_node_rect timed out (15s)";
+            break;
+        case PendingType::GET_NODE_PROPERTY:
+            error_msg = "get_game_node_property timed out (15s)";
+            break;
+        case PendingType::EVAL_IN_GAME:
+            error_msg = "eval_in_game timed out (15s)";
+            break;
+        case PendingType::GET_GAME_SCENE_TREE:
+            error_msg = "get_game_scene_tree timed out (15s)";
+            break;
+        case PendingType::RUN_TEST_SEQUENCE:
+            error_msg = "Test sequence timed out (15s)";
+            break;
+        case PendingType::INPUT_SEQUENCE:
+            error_msg = "Input sequence timed out (15s)";
+            break;
+        case PendingType::INJECT_TEXT:
+            error_msg = "Text injection timed out (15s)";
+            break;
+        default:
+            error_msg = "Deferred operation timed out (15s)";
+            break;
+    }
+
+    // Clear pending state FIRST to prevent race with _capture arriving same frame
+    PendingType expired_type = pending_type;
+    nlohmann::json expired_id = pending_id;
+    pending_type = PendingType::NONE;
+
+    // Deliver error via deferred callback
+    if (deferred_callback) {
+        auto error_response = mcp::create_tool_result(expired_id, {{"error", error_msg}});
+        deferred_callback(error_response);
+    }
+}
+
 void MeowDebuggerPlugin::set_deferred_response_callback(DeferredCallback cb) {
     deferred_callback = cb;
 }
@@ -608,6 +662,7 @@ nlohmann::json MeowDebuggerPlugin::request_game_viewport_capture(
     pending_capture_width = width;
     pending_capture_height = height;
     pending_type = PendingType::VIEWPORT_CAPTURE;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
 
     // Send capture request to the game companion
     Array data;
@@ -626,6 +681,7 @@ nlohmann::json MeowDebuggerPlugin::click_node_tool(const nlohmann::json& id, con
     }
 
     pending_type = PendingType::CLICK_NODE;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
     pending_id = id;
 
     Array data;
@@ -644,6 +700,7 @@ nlohmann::json MeowDebuggerPlugin::get_node_rect_tool(const nlohmann::json& id, 
     }
 
     pending_type = PendingType::GET_NODE_RECT;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
     pending_id = id;
 
     Array data;
@@ -665,6 +722,7 @@ nlohmann::json MeowDebuggerPlugin::get_game_node_property_tool(
     }
 
     pending_type = PendingType::GET_NODE_PROPERTY;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
     pending_id = id;
 
     Array data;
@@ -685,6 +743,7 @@ nlohmann::json MeowDebuggerPlugin::eval_in_game_tool(
     }
 
     pending_type = PendingType::EVAL_IN_GAME;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
     pending_id = id;
 
     Array data;
@@ -704,6 +763,7 @@ nlohmann::json MeowDebuggerPlugin::get_game_scene_tree_tool(
     }
 
     pending_type = PendingType::GET_GAME_SCENE_TREE;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
     pending_id = id;
 
     Array data;
@@ -736,6 +796,7 @@ nlohmann::json MeowDebuggerPlugin::run_test_sequence_tool(
     test_results = nlohmann::json::array();
     test_sequence_id = id;
     pending_type = PendingType::RUN_TEST_SEQUENCE;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
 
     // Start executing the first step
     _execute_test_step(0);
@@ -955,6 +1016,7 @@ nlohmann::json MeowDebuggerPlugin::inject_input_sequence_tool(const nlohmann::js
     }
 
     pending_type = PendingType::INPUT_SEQUENCE;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
     pending_id = id;
 
     // Serialize steps as JSON string to send to game
@@ -976,6 +1038,7 @@ nlohmann::json MeowDebuggerPlugin::inject_text_tool(const nlohmann::json& id, co
     }
 
     pending_type = PendingType::INJECT_TEXT;
+    pending_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
     pending_id = id;
 
     Array data;

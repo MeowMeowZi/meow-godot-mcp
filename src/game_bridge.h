@@ -10,6 +10,7 @@
 #include <vector>
 #include <cstdint>
 #include <functional>
+#include <chrono>
 
 struct LogEntry {
     std::string message;
@@ -59,6 +60,10 @@ public:
     // State queries
     bool is_game_connected() const;
 
+    // Deferred request timeout (TIMEOUT-02)
+    bool has_pending_timeout() const;
+    void expire_pending();
+
     // Deferred response callback (set by MCPServer)
     // Called from _capture on main thread when viewport data arrives
     using DeferredCallback = std::function<void(const nlohmann::json& response)>;
@@ -84,6 +89,7 @@ private:
     // Pending deferred request (viewport capture, click_node, get_node_rect)
     PendingType pending_type = PendingType::NONE;
     nlohmann::json pending_id;          // MCP request id for any pending deferred request
+    std::chrono::steady_clock::time_point pending_deadline;  // Deadline for deferred request timeout
     int pending_capture_width = 0;      // For viewport capture resize
     int pending_capture_height = 0;     // For viewport capture resize
 
