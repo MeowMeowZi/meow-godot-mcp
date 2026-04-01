@@ -125,6 +125,19 @@ void MCPServer::set_game_bridge(MeowDebuggerPlugin* bridge) {
 }
 
 void MCPServer::queue_deferred_response(const nlohmann::json& response) {
+    // TIMEOUT-03: Discard stale responses from timed-out requests
+    {
+        std::lock_guard<std::recursive_mutex> lock(queue_mutex);
+        if (io_pending_request_id.is_null()) {
+            // No request being waited on -- IO thread already timed out and moved on
+            return;
+        }
+        if (response.contains("id") && response["id"] != io_pending_request_id) {
+            // Response ID does not match current pending request -- stale, discard
+            return;
+        }
+    }
+
     nlohmann::json enriched_response = response;
 
     // Check if this is a tool result with an error in the content
@@ -273,16 +286,29 @@ void MCPServer::io_thread_func() {
             if (!line.empty()) {
                 bool handled = process_message_io(line);
                 if (!handled) {
-                    // Request was queued -- wait for main thread response
+                    // Request was queued -- wait for main thread response (30s timeout per TIMEOUT-01)
                     std::unique_lock<std::recursive_mutex> lock(queue_mutex);
-                    response_cv.wait(lock, [this]{ return !response_queue.empty() || !running.load(); });
+                    bool got_response = response_cv.wait_for(lock, std::chrono::seconds(30),
+                        [this]{ return !response_queue.empty() || !running.load(); });
                     if (!running.load()) break;
+
+                    if (!got_response) {
+                        // Timeout: main thread did not respond within 30s
+                        auto timeout_error = mcp::create_error_response(
+                            io_pending_request_id, -32001,
+                            "Tool execution timed out (30s)");
+                        send_json(client_peer, timeout_error);
+                        io_pending_request_id = nullptr;  // Clear tracked ID
+                        continue;
+                    }
+
                     // Send all pending responses
                     while (!response_queue.empty()) {
                         auto resp = response_queue.front();
                         response_queue.pop();
                         send_json(client_peer, resp.response);
                     }
+                    io_pending_request_id = nullptr;  // Clear tracked ID after successful send
                 }
             }
         }
@@ -313,6 +339,7 @@ bool MCPServer::process_message_io(const std::string& line) {
     {
         std::lock_guard<std::recursive_mutex> lock(queue_mutex);
         request_queue.push({result.message.method, result.message.id, result.message.params});
+        io_pending_request_id = result.message.id;  // Track for timeout/stale detection
     }
     return false;
 }

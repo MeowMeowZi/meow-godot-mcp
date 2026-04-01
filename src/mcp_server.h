@@ -78,6 +78,7 @@ private:
     std::queue<PendingRequest> request_queue;
     std::queue<PendingResponse> response_queue;
     std::condition_variable_any response_cv;
+    nlohmann::json io_pending_request_id;  // Tracks which request the IO thread is waiting for
 
     // Godot resources (main thread only)
     godot::EditorUndoRedoManager* undo_redo = nullptr;
