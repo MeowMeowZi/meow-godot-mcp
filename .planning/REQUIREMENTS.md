@@ -15,9 +15,9 @@ Requirements for v1.6 MCP 细节优化。每条需求映射到 roadmap phase。
 
 ### Timeout Safety (超时安全)
 
-- [ ] **TIMEOUT-01**: MCP 工具调用在 30 秒内未收到响应时，IO 线程返回 JSON-RPC 超时错误给 AI 客户端
-- [ ] **TIMEOUT-02**: Game bridge 延迟请求（视口截图、eval_in_game 等）在 15 秒内未收到游戏端响应时，返回超时错误
-- [ ] **TIMEOUT-03**: 超时后收到的迟到响应被正确丢弃，不会污染下一个请求的响应
+- [x] **TIMEOUT-01**: MCP 工具调用在 30 秒内未收到响应时，IO 线程返回 JSON-RPC 超时错误给 AI 客户端
+- [x] **TIMEOUT-02**: Game bridge 延迟请求（视口截图、eval_in_game 等）在 15 秒内未收到游戏端响应时，返回超时错误
+- [x] **TIMEOUT-03**: 超时后收到的迟到响应被正确丢弃，不会污染下一个请求的响应
 
 ### Logging & Cleanup (日志与清理)
 
@@ -58,9 +58,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | PERSIST-01 | Phase 26 | Complete |
 | PERSIST-02 | Phase 26 | Complete |
 | PERSIST-03 | Phase 26 | Complete |
-| TIMEOUT-01 | Phase 27 | Pending |
-| TIMEOUT-02 | Phase 27 | Pending |
-| TIMEOUT-03 | Phase 27 | Pending |
+| TIMEOUT-01 | Phase 27 | Complete |
+| TIMEOUT-02 | Phase 27 | Complete |
+| TIMEOUT-03 | Phase 27 | Complete |
 | LOG-01 | Phase 28 | Pending |
 | CLEAN-01 | Phase 28 | Pending |
 

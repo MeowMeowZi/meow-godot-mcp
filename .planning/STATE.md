@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: MCP Detail Optimizations
 status: verifying
-stopped_at: Completed 26-01-PLAN.md
-last_updated: "2026-03-31T08:14:27.263Z"
-last_activity: 2026-03-31
+stopped_at: Completed 27-01-PLAN.md
+last_updated: "2026-04-01T02:23:37.905Z"
+last_activity: 2026-04-01
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** AI 能通过标准 MCP 协议读取和操控 Godot 编辑器中的场景树与节点，实现真正的 AI 辅助游戏开发
-**Current focus:** Phase 26 — settings-persistence
+**Current focus:** Phase 27 — timeout-safety
 
 ## Current Position
 
-Phase: 27
-Plan: Not started
+Phase: 27 (timeout-safety) — EXECUTING
+Plan: 1 of 1
 Status: Phase complete — ready for verification
-Last activity: 2026-03-31
+Last activity: 2026-04-01
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: Stable
 
 | Phase 26 P01 | 5 | 3 tasks | 1 files |
+| Phase 27 P01 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 26]: Removed set_initial_value() so even default port 6800 persists correctly via ProjectSettings::save()
 - [Phase 26]: Disabled tools stored as comma-separated string in meow_mcp/tools/disabled ProjectSettings key
 - [Phase 26]: All 4 auto-increment port loops replaced with single-attempt + push_error() for fail-fast behavior
+- [Phase 27]: Error code -32001 for IO thread timeout (custom, outside JSON-RPC reserved range)
+- [Phase 27]: 15s deadline for game bridge deferred requests; expire_pending clears state before callback to prevent race
+- [Phase 27]: Stale response discard via io_pending_request_id: null check (timed out) + ID mismatch check (wrong request)
 
 ### Pending Todos
 
@@ -84,6 +88,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-31
-Last session: 2026-03-31T08:09:38.351Z
-Stopped at: Completed 26-01-PLAN.md
+Last session: 2026-04-01T02:23:37.902Z
+Stopped at: Completed 27-01-PLAN.md
 Resume file: None

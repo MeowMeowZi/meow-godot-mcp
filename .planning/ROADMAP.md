@@ -94,7 +94,7 @@ See `.planning/milestones/v1.3-ROADMAP.md` for full details.
 **Milestone Goal:** Reliability and persistence -- the plugin remembers user settings across restarts, fails fast on errors instead of silently degrading, and keeps its codebase clean.
 
 - [x] **Phase 26: Settings Persistence** - Port and tool-disable settings survive editor restart; port conflicts fail fast instead of silently desyncing (completed 2026-03-31)
-- [ ] **Phase 27: Timeout Safety** - IO thread and game bridge requests have bounded wait times; stale responses cannot corrupt subsequent requests
+- [x] **Phase 27: Timeout Safety** - IO thread and game bridge requests have bounded wait times; stale responses cannot corrupt subsequent requests (completed 2026-04-01)
 - [ ] **Phase 28: Logging & Cleanup** - Errors surface in both Output and Debugger panels; dead code from tool consolidation is removed
 
 ## Phase Details
@@ -120,9 +120,9 @@ Plans:
   1. When the Godot main thread hangs or is extremely slow, the AI client receives a JSON-RPC error response (not silence) within 30 seconds of sending a tool call
   2. When the running game does not respond to a deferred request (viewport capture, eval_in_game), the AI client receives a timeout error within 15 seconds instead of waiting forever
   3. If a response arrives after timeout has already fired and the error has been sent, that stale response is discarded and does not appear as the result of the next tool call
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 27-01-PLAN.md -- IO thread timeout + game bridge timeout + stale response discard
+- [x] 27-01-PLAN.md -- IO thread timeout + game bridge timeout + stale response discard
 
 ### Phase 28: Logging & Cleanup
 **Goal**: Plugin errors are visible in both Godot output panels, and dead code left over from the 59-to-30 tool consolidation is removed
@@ -164,5 +164,5 @@ Phases execute in numeric order: 26 -> 27 -> 28
 | 24. Composite Tools | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 25. Prompt Templates | v1.5 | 2/2 | Complete | 2026-03-24 |
 | 26. Settings Persistence | v1.6 | 1/1 | Complete    | 2026-03-31 |
-| 27. Timeout Safety | v1.6 | 0/1 | Planning | - |
+| 27. Timeout Safety | v1.6 | 1/1 | Complete   | 2026-04-01 |
 | 28. Logging & Cleanup | v1.6 | 0/? | Not started | - |
